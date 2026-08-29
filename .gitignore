@@ -1,6 +1,6 @@
 # Build results
-[Db]in/
-[Ob]j/
+bin/
+obj/
 .vs/
 .idea/
 *.user
