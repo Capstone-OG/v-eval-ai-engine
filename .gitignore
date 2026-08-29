@@ -1,0 +1,7 @@
+# Build results
+[Db]in/
+[Ob]j/
+.vs/
+.idea/
+*.user
+*.suo
