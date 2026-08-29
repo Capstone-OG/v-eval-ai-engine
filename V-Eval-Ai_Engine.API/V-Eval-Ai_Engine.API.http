@@ -1,0 +1,6 @@
+@V_Eval_Ai_Engine.API_HostAddress = http://localhost:5104
+
+GET {{V_Eval_Ai_Engine.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

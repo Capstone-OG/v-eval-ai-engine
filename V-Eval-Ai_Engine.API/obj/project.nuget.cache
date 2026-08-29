@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "Bz+nioGLBqA=",
+  "success": true,
+  "projectFilePath": "e:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.API\\V-Eval-Ai_Engine.API.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\USER\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.17\\microsoft.aspnetcore.openapi.9.0.17.nupkg.sha512",
+    "C:\\Users\\USER\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}
