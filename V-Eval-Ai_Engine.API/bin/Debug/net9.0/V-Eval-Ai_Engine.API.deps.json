@@ -1,0 +1,106 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v9.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v9.0": {
+      "V-Eval-Ai_Engine.API/1.0.0": {
+        "dependencies": {
+          "Microsoft.AspNetCore.OpenApi": "9.0.17",
+          "V-Eval-Ai_Engine.Application": "1.0.0",
+          "V-Eval-Ai_Engine.Infrastructure": "1.0.0"
+        },
+        "runtime": {
+          "V-Eval-Ai_Engine.API.dll": {}
+        }
+      },
+      "Microsoft.AspNetCore.OpenApi/9.0.17": {
+        "dependencies": {
+          "Microsoft.OpenApi": "1.6.17"
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.AspNetCore.OpenApi.dll": {
+            "assemblyVersion": "9.0.17.0",
+            "fileVersion": "9.0.1726.26907"
+          }
+        }
+      },
+      "Microsoft.OpenApi/1.6.17": {
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.OpenApi.dll": {
+            "assemblyVersion": "1.6.17.0",
+            "fileVersion": "1.6.17.0"
+          }
+        }
+      },
+      "V-Eval-Ai_Engine.Application/1.0.0": {
+        "dependencies": {
+          "V-Eval-Ai_Engine.Domain": "1.0.0"
+        },
+        "runtime": {
+          "V-Eval-Ai_Engine.Application.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "V-Eval-Ai_Engine.Domain/1.0.0": {
+        "runtime": {
+          "V-Eval-Ai_Engine.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "V-Eval-Ai_Engine.Infrastructure/1.0.0": {
+        "dependencies": {
+          "V-Eval-Ai_Engine.Application": "1.0.0"
+        },
+        "runtime": {
+          "V-Eval-Ai_Engine.Infrastructure.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "V-Eval-Ai_Engine.API/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.AspNetCore.OpenApi/9.0.17": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-+zcqQ/JecNl4G1hC2mrJ8qDolJv17W3grToEqcGZGqa3cXWaCjA9KTdigU0WVK3LWI0TtOG/Q/joXRdKqFhB9Q==",
+      "path": "microsoft.aspnetcore.openapi/9.0.17",
+      "hashPath": "microsoft.aspnetcore.openapi.9.0.17.nupkg.sha512"
+    },
+    "Microsoft.OpenApi/1.6.17": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Le+kehlmrlQfuDFUt1zZ2dVwrhFQtKREdKBo+rexOwaCoYP0/qpgT9tLxCsZjsgR5Itk1UKPcbgO+FyaNid/bA==",
+      "path": "microsoft.openapi/1.6.17",
+      "hashPath": "microsoft.openapi.1.6.17.nupkg.sha512"
+    },
+    "V-Eval-Ai_Engine.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "V-Eval-Ai_Engine.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "V-Eval-Ai_Engine.Infrastructure/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

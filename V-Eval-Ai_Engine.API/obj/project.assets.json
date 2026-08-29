@@ -33,6 +33,42 @@
             "related": ".pdb;.xml"
           }
         }
+      },
+      "V-Eval-Ai_Engine.Application/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "V-Eval-Ai_Engine.Domain": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/V-Eval-Ai_Engine.Application.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/V-Eval-Ai_Engine.Application.dll": {}
+        }
+      },
+      "V-Eval-Ai_Engine.Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "compile": {
+          "bin/placeholder/V-Eval-Ai_Engine.Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/V-Eval-Ai_Engine.Domain.dll": {}
+        }
+      },
+      "V-Eval-Ai_Engine.Infrastructure/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "V-Eval-Ai_Engine.Application": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/V-Eval-Ai_Engine.Infrastructure.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/V-Eval-Ai_Engine.Infrastructure.dll": {}
+        }
       }
     }
   },
@@ -67,11 +103,28 @@
         "microsoft.openapi.1.6.17.nupkg.sha512",
         "microsoft.openapi.nuspec"
       ]
+    },
+    "V-Eval-Ai_Engine.Application/1.0.0": {
+      "type": "project",
+      "path": "../V-Eval-Ai_Engine.Application/V-Eval-Ai_Engine.Application.csproj",
+      "msbuildProject": "../V-Eval-Ai_Engine.Application/V-Eval-Ai_Engine.Application.csproj"
+    },
+    "V-Eval-Ai_Engine.Domain/1.0.0": {
+      "type": "project",
+      "path": "../V-Eval-Ai_Engine.Domain/V-Eval-Ai_Engine.Domain.csproj",
+      "msbuildProject": "../V-Eval-Ai_Engine.Domain/V-Eval-Ai_Engine.Domain.csproj"
+    },
+    "V-Eval-Ai_Engine.Infrastructure/1.0.0": {
+      "type": "project",
+      "path": "../V-Eval-Ai_Engine.Infrastructure/V-Eval-Ai_Engine.Infrastructure.csproj",
+      "msbuildProject": "../V-Eval-Ai_Engine.Infrastructure/V-Eval-Ai_Engine.Infrastructure.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net9.0": [
-      "Microsoft.AspNetCore.OpenApi >= 9.0.17"
+      "Microsoft.AspNetCore.OpenApi >= 9.0.17",
+      "V-Eval-Ai_Engine.Application >= 1.0.0",
+      "V-Eval-Ai_Engine.Infrastructure >= 1.0.0"
     ]
   },
   "packageFolders": {
@@ -107,7 +160,14 @@
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "e:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Application\\V-Eval-Ai_Engine.Application.csproj": {
+              "projectPath": "e:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Application\\V-Eval-Ai_Engine.Application.csproj"
+            },
+            "e:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Infrastructure\\V-Eval-Ai_Engine.Infrastructure.csproj": {
+              "projectPath": "e:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Infrastructure\\V-Eval-Ai_Engine.Infrastructure.csproj"
+            }
+          }
         }
       },
       "warningProperties": {
