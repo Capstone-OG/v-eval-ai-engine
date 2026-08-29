@@ -1,1 +1,1 @@
-- clear bin and debug file 
+- Fix CI error in github action 
