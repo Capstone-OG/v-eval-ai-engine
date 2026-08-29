@@ -1,0 +1,2 @@
+obj\Debug\net9.0/Ai.cs \
+obj\Debug\net9.0/AiGrpc.cs: ../../../grpc/ai.proto

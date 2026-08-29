@@ -1,0 +1,45 @@
+name: .NET CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Checkout the service repository itself
+    - name: Checkout Service Repo
+      uses: actions/checkout@v4
+
+    # 2. Checkout the System-Repo (gRPC definitions)
+    - name: Checkout System-Repo (gRPC)
+      uses: actions/checkout@v4
+      with:
+        repository: Capstone-OG/System-Repo
+        token: ${{ secrets.GH_PAT }}
+        path: temp-system-repo
+
+    # 3. Place grpc folder at the correct relative path
+    - name: Setup Shared gRPC Path
+      run: |
+        mkdir -p ../../grpc
+        cp -r temp-system-repo/grpc/* ../../grpc/
+        rm -rf temp-system-repo
+
+    # 4. Setup .NET Core SDK
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    # 5. Restore dependencies
+    - name: Restore dependencies
+      run: dotnet restore
+
+    # 6. Build projects
+    - name: Build
+      run: dotnet build --no-restore --configuration Release

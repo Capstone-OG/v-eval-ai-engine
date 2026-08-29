@@ -33,11 +33,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "e:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Application\\V-Eval-Ai_Engine.Application.csproj",
+      "projectUniqueName": "E:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Application\\V-Eval-Ai_Engine.Application.csproj",
       "projectName": "V-Eval-Ai_Engine.Application",
-      "projectPath": "e:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Application\\V-Eval-Ai_Engine.Application.csproj",
+      "projectPath": "E:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Application\\V-Eval-Ai_Engine.Application.csproj",
       "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-      "outputPath": "e:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Application\\obj\\",
+      "outputPath": "E:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Application\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -60,8 +60,8 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "e:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Domain\\V-Eval-Ai_Engine.Domain.csproj": {
-              "projectPath": "e:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Domain\\V-Eval-Ai_Engine.Domain.csproj"
+            "E:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Domain\\V-Eval-Ai_Engine.Domain.csproj": {
+              "projectPath": "E:\\CapStone\\All Services\\V-Eval-Ai_Engine\\V-Eval-Ai_Engine.Domain\\V-Eval-Ai_Engine.Domain.csproj"
             }
           }
         }

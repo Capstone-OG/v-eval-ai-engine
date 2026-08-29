@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("V-Eval-Ai_Engine.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b7b53024f950bab18ba9d1ceda5dc58d0c20a1e0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b9dcc2386884fd097e59102266b8315092ff63ec")]
 [assembly: System.Reflection.AssemblyProductAttribute("V-Eval-Ai_Engine.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("V-Eval-Ai_Engine.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
