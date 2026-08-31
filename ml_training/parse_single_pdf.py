@@ -24,23 +24,24 @@ import socket
 
 def query_gemini_api(pdf_path, api_key):
     try:
-        print("[AI Process] Đang gửi yêu cầu trích xuất đề thi tới Gemini 2.5 Flash API...", file=sys.stderr)
+        print("[AI Process] Đang đọc trực tiếp file PDF và mã hóa sang base64 để gửi sang Gemini...", file=sys.stderr)
         
-        # 1. Đọc file PDF và chuyển sang base64
+        # 1. Đọc trực tiếp file PDF và chuyển sang base64
         with open(pdf_path, "rb") as f:
             pdf_bytes = f.read()
         pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
         
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        print(f"[AI Process] Đọc file PDF thành công ({len(pdf_bytes)/1024:.1f} KB). Đang chuẩn bị payload gửi sang Gemini...", file=sys.stderr)
         
         prompt = (
             "Bạn là một chuyên gia chuyển đổi tài liệu đề thi sang cấu trúc JSON chuẩn.\n"
-            "Hãy đọc toàn bộ tài liệu PDF đề thi ĐGNL (Đánh giá năng lực) này và trích xuất tất cả các câu hỏi.\n"
+            "Hãy đọc toàn bộ tài liệu đề thi ĐGNL (Đánh giá năng lực) PDF này và trích xuất tất cả các câu hỏi.\n"
             "Yêu cầu:\n"
             "1. Trích xuất đúng cấu trúc câu hỏi đơn lẻ (single_questions) và chùm câu hỏi đọc hiểu (passages).\n"
-            "2. Đổi các công thức toán học, vật lý, hóa học sang dạng công thức LaTeX chuẩn được bao bọc bởi dấu $ (ví dụ: $y = x^3 - 3x^2 + 1$ hoặc $\\int_0^1 x dx$).\n"
-            "3. Nếu trang có đồ thị, biểu đồ, hoặc sơ đồ hình vẽ, hãy thêm mô tả bằng chữ chi tiết về hình vẽ đó ngay dưới nội dung câu hỏi hoặc passage tương ứng (ví dụ: *([Hình vẽ]: Đồ thị parabol...)*) để người đọc nắm được thông tin.\n"
-            "4. Điền đầy đủ bốn phương án A, B, C, D vào thuộc tính options. Đảm bảo toàn bộ câu hỏi đều được trích xuất đầy đủ từ trang đầu đến trang cuối."
+            "2. Mọi công thức toán học, vật lý, hóa học, phương trình, biến số, hằng số (kể cả các ký hiệu chữ đơn lẻ như x, y, z, m, T, t) BẮT BUỘC phải được bao bọc bởi một cặp dấu đô-la đơn $...$ (ví dụ: viết $y = -x^3 + 3(m-1)x^2 + 6mx + 1$, $z = 3 - i$ hoặc $\\int_0^1 x dx$). Đảm bảo viết đúng các công thức phân số (dùng \\frac{a}{b}), chỉ số dưới (dùng m_0, t_0), chỉ số trên (dùng x^2), tránh viết rời rạc vô nghĩa như '0 m m 16 = .'. KHÔNG được để trống hoặc dùng chữ thường không có dấu $ cho công thức.\n"
+            "3. Nếu trang có đồ thị, biểu đồ, hoặc sơ đồ hình vẽ, hãy thêm mô tả bằng chữ chi tiết về hình vẽ đó ngay dưới nội dung câu hỏi hoặc passage tương ứng (ví dụ: *([Hình vẽ]: Đồ thị parabol...)*) để người học nắm được thông tin.\n"
+            "4. Điền đầy đủ bốn phương án A, B, C, D vào thuộc tính options. Đảm bảo toàn bộ câu hỏi đều được trích xuất đầy đủ từ trang đầu đến trang cuối.\n"
+            "5. Phân tích nội dung từng câu hỏi để gợi ý tên dạng bài / kỹ năng tương ứng (suggested_skill_name), ví dụ: 'Thì động từ', 'Biện pháp tu từ', 'Phóng xạ hạt nhân', 'Cực trị hàm số', 'Đọc hiểu biểu đồ'..."
         )
         
         schema = {
@@ -62,6 +63,7 @@ def query_gemini_api(pdf_path, api_key):
                         "question_number": {"type": "INTEGER"},
                         "page_number": {"type": "INTEGER"},
                         "content": {"type": "STRING"},
+                        "suggested_skill_name": {"type": "STRING"},
                         "options": {
                           "type": "OBJECT",
                           "properties": {
@@ -73,7 +75,7 @@ def query_gemini_api(pdf_path, api_key):
                           "required": ["A", "B", "C", "D"]
                         }
                       },
-                      "required": ["question_number", "content", "options"]
+                      "required": ["question_number", "content", "options", "suggested_skill_name"]
                     }
                   }
                 },
@@ -88,6 +90,7 @@ def query_gemini_api(pdf_path, api_key):
                   "question_number": {"type": "INTEGER"},
                   "page_number": {"type": "INTEGER"},
                   "content": {"type": "STRING"},
+                  "suggested_skill_name": {"type": "STRING"},
                   "options": {
                     "type": "OBJECT",
                     "properties": {
@@ -99,12 +102,14 @@ def query_gemini_api(pdf_path, api_key):
                     "required": ["A", "B", "C", "D"]
                   }
                 },
-                "required": ["question_number", "content", "options"]
+                "required": ["question_number", "content", "options", "suggested_skill_name"]
               }
             }
           },
           "required": ["passages", "single_questions"]
         }
+        
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
         
         payload = {
             "contents": [
@@ -145,11 +150,26 @@ def query_gemini_api(pdf_path, api_key):
             try:
                 if attempt > 0:
                     print(f"[AI Process] Thử lại gửi yêu cầu tới Gemini API (Lần {attempt + 1})...", file=sys.stderr)
-                with urllib.request.urlopen(req, timeout=180) as response:
+                else:
+                    print("[AI Process] Đang tải payload lên Google Gemini API và chờ AI xử lý (quá trình này có thể mất 10-30s)...", file=sys.stderr)
+                with urllib.request.urlopen(req, timeout=240) as response:
+                    print("[AI Process] Đã nhận phản hồi thành công từ Gemini. Đang xử lý cấu trúc JSON...", file=sys.stderr)
                     res_data = response.read().decode("utf-8")
                     res_json = json.loads(res_data)
-                    content_text = res_json["candidates"][0]["content"]["parts"][0]["text"]
-                    parsed_json = json.loads(content_text.strip())
+                    if "candidates" in res_json and len(res_json["candidates"]) > 0:
+                        candidate = res_json["candidates"][0]
+                        if "content" in candidate:
+                            content_text = candidate["content"]["parts"][0]["text"]
+                            parsed_json = json.loads(content_text.strip())
+                        else:
+                            finish_reason = candidate.get("finishReason", "UNKNOWN")
+                            print(f"[Warning] Gemini không trả về nội dung. Lý do dừng: {finish_reason}", file=sys.stderr)
+                            if "safetyRatings" in candidate:
+                                print(f"Chi tiết đánh giá an toàn: {json.dumps(candidate['safetyRatings'])}", file=sys.stderr)
+                            raise Exception(f"Gemini API blocked generation. Reason: {finish_reason}")
+                    else:
+                        print(f"Phản hồi lạ từ Gemini: {json.dumps(res_json)}", file=sys.stderr)
+                        raise Exception("No candidates returned from Gemini API")
                     
                     doc = pymupdf.open(pdf_path)
                     total_pages = len(doc)
@@ -164,8 +184,29 @@ def query_gemini_api(pdf_path, api_key):
                         "passages": parsed_json.get("passages", []),
                         "single_questions": parsed_json.get("single_questions", [])
                     }
+            except urllib.error.HTTPError as http_err:
+                error_content = ""
+                try:
+                    error_content = http_err.read().decode("utf-8")
+                except:
+                    pass
+                print(f"[Warning] Thử gọi Gemini lần {attempt + 1} gặp lỗi HTTP {http_err.code}: {http_err.reason}\nChi tiết phản hồi: {error_content}", file=sys.stderr)
+                
+                if http_err.code in (429, 503):
+                    sleep_time = 10
+                    print(f"[AI Process] Gặp lỗi {http_err.code}. Đang dừng {sleep_time} giây trước khi thử lại...", file=sys.stderr)
+                    import time
+                    time.sleep(sleep_time)
+                    continue
+                    
+                if attempt == max_attempts - 1:
+                    raise http_err
+                import time
+                time.sleep(2)
             except Exception as e:
                 print(f"[Warning] Thử gọi Gemini lần {attempt + 1} gặp lỗi: {str(e)}", file=sys.stderr)
+                if "content" in str(e) and 'res_json' in locals():
+                    print(f"JSON phản hồi từ Gemini: {json.dumps(res_json, ensure_ascii=False)}", file=sys.stderr)
                 if attempt == max_attempts - 1:
                     raise e
                 import time

@@ -150,6 +150,11 @@ app.MapGet("/api/ai-engine/parse-pdf", async (string filePath, IConfiguration co
         {
             process.StartInfo.Environment["OPENAI_API_KEY"] = apiKey;
         }
+        var geminiKey = configuration.GetSection("AiSettings")["GeminiApiKey"];
+        if (!string.IsNullOrWhiteSpace(geminiKey))
+        {
+            process.StartInfo.Environment["GEMINI_API_KEY"] = geminiKey;
+        }
 
         process.Start();
 
@@ -255,6 +260,11 @@ app.MapPost("/api/ai-engine/upload-pdf", async (IFormFile file, IConfiguration c
         if (!string.IsNullOrWhiteSpace(apiKey))
         {
             process.StartInfo.Environment["OPENAI_API_KEY"] = apiKey;
+        }
+        var geminiKey = configuration.GetSection("AiSettings")["GeminiApiKey"];
+        if (!string.IsNullOrWhiteSpace(geminiKey))
+        {
+            process.StartInfo.Environment["GEMINI_API_KEY"] = geminiKey;
         }
 
         process.Start();

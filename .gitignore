@@ -5,3 +5,8 @@ obj/
 .idea/
 *.user
 *.suo
+
+# Configuration overrides (prevent API key leakage)
+appsettings.Development.json
+appsettings.local.json
+appsettings.json.user

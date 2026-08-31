@@ -39,3 +39,12 @@ Dữ liệu đề thi sau khi trích xuất sẽ được định dạng JSON đ
   ]
 }
 ```
+
+---
+
+## 3. Quy trình Trích xuất qua Cloud Gemini API (Bản Ổn định)
+
+Để giải quyết triệt để vấn đề nhận diện các công thức toán học LaTeX phức tạp, cấu trúc chùm câu hỏi đọc hiểu (passages), và các định dạng chữ in đậm/gạch chân trong đề thi ĐGNL, hệ thống đã tích hợp API của Google Gemini:
+* **Mô hình sử dụng**: `gemini-2.5-flash` (Stable production).
+* **Phương thức truyền dữ liệu**: Đọc trực tiếp byte tệp tin PDF và mã hóa sang chuỗi base64 với MIME type `application/pdf`. Dữ liệu được gửi lên Cloud để tận dụng bộ máy phân tích tài liệu đa phương thức (multimodal) gốc của Google, giúp loại bỏ hoàn toàn việc render ảnh cục bộ (giảm độ trễ CPU từ 3 phút xuống còn 0 giây).
+* **Ràng buộc đầu ra (Structured Outputs)**: Định nghĩa JSON Schema đầu ra nghiêm ngặt trong API payload, ép buộc Gemini phải trả về dữ liệu đúng cấu trúc bao gồm chùm câu hỏi (`passages`), câu hỏi đơn lẻ (`single_questions`), phân loại dạng bài học tập (`suggested_skill_name`), và bọc các công thức toán học chính xác theo cú pháp LaTeX dấu đô-la `$ ... $`.

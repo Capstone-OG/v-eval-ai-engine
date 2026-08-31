@@ -23,7 +23,23 @@ Triển khai tính năng **2 chiều**: đọc tệp đề thi dạng PDF ở Ba
 | **Tạo trang UI hiển thị trực quan (`/api/ai-engine/view-exam`)** | 🟢 Hoàn thành | Tách code giao diện ra tệp tĩnh `wwwroot/view-exam.html` riêng biệt, gọi API trích xuất và hiển thị kèm LaTeX. |
 | **Kiểm tra liên thông 2 chiều** | 🟢 Hoàn thành | Chạy kiểm chứng toàn bộ luồng. |
 
-### 💡 Kế hoạch tiếp theo (Ngày mai & Tuần tới)
-1. Phát triển cấu trúc trích xuất đề thi (Passage & Questions) tự động để đưa vào database `Content Service` theo đúng định dạng `SQL.sql` đã thiết kế.
-2. Tích hợp thư viện sinh hình vẽ đồ thị động hoặc xử lý hình học không gian.
-3. Triển khai cấu trúc RAG Pipeline (Qdrant Vector Database) và Service gRPC để phục vụ Socratic AI Tutor.
+---
+
+## 📅 Cập nhật ngày 31/08/2026
+
+### 🎯 Mục tiêu hiện tại (Milestone 2)
+Tối ưu hóa luồng trích xuất đề thi PDF với Gemini Vision OCR cloud (bản ổn định), đảm bảo tính an toàn chống lộ API Key khi push git, và liên thông lưu dữ liệu sang Content Service Database.
+
+### 📋 Danh sách Task & Trạng thái
+
+| Tên Task | Trạng thái | Ghi chú |
+| :--- | :---: | :--- |
+| **Bảo mật API Key (Leak-proof configuration)** | 🟢 Hoàn thành | Cấu hình `.gitignore` chặn `appsettings.Development.json` và dùng các placeholder an toàn trong `appsettings.json`. |
+| **Tối ưu hóa Ingestion (Raw PDF Base64)** | 🟢 Hoàn thành | Thay vì chuyển sang ảnh PNG (CPU lag 3 phút), gửi trực tiếp PDF base64 sang Gemini để xử lý tức thì (<15s) bằng mô hình ổn định `gemini-2.5-flash`. |
+| **Đồng bộ hóa Progress Logging** | 🟢 Hoàn thành | Thêm logs thời gian thực trong Python (`parse_single_pdf.py`) báo cáo kích thước file và tiến trình tải lên. |
+| **Tích hợp Frontend & Content Service** | 🟢 Hoàn thành | Nút "Lưu vào Database" trên UI `view-exam.html` gọi sang Minimal API `POST /api/content/exams/import` của Content Service để lưu dữ liệu. |
+| **Tự động phân loại dạng bài động** | 🟢 Hoàn thành | Ánh xạ trường `suggested_skill_name` để DB tự động sinh dạng bài tương ứng trên schema `content` Supabase. |
+
+### 💡 Kế hoạch tiếp theo
+1. Nghiên cứu và thiết lập môi trường Qdrant Vector Database cho RAG Pipeline phục vụ tính năng Socratic AI Tutor.
+2. Xây dựng dịch vụ gRPC Stream để truyền dữ liệu tương tác học tập thời gian thực giữa AI Engine và Practice Service.

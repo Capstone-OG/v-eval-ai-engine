@@ -419,7 +419,10 @@
               <span id="stat-singles">Câu hỏi đơn lẻ: --</span>
             </div>
           </div>
-          <button class="btn-select" style="margin: 0;" onclick="window.location.reload()">Tải Đề Khác</button>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn-select" id="btn-save-exam" style="margin: 0; background: var(--success); color: #fff;" onclick="saveExam()">Lưu vào Database</button>
+            <button class="btn-select" style="margin: 0;" onclick="window.location.reload()">Tải Đề Khác</button>
+          </div>
         </div>
 
         <div class="exam-layout" id="exam-layout"></div>
@@ -436,6 +439,7 @@
   </div>
 
   <script>
+    let currentExamData = null; // Biến lưu trữ kết quả trích xuất tạm thời
     const fileInput = document.getElementById('file-input');
     const loading = document.getElementById('loading');
     const uploadContainer = document.getElementById('upload-container');
@@ -450,14 +454,6 @@
 
     function markdownToHtml(text) {
       if (!text) return '';
-      
-      // Tự động bao bọc biểu thức Toán bằng dấu $ nếu chứa ký hiệu Toán học nhưng chưa có dấu $
-      if ((text.includes('\\') || text.includes('_') || text.includes('^') || text.includes('<') || text.includes('>') || text.includes('=')) && !text.includes('$')) {
-        // Tránh bao bọc nếu có chứa thẻ HTML <u> hoặc <strong> hoặc <span>
-        if (!text.includes('<u') && !text.includes('<strong') && !text.includes('<span')) {
-          text = '$' + text + '$';
-        }
-      }
       
       // Thay thế **bold** -> <strong>bold</strong>
       let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -489,6 +485,7 @@
         }
 
         const data = await response.json();
+        currentExamData = data; // Lưu lại kết quả trích xuất đề thi
         renderExam(data);
       } catch (err) {
         alert('Lỗi kết nối đến server: ' + err.message);
@@ -702,6 +699,88 @@
       }
       el.style.borderColor = 'var(--success)';
       el.style.background = 'rgba(16, 185, 129, 0.1)';
+    }
+
+    async function saveExam() {
+      if (!currentExamData) {
+        alert("Không tìm thấy dữ liệu đề thi để lưu!");
+        return;
+      }
+
+      // Chuẩn bị payload khớp với ImportMockExamCommand DTO
+      const payload = {
+        title: currentExamData.file_name.replace(/\.[^/.]+$/, ""), // Tên file bỏ đuôi mở rộng
+        durationMinutes: 150, // Mặc định 150 phút
+        examCategory: "FULL_MOCK", // Mặc định FULL_MOCK
+        subjectCode: "MATH", // Có thể cho chọn hoặc mặc định MATH
+        difficultyLevel: 2, // Mặc định 2
+        passages: currentExamData.passages.map(p => ({
+          startQuestion: p.start_question,
+          endQuestion: p.end_question,
+          content: p.content,
+          imageUrl: p.image_url || null,
+          questions: p.questions.map(q => ({
+            questionNumber: q.question_number,
+            pageNumber: q.page_number || 1,
+            content: q.content,
+            options: {
+              A: q.options.A || "",
+              B: q.options.B || "",
+              C: q.options.C || "",
+              D: q.options.D || ""
+            },
+            correctOption: "A", // AI trích xuất có thể thiếu, cho mặc định A
+            explanation: q.explanation || "",
+            difficultyLevel: 2,
+            suggestedSkillName: q.suggested_skill_name || "Đọc hiểu" // Gợi ý dạng bài từ Gemini
+          }))
+        })),
+        singleQuestions: currentExamData.single_questions.map(q => ({
+          questionNumber: q.question_number,
+          pageNumber: q.page_number || 1,
+          content: q.content,
+          options: {
+            A: q.options.A || "",
+            B: q.options.B || "",
+            C: q.options.C || "",
+            D: q.options.D || ""
+          },
+          correctOption: "A",
+          explanation: q.explanation || "",
+          difficultyLevel: 2,
+          suggestedSkillName: q.suggested_skill_name || "Trắc nghiệm tổng hợp"
+        }))
+      };
+
+      loading.style.display = 'flex';
+      document.querySelector('#loading p').textContent = "Đang lưu đề thi vào Supabase PostgreSQL...";
+
+      try {
+        const response = await fetch('http://localhost:5249/api/content/exams/import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          alert('Lỗi khi lưu đề thi: ' + (errData.detail || 'Không thể lưu.'));
+          return;
+        }
+
+        const res = await response.json();
+        alert('Thành công: ' + res.message + '\nExam ID: ' + res.exam_id);
+        
+        // Reset view
+        window.location.reload();
+      } catch (err) {
+        alert('Lỗi kết nối đến Content Service: ' + err.message);
+      } finally {
+        loading.style.display = 'none';
+        document.querySelector('#loading p').textContent = "Đang tải và trích xuất cấu trúc đề thi bằng Python...";
+      }
     }
   </script>
 </body>
