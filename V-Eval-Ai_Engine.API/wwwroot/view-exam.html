@@ -470,6 +470,8 @@
       formData.append('file', file);
 
       loading.style.display = 'flex';
+      const loadingText = document.querySelector('#loading p');
+      loadingText.textContent = "Đang tải tệp lên server...";
 
       try {
         const response = await fetch('/api/ai-engine/upload-pdf', {
@@ -479,17 +481,47 @@
 
         if (!response.ok) {
           const errData = await response.json();
-          alert('Lỗi: ' + (errData.detail || 'Không thể trích xuất đề thi.'));
+          alert('Lỗi: ' + (errData.detail || errData.message || 'Không thể khởi tạo tác vụ.'));
           loading.style.display = 'none';
           return;
         }
 
-        const data = await response.json();
-        currentExamData = data; // Lưu lại kết quả trích xuất đề thi
-        renderExam(data);
+        const jobData = await response.json();
+        const jobId = jobData.job_id;
+
+        // Vòng lặp Polling theo dõi tiến trình nền
+        const intervalId = setInterval(async () => {
+          try {
+            const jobRes = await fetch(`/api/ai-engine/jobs/${jobId}`);
+            if (!jobRes.ok) return;
+
+            const job = await jobRes.json();
+            const elapsed = job.elapsed_seconds || 0;
+            const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const secs = (elapsed % 60).toString().padStart(2, '0');
+
+            loadingText.innerHTML = `
+              <span style="font-size: 16px; font-weight: 600; color: #38bdf8;">Đang phân tích đề thi bằng Gemini AI (${mins}:${secs})</span><br/>
+              <span style="font-size: 13px; color: var(--text-muted); margin-top: 6px; display: inline-block;">${job.current_step}</span>
+            `;
+
+            if (job.status === 'COMPLETED') {
+              clearInterval(intervalId);
+              loading.style.display = 'none';
+              currentExamData = job.result;
+              renderExam(job.result);
+            } else if (job.status === 'FAILED') {
+              clearInterval(intervalId);
+              loading.style.display = 'none';
+              alert('Lỗi phân tích đề thi: ' + (job.error_message || 'Không xác định.'));
+            }
+          } catch (pollErr) {
+            console.warn('Lỗi polling tiến trình:', pollErr);
+          }
+        }, 2000);
+
       } catch (err) {
         alert('Lỗi kết nối đến server: ' + err.message);
-      } finally {
         loading.style.display = 'none';
       }
     });
@@ -779,7 +811,7 @@
         alert('Lỗi kết nối đến Content Service: ' + err.message);
       } finally {
         loading.style.display = 'none';
-        document.querySelector('#loading p').textContent = "Đang tải và trích xuất cấu trúc đề thi bằng Python...";
+        document.querySelector('#loading p').textContent = "Đang tải và phân tích đề thi bằng Gemini AI...";
       }
     }
   </script>

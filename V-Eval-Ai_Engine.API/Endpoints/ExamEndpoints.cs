@@ -9,10 +9,11 @@ public static class ExamEndpoints
     {
         var group = app.MapGroup("/api/ai-engine");
 
-        // 1. Endpoint Upload và Trích xuất Đề thi PDF trực tiếp bằng Gemini 2.5 Flash Native
-        group.MapPost("/upload-pdf", async (
+        // 1. Endpoint Upload Đề thi PDF và khởi tạo tiến trình nền (Background Job)
+        group.MapPost("/upload-pdf", (
             IFormFile file,
-            [FromServices] IExamParserService examParserService,
+            [FromServices] IExamJobManager jobManager,
+            [FromServices] IServiceScopeFactory scopeFactory,
             IWebHostEnvironment env) =>
         {
             if (file == null || file.Length == 0)
@@ -25,7 +26,7 @@ public static class ExamEndpoints
                 return Results.BadRequest(new { message = "Chỉ chấp nhận file định dạng PDF." });
             }
 
-            // Tạo thư mục uploads trong wwwroot để phục vụ preview PDF nếu chưa có
+            // Tạo thư mục uploads trong wwwroot nếu chưa có
             string webRoot = env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
             string uploadsDir = Path.Combine(webRoot, "uploads");
             if (!Directory.Exists(uploadsDir))
@@ -38,34 +39,68 @@ public static class ExamEndpoints
 
             try
             {
-                // Lưu file tạm thời phục vụ render PDF trên UI
-                await using (var fileStream = new FileStream(savedFilePath, FileMode.Create))
+                // Lưu file PDF tạm thời
+                using (var fileStream = new FileStream(savedFilePath, FileMode.Create))
                 {
-                    await file.CopyToAsync(fileStream);
+                    file.CopyTo(fileStream);
                 }
 
-                // Đọc file và gọi bóc tách đề thi qua Gemini Native C#
-                await using (var readStream = new FileStream(savedFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                {
-                    var parsedExam = await examParserService.ParsePdfAsync(readStream, file.FileName);
-                    parsedExam.PdfUrl = $"/uploads/{uniqueFileName}";
+                // Khởi tạo Background Job
+                var job = jobManager.CreateJob(file.FileName);
 
-                    return Results.Ok(parsedExam);
-                }
+                // Khởi chạy tiến trình phân tích nền không khóa luồng HTTP
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        using var scope = scopeFactory.CreateScope();
+                        var parserService = scope.ServiceProvider.GetRequiredService<IExamParserService>();
+
+                        jobManager.UpdateJobProgress(job.JobId, "Đang tải dữ liệu và phân tích đề thi bằng Gemini AI (có thể mất 1-3 phút)...");
+
+                        await using var readStream = new FileStream(savedFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        var parsedExam = await parserService.ParsePdfAsync(readStream, file.FileName);
+                        parsedExam.PdfUrl = $"/uploads/{uniqueFileName}";
+
+                        jobManager.CompleteJob(job.JobId, parsedExam);
+                    }
+                    catch (Exception ex)
+                    {
+                        jobManager.FailJob(job.JobId, ex.Message);
+                    }
+                });
+
+                // Trả về HTTP 202 Accepted kèm thông tin job để client polling
+                return Results.Accepted($"/api/ai-engine/jobs/{job.JobId}", job);
             }
             catch (Exception ex)
             {
                 return Results.Problem(
                     detail: ex.Message,
                     statusCode: 500,
-                    title: "Lỗi trong quá trình trích xuất đề thi AI"
+                    title: "Lỗi trong quá trình khởi tạo tác vụ phân tích đề thi"
                 );
             }
         })
         .WithName("UploadAndParsePdfFile")
         .DisableAntiforgery();
 
-        // 2. Endpoint phục vụ giao diện xem trước đề thi trực quan
+        // 2. Endpoint kiểm tra trạng thái tiến trình nền (Job Polling)
+        group.MapGet("/jobs/{jobId}", (
+            string jobId,
+            [FromServices] IExamJobManager jobManager) =>
+        {
+            var job = jobManager.GetJob(jobId);
+            if (job == null)
+            {
+                return Results.NotFound(new { message = $"Không tìm thấy tác vụ với mã '{jobId}'." });
+            }
+
+            return Results.Ok(job);
+        })
+        .WithName("GetExamJobStatus");
+
+        // 3. Endpoint phục vụ giao diện xem trước đề thi trực quan
         group.MapGet("/view-exam", async (IWebHostEnvironment env) =>
         {
             string webRoot = env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");

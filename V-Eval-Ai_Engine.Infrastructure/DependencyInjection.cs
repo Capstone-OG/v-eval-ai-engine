@@ -9,11 +9,14 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        // Đăng ký HttpClient cho Gemini Parser với timeout tối ưu
+        // Đăng ký HttpClient cho Gemini Parser với timeout thoải mái cho đề thi phức tạp (8 phút)
         services.AddHttpClient<IExamParserService, GeminiExamParserService>(client =>
         {
-            client.Timeout = TimeSpan.FromSeconds(180);
+            client.Timeout = TimeSpan.FromMinutes(8);
         });
+
+        // Đăng ký Background Job Manager quản lý tiến trình nền
+        services.AddSingleton<IExamJobManager, InMemoryExamJobManager>();
 
         // Đăng ký Vector Database Service cho RAG
         services.AddSingleton<IVectorDbService, QdrantVectorDbService>();
