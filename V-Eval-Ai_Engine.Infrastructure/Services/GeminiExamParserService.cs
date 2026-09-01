@@ -181,8 +181,15 @@ Yêu cầu:
         {
             candidateModels.Add(configuredModel);
         }
-        // Các model Flash tối ưu theo thứ tự ưu tiên
-        candidateModels.AddRange(new[] { "gemini-3.6-flash", "gemini-flash-latest", "gemini-2.5-flash" });
+        // Ưu tiên theo đúng yêu cầu: gemini-2.5-flash đầu tiên, rồi sang 3.5 và các model khác
+        candidateModels.AddRange(new[] { 
+            "gemini-2.5-flash", 
+            "gemini-3.5-flash", 
+            "gemini-flash-latest", 
+            "gemini-flash-lite-latest", 
+            "gemini-3.6-flash", 
+            "gemini-3.7-flash"
+        });
 
         string responseContent = string.Empty;
         bool isSuccess = false;
@@ -196,28 +203,35 @@ Yêu cầu:
             };
 
             _logger.LogInformation("Đang gửi yêu cầu tới mô hình '{ModelName}'...", modelName);
-            var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
-            responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-
-            if (response.IsSuccessStatusCode)
+            try
             {
-                _logger.LogInformation("Mô hình '{ModelName}' phản hồi thành công!", modelName);
-                isSuccess = true;
-                break;
+                var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
+                responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("Mô hình '{ModelName}' phản hồi thành công!", modelName);
+                    isSuccess = true;
+                    break;
+                }
+
+                _logger.LogWarning("Mô hình '{ModelName}' trả về lỗi HTTP {StatusCode}. Thử mô hình kế tiếp...", modelName, response.StatusCode);
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    // Chỉ dừng nếu 400 Bad Request (lỗi cấu trúc payload)
+                    break;
+                }
             }
-
-            _logger.LogWarning("Mô hình '{ModelName}' trả về lỗi HTTP {StatusCode}. Thử mô hình kế tiếp...", modelName, response.StatusCode);
-            if ((int)response.StatusCode != 404)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                // Nếu không phải 404 (ví dụ 400 bad request) thì không thử tiếp
-                break;
+                _logger.LogWarning(ex, "Lỗi kết nối tới mô hình '{ModelName}'. Thử mô hình kế tiếp...", modelName);
             }
         }
 
         if (!isSuccess)
         {
-            _logger.LogError("Tất cả mô hình Gemini đều thất bại: {ResponseContent}", responseContent);
-            throw new HttpRequestException($"Gemini API lỗi: {responseContent}");
+            _logger.LogWarning("Tất cả mô hình Gemini đều quá tải hoặc gặp sự cố (503/404). Tự động kích hoạt Local Fallback Parser để không làm gián đoạn người dùng...");
+            return await RunLocalFallbackParserAsync(pdfBytes, fileName, cancellationToken);
         }
 
         // 5. Trích xuất Text JSON từ phản hồi của Gemini
@@ -226,7 +240,8 @@ Yêu cầu:
 
         if (!root.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0)
         {
-            throw new InvalidOperationException("Gemini không trả về kết quả ứng viên (candidates) nào.");
+            _logger.LogWarning("Gemini không trả về candidates. Tự động chuyển sang Local Fallback Parser...");
+            return await RunLocalFallbackParserAsync(pdfBytes, fileName, cancellationToken);
         }
 
         var candidate = candidates[0];
@@ -234,8 +249,8 @@ Yêu cầu:
             !content.TryGetProperty("parts", out var parts) ||
             parts.GetArrayLength() == 0)
         {
-            string finishReason = candidate.TryGetProperty("finishReason", out var reason) ? reason.GetString() ?? "UNKNOWN" : "UNKNOWN";
-            throw new InvalidOperationException($"Gemini không xuất được nội dung. Lý do dừng: {finishReason}");
+            _logger.LogWarning("Gemini không xuất được parts. Tự động chuyển sang Local Fallback Parser...");
+            return await RunLocalFallbackParserAsync(pdfBytes, fileName, cancellationToken);
         }
 
         string rawJsonText = parts[0].GetProperty("text").GetString() ?? "{}";
@@ -264,9 +279,85 @@ Yêu cầu:
 
         parsedResult.TotalPages = maxPage;
 
-        _logger.LogInformation("Bóc tách đề thi '{FileName}' thành công: {Passages} chùm câu hỏi, {Questions} câu hỏi đơn lẻ.",
+        _logger.LogInformation("Bóc tách đề thi '{FileName}' bằng Gemini thành công: {Passages} chùm câu hỏi, {Questions} câu hỏi đơn lẻ.",
             fileName, parsedResult.TotalPassages, parsedResult.TotalSingleQuestions);
 
         return parsedResult;
+    }
+
+    /// <summary>
+    /// Bộ bóc tách dự phòng cục bộ (Local Fallback Parser) khi Gemini bị lỗi 503 hoặc quá tải
+    /// </summary>
+    private async Task<ParsedExamDto> RunLocalFallbackParserAsync(byte[] pdfBytes, string fileName, CancellationToken cancellationToken)
+    {
+        string tempFile = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}_{fileName}");
+        try
+        {
+            await File.WriteAllBytesAsync(tempFile, pdfBytes, cancellationToken);
+
+            string[] candidates = new[]
+            {
+                Path.Combine(AppContext.BaseDirectory, "Parsers", "exam_parser.py"),
+                Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "V-Eval-Ai_Engine.Infrastructure", "Parsers", "exam_parser.py"),
+                Path.Combine(Directory.GetCurrentDirectory(), "Parsers", "exam_parser.py"),
+                Path.Combine(Directory.GetCurrentDirectory(), "..", "V-Eval-Ai_Engine.Infrastructure", "Parsers", "exam_parser.py"),
+                Path.Combine(Directory.GetCurrentDirectory(), "archive", "legacy_python_parsers", "exam_parser.py"),
+                Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "archive", "legacy_python_parsers", "exam_parser.py")
+            };
+
+            string? scriptPath = candidates.FirstOrDefault(File.Exists);
+            if (scriptPath == null)
+            {
+                throw new FileNotFoundException("Không tìm thấy script exam_parser.py dự phòng cục bộ.");
+            }
+
+            _logger.LogInformation("Đang thực thi Local Fallback Parser với script: '{ScriptPath}'...", scriptPath);
+
+            using var process = new System.Diagnostics.Process();
+            process.StartInfo.FileName = "python";
+            process.StartInfo.Arguments = $"\"{scriptPath}\" \"{tempFile}\"";
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+
+            process.Start();
+            string output = await process.StandardOutput.ReadToEndAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken);
+
+            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
+            {
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var localResult = JsonSerializer.Deserialize<ParsedExamDto>(output, options) ?? new ParsedExamDto();
+                localResult.Format = "V-ACT Exam (Local Fallback Parser - AI Quá tải)";
+                localResult.FileName = fileName;
+                localResult.TotalPassages = localResult.Passages.Count;
+                localResult.TotalSingleQuestions = localResult.SingleQuestions.Count;
+
+                int maxPage = 1;
+                foreach (var q in localResult.SingleQuestions)
+                    if (q.PageNumber > maxPage) maxPage = q.PageNumber;
+                foreach (var p in localResult.Passages)
+                    foreach (var q in p.Questions)
+                        if (q.PageNumber > maxPage) maxPage = q.PageNumber;
+                localResult.TotalPages = maxPage;
+
+                _logger.LogInformation("Local Fallback Parser hoàn tất xuất sắc: {Questions} câu hỏi, {Passages} chùm câu hỏi.",
+                    localResult.TotalSingleQuestions, localResult.TotalPassages);
+
+                return localResult;
+            }
+
+            string err = await process.StandardError.ReadToEndAsync(cancellationToken);
+            throw new InvalidOperationException($"Lỗi chạy Local Fallback Parser: {err}");
+        }
+        finally
+        {
+            if (File.Exists(tempFile))
+            {
+                try { File.Delete(tempFile); } catch { }
+            }
+        }
     }
 }
