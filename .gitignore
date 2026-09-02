@@ -10,3 +10,7 @@ obj/
 appsettings.Development.json
 appsettings.local.json
 appsettings.json.user
+
+# Uploaded test and preview files
+**/wwwroot/uploads/*.pdf
+

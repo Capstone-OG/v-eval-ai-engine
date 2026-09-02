@@ -181,14 +181,13 @@ Yêu cầu:
         {
             candidateModels.Add(configuredModel);
         }
-        // Ưu tiên theo đúng yêu cầu: gemini-2.5-flash đầu tiên, rồi sang 3.5 và các model khác
+        // Các model Flash Vision hoạt động nhanh và ổn định nhất theo kiểm thử thực tế
         candidateModels.AddRange(new[] { 
-            "gemini-2.5-flash", 
-            "gemini-3.5-flash", 
-            "gemini-flash-latest", 
             "gemini-flash-lite-latest", 
+            "gemini-3.1-flash-lite", 
+            "gemini-3.5-flash", 
             "gemini-3.6-flash", 
-            "gemini-3.7-flash"
+            "gemini-flash-latest"
         });
 
         string responseContent = string.Empty;
