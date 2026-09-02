@@ -40,6 +40,26 @@ Tối ưu hóa luồng trích xuất đề thi PDF với Gemini Vision OCR cloud
 | **Tích hợp Frontend & Content Service** | 🟢 Hoàn thành | Nút "Lưu vào Database" trên UI `view-exam.html` gọi sang Minimal API `POST /api/content/exams/import` của Content Service để lưu dữ liệu. |
 | **Tự động phân loại dạng bài động** | 🟢 Hoàn thành | Ánh xạ trường `suggested_skill_name` để DB tự động sinh dạng bài tương ứng trên schema `content` Supabase. |
 
+---
+
+## 📅 Cập nhật ngày 01/09/2026 - 02/09/2026
+
+### 🎯 Mục tiêu hiện tại (Milestone 3)
+Chuyển đổi toàn diện phân hệ AI Engine sang kiến trúc **.NET 9 Native Clean Architecture**, loại bỏ tiến trình phụ trợ Python chậm chạp, xây dựng hợp đồng gRPC Server Streaming phục vụ Socratic AI Tutor, và tối ưu hóa luồng Gemini Vision High-Throughput xử lý 120 câu chỉ trong ~50 giây.
+
+### 📋 Danh sách Task & Trạng thái
+
+| Tên Task | Trạng thái | Ghi chú |
+| :--- | :---: | :--- |
+| **Tái cấu trúc Clean Architecture (.NET 9)** | 🟢 Hoàn thành | Phân chia chuẩn 4 Layer: `Domain`, `Application`, `Infrastructure`, `API`. Dọn dẹp script python rác, lưu trữ script cũ vào `archive/`. |
+| **Xây dựng Domain Bounded Context AI** | 🟢 Hoàn thành | Định nghĩa Entities (`TheoreticalDocument`, `TutorSession`) và Value Objects (`KnowledgeChunk`, `DialogueMessage`) phục vụ RAG và AI Tutor. |
+| **Xây dựng gRPC Server Streaming (`AiGrpcService`)** | 🟢 Hoàn thành | Triển khai hợp đồng `grpc/ai.proto` (`ChatSocraticTutor` streaming từng token thời gian thực và `IndexTheoreticalDocument`). |
+| **Tối ưu hóa Gemini Vision High-Throughput** | 🟢 Hoàn thành | Đưa `gemini-flash-lite-latest` làm mô hình cốt lõi. Rút ngắn thời gian bóc tách đề thi 16 trang (120 câu hỏi) từ **6 phút xuống còn ~50 giây**, loại bỏ triệt để lỗi 503 do quá tải. |
+| **Triển khai Mô hình Tác vụ Nền (Background Job)** | 🟢 Hoàn thành | `POST /api/ai-engine/upload-pdf` trả về `202 Accepted` ngay tức thì. Endpoint `GET /api/ai-engine/jobs/{jobId}` phục vụ polling trạng thái. |
+| **Nâng cấp Giao diện Trực quan (`view-exam.html`)** | 🟢 Hoàn thành | Tích hợp đồng hồ đếm thời gian thực `(mm:ss)` kèm chi tiết tiến trình, tự động polling và render mượt mà khi hoàn tất. |
+| **Tích hợp Cơ chế Cứu Cánh (Local Fallback Parser)** | 🟢 Hoàn thành | Dự phòng bộ bóc tách cục bộ `exam_parser.py` (0.3s) trong trường hợp toàn bộ mạng Cloud Google gặp sự cố gián đoạn. |
+| **Kiểm thử Toàn diện & Đồng bộ Code Git** | 🟢 Hoàn thành | Build toàn bộ solution đạt **0 Warning, 0 Error**. Đã commit và push nhánh `main` trên repository `v-eval-ai-engine`. |
+
 ### 💡 Kế hoạch tiếp theo
-1. Nghiên cứu và thiết lập môi trường Qdrant Vector Database cho RAG Pipeline phục vụ tính năng Socratic AI Tutor.
-2. Xây dựng dịch vụ gRPC Stream để truyền dữ liệu tương tác học tập thời gian thực giữa AI Engine và Practice Service.
+1. Kết nối chính thức instance Qdrant Vector Database qua gRPC/HTTP Client trên Docker để lưu trữ embedding bài giảng lý thuyết.
+2. Liên thông gRPC giữa `Practice & Adaptive Service` và `AI Engine` để hoàn thiện tính năng gợi mở Socratic AI Tutor trong lúc học sinh làm bài tập.
