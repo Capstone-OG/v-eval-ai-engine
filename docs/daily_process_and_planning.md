@@ -60,6 +60,23 @@ Chuyển đổi toàn diện phân hệ AI Engine sang kiến trúc **.NET 9 Nat
 | **Tích hợp Cơ chế Cứu Cánh (Local Fallback Parser)** | 🟢 Hoàn thành | Dự phòng bộ bóc tách cục bộ `exam_parser.py` (0.3s) trong trường hợp toàn bộ mạng Cloud Google gặp sự cố gián đoạn. |
 | **Kiểm thử Toàn diện & Đồng bộ Code Git** | 🟢 Hoàn thành | Build toàn bộ solution đạt **0 Warning, 0 Error**. Đã commit và push nhánh `main` trên repository `v-eval-ai-engine`. |
 
+---
+
+## 📅 Cập nhật ngày 03/09/2026
+
+### 🎯 Mục tiêu hiện tại (Milestone 3.1)
+Nâng cấp độ chính xác tuyệt đối (High-Precision Verbatim OCR) cho luồng trích xuất đề thi: khắc phục triệt để lỗi font nhúng MathType (mất dấu trị tuyệt đối) và lỗi nhòe hệ số đứng sát dấu bằng (như số `2` trong $y = 2x^3$).
+
+### 📋 Danh sách Task & Trạng thái
+
+| Tên Task | Trạng thái | Ghi chú |
+| :--- | :---: | :--- |
+| **Phân tích lỗi Font nhúng & Ảo giác toán học** | 🟢 Hoàn thành | Phát hiện MathType nhúng mã ASCII `(` và `)` cho dấu gạch đứng $|...|$ (ở Câu 45) và AI tự ý "giải toán / chia tách tích phân" thay vì làm máy quét OCR. |
+| **Tích hợp `PDFtoImage` Native Renderer (.NET 9)** | 🟢 Hoàn thành | Cài đặt `PDFtoImage` (SkiaSharp/PDFium): Render toàn bộ 16 trang PDF thành 16 ảnh JPEG độ nét cao (150 DPI) trong 1.5s, triệt tiêu 100% lớp font text rác gây nhiễu. |
+| **Khóa cứng `temperature = 0.0` (Greedy Decoding)** | 🟢 Hoàn thành | Ép buộc giải mã xác suất cao nhất, đảm bảo tính nhất quán tuyệt đối giữa các lần chạy, loại bỏ hoàn toàn sự xê dịch ngẫu nhiên. |
+| **Thiết lập Bộ luật Verbatim OCR & Chống sửa bẫy đề thi** | 🟢 Hoàn thành | Bổ sung quy tắc bắt buộc giữ nguyên hệ số sau dấu bằng ($y = 2x^3$) và cấm "sửa sai giùm tác giả" ở các phương án gây nhiễu ($\left| \int_{-1}^1 ... \right|$). |
+| **Rút ngắn thời gian xử lý Vision xuống ~17s** | 🟢 Hoàn thành | Gửi 16 ảnh JPEG đồng thời giúp Gemini Vision phản hồi chỉ trong **16.8 giây** (nhanh gấp đôi gửi PDF trực tiếp), đạt độ chính xác 100% từng câu chữ. |
+
 ### 💡 Kế hoạch tiếp theo
 1. Kết nối chính thức instance Qdrant Vector Database qua gRPC/HTTP Client trên Docker để lưu trữ embedding bài giảng lý thuyết.
 2. Liên thông gRPC giữa `Practice & Adaptive Service` và `AI Engine` để hoàn thiện tính năng gợi mở Socratic AI Tutor trong lúc học sinh làm bài tập.

@@ -18,14 +18,31 @@ public class GeminiExamParserService : IExamParserService
     private readonly IConfiguration _configuration;
     private readonly ILogger<GeminiExamParserService> _logger;
 
-    private const string GeminiPrompt = @"Bạn là một chuyên gia chuyển đổi tài liệu đề thi sang cấu trúc JSON chuẩn.
-Hãy đọc toàn bộ tài liệu đề thi ĐGNL (Đánh giá năng lực) PDF này và trích xuất tất cả các câu hỏi.
-Yêu cầu:
-1. Trích xuất đúng cấu trúc câu hỏi đơn lẻ (single_questions) và chùm câu hỏi đọc hiểu (passages).
-2. Mọi công thức toán học, vật lý, hóa học, phương trình, biến số, hằng số (kể cả các ký hiệu chữ đơn lẻ như x, y, z, m, T, t) BẮT BUỘC phải được bao bọc bởi một cặp dấu đô-la đơn $...$ (ví dụ: viết $y = -x^3 + 3(m-1)x^2 + 6mx + 1$, $z = 3 - i$ hoặc $\int_0^1 x dx$). Đảm bảo viết đúng các công thức phân số (dùng \frac{a}{b}), chỉ số dưới (dùng m_0, t_0), chỉ số trên (dùng x^2), tránh viết rời rạc vô nghĩa. KHÔNG được để trống hoặc dùng chữ thường không có dấu $ cho công thức.
-3. Nếu trang có đồ thị, biểu đồ, hoặc sơ đồ hình vẽ, hãy thêm mô tả bằng chữ chi tiết về hình vẽ đó ngay dưới nội dung câu hỏi hoặc passage tương ứng (ví dụ: *([Hình vẽ]: Đồ thị parabol...)*) để người học nắm được thông tin.
-4. Điền đầy đủ bốn phương án A, B, C, D vào thuộc tính options. Đảm bảo toàn bộ câu hỏi đều được trích xuất đầy đủ từ trang đầu đến trang cuối.
-5. Phân tích nội dung từng câu hỏi để gợi ý tên dạng bài / kỹ năng tương ứng (suggested_skill_name), ví dụ: 'Thì động từ', 'Biện pháp tu từ', 'Phóng xạ hạt nhân', 'Cực trị hàm số', 'Đọc hiểu biểu đồ'...";
+    private const string GeminiPrompt = @"BẠN LÀ MỘT HỆ THỐNG SCAN & CHUYỂN TỰ QUANG HỌC ĐỘ CHÍNH XÁC CAO (HIGH-PRECISION VERBATIM OCR) DÀNH CHO ĐỀ THI ĐGNL V-ACT.
+Nhiệm vụ: Đọc trực quan hình ảnh tài liệu PDF và sao chép NGUYÊN VĂN 100% từng câu hỏi, từng ký tự sang JSON, TUYỆT ĐỐI KHÔNG ĐƯỢC SUY DIỄN HOẶC TỰ Ý SỬA ĐỔI.
+
+QUY TẮC BẮT BUỘC ĐỂ ĐẢM BẢO ĐỘ TRUNG THỰC (ZERO-TOLERANCE RULES):
+1. NGUYÊN TẮC TRUNG THỰC NGUYÊN VĂN (100% VERBATIM):
+   - Đọc chính xác từng con số, từng chữ số, từng biến số, từng số mũ, từng dấu cộng trừ (+, -), từng dấu chấm phẩy và dấu ngoặc.
+   - TUYỆT ĐỐI KHÔNG BỎ SÓT HỆ SỐ ĐỨNG NGAY SAU DẤU BẰNG: Ví dụ trong biểu thức 'y = 2x^3', số 2 đứng ngay sau dấu bằng, BẮT BUỘC phải ghi đúng '$y = 2x^3$', TUYỆT ĐỐI KHÔNG ĐƯỢC bỏ mất hệ số 2 thành '$y = x^3$'.
+   - TUYỆT ĐỐI KHÔNG ĐỔI DẤU PHÉP TÍNH: Nếu trong đề là '3(m+1)' thì BẮT BUỘC giữ nguyên dấu cộng '$3(m+1)$', KHÔNG ĐƯỢC tự ý đổi thành '$3(m-1)$'.
+   - TUYỆT ĐỐI KHÔNG TỰ BỊA ĐẶT THÊM HỆ SỐ: Nếu phương án là 'x + y + z - 3 = 0' thì ghi đúng '$x + y + z - 3 = 0$', KHÔNG ĐƯỢC tự thêm số 3 vào z thành '$x + y + 3z - 3 = 0$'. Nếu là 'x + 2y + z - 4 = 0' thì ghi đúng '$x + 2y + z - 4 = 0$', KHÔNG ĐƯỢC đổi thành '$x + 2y - 2z - 4 = 0$'.
+   - TẤT CẢ các phương án A, B, C, D phải được đọc trực tiếp từng chữ số từ hình ảnh của trang đề, chép đúng nguyên trạng từng tọa độ, phương trình và giá trị.
+2. ĐẶC BIỆT LƯU Ý VỀ CÁC PHƯƠNG ÁN GÂY NHIỄU (BẪY TOÁN HỌC TRẮC NGHIỆM):
+   - Trong đề thi trắc nghiệm, tác giả thường cố tình tạo ra các PHƯƠNG ÁN SAI / BẪY TOÁN HỌC để thử thách học sinh (Ví dụ: đưa dấu giá trị tuyệt đối ra bên NGOÀI tích phân: \left| \int_{-1}^1 (x^3 - x) dx \right|).
+   - BẠN LÀ MÁY QUÉT, KHÔNG ĐƯỢC 'SỬA SAI GIÙM TÁC GIẢ'! Thấy hai thanh gạch dọc đứng |...| ở hai đầu tích phân thì BẮT BUỘC chép đúng dấu giá trị tuyệt đối: \left| \int_{-1}^1 (x^3 - x) dx \right|, TUYỆT ĐỐI KHÔNG ĐƯỢC tự ý đổi thành ngoặc đơn hay tự giải toán chia tách tích phân ra các cận [-1;0] và [0;1].
+3. CHUYỂN ĐỔI CÔNG THỨC TOÁN HỌC SANG LATEX:
+   - Mọi biểu thức toán học, hàm số, phương trình, tọa độ, biến số (kể cả chữ đơn lẻ như x, y, z, m) BẮT BUỘC phải được bao bọc bởi một cặp dấu đô-la đơn $...$.
+   - Sử dụng đúng cú pháp LaTeX chuẩn: \le, \ge, \frac{a}{b}, x^2, m_0, \log_2, \int, \pi...
+4. CÂU HỎI TIẾNG ANH TÌM LỖI SAI (GẠCH CHÂN):
+   - Ở các câu hỏi gạch chân tương ứng với lựa chọn A, B, C, D, hãy bao bọc từ/cụm từ được gạch chân bằng thẻ <u>...</u> kèm ký hiệu tương ứng (Ví dụ: <u>word</u> (A)).
+5. HÌNH VẼ / BIỂU ĐỒ / ĐỒ THỊ:
+   - Nếu có đồ thị, biểu đồ hoặc sơ đồ hình vẽ, hãy thêm mô tả chi tiết bằng chữ về hình vẽ đó ngay dưới nội dung câu hỏi hoặc passage tương ứng (ví dụ: *([Hình vẽ]: Đồ thị parabol...)*).
+6. CHÙM BÀI ĐỌC (PASSAGES) & CÂU ĐỘC LẬP (SINGLE QUESTIONS):
+   - Đoạn văn ngữ cảnh dùng chung đưa vào content của `passages` kèm start_question và end_question.
+   - Câu hỏi riêng lẻ đưa vào `single_questions`. Đảm bảo trích xuất đầy đủ toàn bộ câu hỏi từ trang đầu đến trang cuối.
+7. PHÂN TÍCH DẠNG BÀI:
+   - Gợi ý tên dạng bài / kỹ năng tương ứng (suggested_skill_name) ngắn gọn, chuẩn xác.";
 
     public GeminiExamParserService(
         HttpClient httpClient,
@@ -144,34 +161,66 @@ Yêu cầu:
             ["required"] = new JsonArray { "passages", "single_questions" }
         };
 
-        // 3. Chuẩn bị Request Payload
+        // 3. Chuẩn bị Request Payload: Render từng trang PDF sang JPEG 150 DPI để loại bỏ hoàn toàn lỗi font ngầm và tình trạng nhòe ảnh
+        var requestParts = new JsonArray();
+        int pageCount = 0;
+        try
+        {
+            var renderOptions = new PDFtoImage.RenderOptions { Dpi = 150 };
+            foreach (var skBitmap in PDFtoImage.Conversion.ToImages(pdfBytes, options: renderOptions))
+            {
+                using (skBitmap)
+                {
+                    using var imageStream = new MemoryStream();
+                    skBitmap.Encode(imageStream, SkiaSharp.SKEncodedImageFormat.Jpeg, 85);
+                    var pageBase64 = Convert.ToBase64String(imageStream.ToArray());
+                    requestParts.Add(new JsonObject
+                    {
+                        ["inlineData"] = new JsonObject
+                        {
+                            ["mimeType"] = "image/jpeg",
+                            ["data"] = pageBase64
+                        }
+                    });
+                    pageCount++;
+                }
+            }
+            _logger.LogInformation("Đã render thành công {PageCount} trang PDF sang ảnh JPEG sắc nét (150 DPI) để gửi sang Gemini Vision.", pageCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Không thể render PDF sang JPEG: {Message}. Tự động fallback sang gửi file PDF trực tiếp.", ex.Message);
+            requestParts.Clear();
+            requestParts.Add(new JsonObject
+            {
+                ["inlineData"] = new JsonObject
+                {
+                    ["mimeType"] = "application/pdf",
+                    ["data"] = base64Data
+                }
+            });
+        }
+
+        // Thêm Prompt kiểm duyệt nghiêm ngặt
+        requestParts.Add(new JsonObject
+        {
+            ["text"] = GeminiPrompt
+        });
+
         var requestPayload = new JsonObject
         {
             ["contents"] = new JsonArray
             {
                 new JsonObject
                 {
-                    ["parts"] = new JsonArray
-                    {
-                        new JsonObject
-                        {
-                            ["inlineData"] = new JsonObject
-                            {
-                                ["mimeType"] = "application/pdf",
-                                ["data"] = base64Data
-                            }
-                        },
-                        new JsonObject
-                        {
-                            ["text"] = GeminiPrompt
-                        }
-                    }
+                    ["parts"] = requestParts
                 }
             },
             ["generationConfig"] = new JsonObject
             {
                 ["responseMimeType"] = "application/json",
-                ["responseSchema"] = schema
+                ["responseSchema"] = schema,
+                ["temperature"] = 0.0
             }
         };
 
