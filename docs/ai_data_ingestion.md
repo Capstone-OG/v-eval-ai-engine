@@ -144,3 +144,35 @@ sequenceDiagram
   ]
 }
 ```
+
+---
+
+## 5. Chiến lược Giải quyết Giới hạn Output Token & Đa Mô Hình Động
+
+### 5.1. Khắc phục Giới hạn Token Trích xuất (Output Token Cap)
+* Một đề thi ĐGNL chuẩn V-ACT gồm 120 câu hỏi (kèm văn bản ngữ cảnh passages, công thức toán LaTeX, 4 lựa chọn A/B/C/D) khi sinh ra JSON đầy đủ có dung lượng từ **70 – 80 KB**, tương đương **~18.000 tokens**.
+* Mặc định Google Gemini API chỉ cung cấp `maxOutputTokens = 8192`. Do đó nếu không cấu hình tường minh, kết quả bị cắt cụt (truncation) ở trang 1 (câu 6).
+* **Giải pháp**: Cấu hình bắt buộc `maxOutputTokens: 65536` trong `generationConfig`, đảm bảo xuất đầy đủ 100% 120 câu hỏi từ Trang 1 đến Trang 16.
+
+### 5.2. Thứ tự Mô hình & Cơ chế Fallback an toàn (MaxAttempts = 5)
+* Cấu hình linh hoạt thông qua `appsettings.json`:
+  * **OpenAI GPT Models (4 models)**: `gpt-4o`, `gpt-4o-mini`, `o3-mini`, `chatgpt-4o-latest` (được ưu tiên thử trước nếu phát hiện có API Key OpenAI hợp lệ).
+  * **Google Gemini Models (5 models)**: `gemini-3.6-flash` (Top 1 ưu tiên), `gemini-3.1-flash-lite`, `gemini-flash-latest`, `gemini-flash-lite-latest`, `gemini-2.5-flash`.
+  * **Xoay tua API Key**: Luân chuyển tự động qua mảng `GeminiApiKeys` khi gặp mã lỗi 429 hoặc 503.
+  * **Giới hạn số lần thử**: `MaxAttempts: 5`. Sau 5 lần gọi bất kể mô hình hay key, hệ thống dừng lại, tự động sử dụng kết quả tốt nhất đã lưu hoặc kích hoạt `Local Fallback Parser`.
+
+---
+
+## 6. Xử lý Trực quan các Câu hỏi Phi Văn bản (Bảng số liệu & Biểu đồ)
+
+Đối với các câu hỏi đặc thù trong phần Phân tích số liệu và Tư duy khoa học:
+1. **Bảng số liệu ma trận (Tables - ví dụ bảng giá vé xe buýt Câu 64-67)**:
+   * Prompt AI yêu cầu xuất ra định dạng Markdown Table chuẩn.
+   * Giao diện `view-exam.html` sử dụng bộ parser tự động chuyển đổi các khối dòng Markdown thành thẻ HTML `<table>` responsive, có header cyan, viền phát sáng và hiệu ứng hover từng hàng.
+2. **Biểu đồ thống kê (Charts - ví dụ Biểu đồ cột Câu 61-63, Biểu đồ tròn Câu 68-70)**:
+   * Tích hợp thư viện **Chart.js** trực tiếp vào Frontend.
+   * Hệ thống tự động phân tích tên nhãn và tỷ lệ phần trăm trong văn bản để vẽ thành Canvas **Bar Chart** và **Pie/Doughnut Chart** chuẩn vector.
+   * **In số liệu trực quan**: Sử dụng plugin canvas in trực tiếp số liệu `${val}%` lên trên đỉnh từng cột và trực tiếp trên từng lát cắt của biểu đồ, bám sát thiết kế trực quan của đề thi gốc.
+3. **Hình vẽ phức tạp & Ảnh gốc**:
+   * Cung cấp nút đính kèm/dán ảnh (Ctrl+V) cho từng câu hỏi, cho phép giáo viên/học sinh lưu giữ hình vẽ gốc từ PDF vào database.
+

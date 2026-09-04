@@ -77,6 +77,24 @@ Nâng cấp độ chính xác tuyệt đối (High-Precision Verbatim OCR) cho l
 | **Thiết lập Bộ luật Verbatim OCR & Chống sửa bẫy đề thi** | 🟢 Hoàn thành | Bổ sung quy tắc bắt buộc giữ nguyên hệ số sau dấu bằng ($y = 2x^3$) và cấm "sửa sai giùm tác giả" ở các phương án gây nhiễu ($\left| \int_{-1}^1 ... \right|$). |
 | **Rút ngắn thời gian xử lý Vision xuống ~17s** | 🟢 Hoàn thành | Gửi 16 ảnh JPEG đồng thời giúp Gemini Vision phản hồi chỉ trong **16.8 giây** (nhanh gấp đôi gửi PDF trực tiếp), đạt độ chính xác 100% từng câu chữ. |
 
+## 📅 Cập nhật ngày 04/09/2026
+
+### 🎯 Mục tiêu hiện tại (Milestone 3.2)
+Giải quyết triệt để vấn đề giới hạn Output Token để bóc tách toàn vẹn 100% cả 120 câu hỏi V-ACT từ file PDF 16 trang, xây dựng cơ chế Đa mô hình linh hoạt với giới hạn thử nghiệm an toàn, và nâng cấp hiển thị trực quan các dạng câu hỏi đặc thù (Bảng số liệu HTML Table, Biểu đồ tương tác Chart.js).
+
+### 📋 Danh sách Task & Trạng thái
+
+| Tên Task | Trạng thái | Ghi chú |
+| :--- | :---: | :--- |
+| **Phát hiện & Khắc phục Giới hạn Token (Truncation)** | 🟢 Hoàn thành | Phát hiện nguyên nhân kết quả bị cắt cụt ở câu 6 do mặc định API chỉ có 8.192 token. Cấu hình `maxOutputTokens: 65536` (~75 KB JSON đủ sức chứa 120 câu). |
+| **Tối ưu hóa Mô hình `gemini-3.1-flash-lite`** | 🟢 Hoàn thành | Tắt suy luận ngầm `thinkingBudget: 0` để tránh tiêu hao token vô ích, xuất thẳng JSON câu hỏi. |
+| **Đưa `gemini-3.6-flash` lên Top 1 Ưu tiên** | 🟢 Hoàn thành | Trích xuất thành công trọn vẹn 100% cả 120 câu hỏi (17 chùm đọc hiểu passages, 62 câu hỏi đơn lẻ) trong ~2 phút 50 giây. |
+| **Kiến trúc Fallback Đa mô hình & Giới hạn 5 lần thử** | 🟢 Hoàn thành | Đưa toàn bộ cấu hình vào `appsettings.json`. Hỗ trợ 4 mô hình OpenAI (`gpt-4o`, `gpt-4o-mini`, `o3-mini`, `chatgpt-4o-latest`) và 5 mô hình Gemini (`gemini-3.6-flash`, `gemini-3.1-flash-lite`, `gemini-flash-latest`, `gemini-flash-lite-latest`, `gemini-2.5-flash`). Giới hạn `MaxAttempts: 5` chống lặp vô tận. |
+| **Tự động chuyển đổi Bảng số liệu sang HTML Table** | 🟢 Hoàn thành | Nâng cấp hàm `markdownToHtml` nhận diện toàn bộ các dạng bảng số liệu (như bảng giá vé xe buýt Câu 64-67), render ra thẻ HTML `<table>` phong cách Dark-mode, viền phát sáng, header cyan. |
+| **Tích hợp Chart.js vẽ Biểu đồ tương tác Vector** | 🟢 Hoàn thành | Tự động phát hiện mô tả biểu đồ cột (Câu 61-63) và biểu đồ tròn (Câu 68-70) để vẽ Canvas Chart.js sắc nét. Tích hợp plugin in số liệu trực quan `${val}%` ngay trên đỉnh từng cột và từng lát bánh. |
+| **Hỗ trợ đính kèm/dán ảnh gốc đề thi** | 🟢 Hoàn thành | Bổ sung nút `📷 Đính kèm / Chèn ảnh gốc` trên từng Card chùm câu và câu hỏi để lưu ảnh đề gốc vào Database. |
+| **Liên thông Quản lý Đề thi 2 chiều với Database** | 🟢 Hoàn thành | Hoàn thiện tính năng xem danh sách đề thi đã lưu, tải cấu trúc đề thi từ Database để xem lại và xóa đề thi khỏi Database. |
+
 ### 💡 Kế hoạch tiếp theo
 1. Kết nối chính thức instance Qdrant Vector Database qua gRPC/HTTP Client trên Docker để lưu trữ embedding bài giảng lý thuyết.
 2. Liên thông gRPC giữa `Practice & Adaptive Service` và `AI Engine` để hoàn thiện tính năng gợi mở Socratic AI Tutor trong lúc học sinh làm bài tập.

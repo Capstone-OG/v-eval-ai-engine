@@ -19,29 +19,35 @@ public class GeminiExamParserService : IExamParserService
     private readonly ILogger<GeminiExamParserService> _logger;
 
     private const string GeminiPrompt = @"BẠN LÀ MỘT HỆ THỐNG SCAN & CHUYỂN TỰ QUANG HỌC ĐỘ CHÍNH XÁC CAO (HIGH-PRECISION VERBATIM OCR) DÀNH CHO ĐỀ THI ĐGNL V-ACT.
-Nhiệm vụ: Đọc trực quan hình ảnh tài liệu PDF và sao chép NGUYÊN VĂN 100% từng câu hỏi, từng ký tự sang JSON, TUYỆT ĐỐI KHÔNG ĐƯỢC SUY DIỄN HOẶC TỰ Ý SỬA ĐỔI.
+Nhiệm vụ: Đọc trực quan toàn bộ tài liệu và sao chép NGUYÊN VĂN 100% TOÀN BỘ 120 CÂU HỎI từ trang đầu đến trang cuối cùng sang JSON, TUYỆT ĐỐI KHÔNG ĐƯỢC SUY DIỄN HOẶC TỰ Ý SỬA ĐỔI.
 
-QUY TẮC BẮT BUỘC ĐỂ ĐẢM BẢO ĐỘ TRUNG THỰC (ZERO-TOLERANCE RULES):
-1. NGUYÊN TẮC TRUNG THỰC NGUYÊN VĂN (100% VERBATIM):
+CÁC NGUYÊN TẮC BẮT BUỘC:
+1. ĐẦY ĐỦ VÀ TOÀN DIỆN (BẮT BUỘC ĐỦ 100% TỔNG CỘNG 120 CÂU HỎI):
+   - Đề thi chuẩn V-ACT có ĐẦY ĐỦ 120 CÂU HỎI (từ Câu 1 đến Câu 120) trải dài qua tất cả các trang từ Trang 1 đến Trang 16.
+   - Bạn PHẢI duyệt qua TẤT CẢ các trang và trích xuất TOÀN BỘ 120 CÂU HỎI vào JSON.
+   - TUYỆT ĐỐI KHÔNG ĐƯỢC DỪNG LẠI, KHÔNG ĐƯỢC TÓM TẮT, KHÔNG ĐƯỢC CHỈ LÀM MẪU VÀI CÂU ĐẦU! PHẢI BÓC TÁCH ĐẦY ĐỦ HẾT CẢ 120 CÂU!
+2. NGUYÊN TẮC TRUNG THỰC NGUYÊN VĂN (100% VERBATIM):
    - Đọc chính xác từng con số, từng chữ số, từng biến số, từng số mũ, từng dấu cộng trừ (+, -), từng dấu chấm phẩy và dấu ngoặc.
    - TUYỆT ĐỐI KHÔNG BỎ SÓT HỆ SỐ ĐỨNG NGAY SAU DẤU BẰNG: Ví dụ trong biểu thức 'y = 2x^3', số 2 đứng ngay sau dấu bằng, BẮT BUỘC phải ghi đúng '$y = 2x^3$', TUYỆT ĐỐI KHÔNG ĐƯỢC bỏ mất hệ số 2 thành '$y = x^3$'.
    - TUYỆT ĐỐI KHÔNG ĐỔI DẤU PHÉP TÍNH: Nếu trong đề là '3(m+1)' thì BẮT BUỘC giữ nguyên dấu cộng '$3(m+1)$', KHÔNG ĐƯỢC tự ý đổi thành '$3(m-1)$'.
    - TUYỆT ĐỐI KHÔNG TỰ BỊA ĐẶT THÊM HỆ SỐ: Nếu phương án là 'x + y + z - 3 = 0' thì ghi đúng '$x + y + z - 3 = 0$', KHÔNG ĐƯỢC tự thêm số 3 vào z thành '$x + y + 3z - 3 = 0$'. Nếu là 'x + 2y + z - 4 = 0' thì ghi đúng '$x + 2y + z - 4 = 0$', KHÔNG ĐƯỢC đổi thành '$x + 2y - 2z - 4 = 0$'.
    - TẤT CẢ các phương án A, B, C, D phải được đọc trực tiếp từng chữ số từ hình ảnh của trang đề, chép đúng nguyên trạng từng tọa độ, phương trình và giá trị.
-2. ĐẶC BIỆT LƯU Ý VỀ CÁC PHƯƠNG ÁN GÂY NHIỄU (BẪY TOÁN HỌC TRẮC NGHIỆM):
+3. ĐẶC BIỆT LƯU Ý VỀ CÁC PHƯƠNG ÁN GÂY NHIỄU (BẪY TOÁN HỌC TRẮC NGHIỆM):
    - Trong đề thi trắc nghiệm, tác giả thường cố tình tạo ra các PHƯƠNG ÁN SAI / BẪY TOÁN HỌC để thử thách học sinh (Ví dụ: đưa dấu giá trị tuyệt đối ra bên NGOÀI tích phân: \left| \int_{-1}^1 (x^3 - x) dx \right|).
    - BẠN LÀ MÁY QUÉT, KHÔNG ĐƯỢC 'SỬA SAI GIÙM TÁC GIẢ'! Thấy hai thanh gạch dọc đứng |...| ở hai đầu tích phân thì BẮT BUỘC chép đúng dấu giá trị tuyệt đối: \left| \int_{-1}^1 (x^3 - x) dx \right|, TUYỆT ĐỐI KHÔNG ĐƯỢC tự ý đổi thành ngoặc đơn hay tự giải toán chia tách tích phân ra các cận [-1;0] và [0;1].
-3. CHUYỂN ĐỔI CÔNG THỨC TOÁN HỌC SANG LATEX:
+4. CHUYỂN ĐỔI CÔNG THỨC TOÁN HỌC SANG LATEX:
    - Mọi biểu thức toán học, hàm số, phương trình, tọa độ, biến số (kể cả chữ đơn lẻ như x, y, z, m) BẮT BUỘC phải được bao bọc bởi một cặp dấu đô-la đơn $...$.
    - Sử dụng đúng cú pháp LaTeX chuẩn: \le, \ge, \frac{a}{b}, x^2, m_0, \log_2, \int, \pi...
-4. CÂU HỎI TIẾNG ANH TÌM LỖI SAI (GẠCH CHÂN):
+5. CÂU HỎI TIẾNG ANH TÌM LỖI SAI (GẠCH CHÂN):
    - Ở các câu hỏi gạch chân tương ứng với lựa chọn A, B, C, D, hãy bao bọc từ/cụm từ được gạch chân bằng thẻ <u>...</u> kèm ký hiệu tương ứng (Ví dụ: <u>word</u> (A)).
-5. HÌNH VẼ / BIỂU ĐỒ / ĐỒ THỊ:
-   - Nếu có đồ thị, biểu đồ hoặc sơ đồ hình vẽ, hãy thêm mô tả chi tiết bằng chữ về hình vẽ đó ngay dưới nội dung câu hỏi hoặc passage tương ứng (ví dụ: *([Hình vẽ]: Đồ thị parabol...)*).
-6. CHÙM BÀI ĐỌC (PASSAGES) & CÂU ĐỘC LẬP (SINGLE QUESTIONS):
+6. HÌNH VẼ / BIỂU ĐỒ / ĐỒ THỊ & BẢNG SỐ LIỆU:
+   - BẢNG SỐ LIỆU: BẮT BUỘC định dạng bảng dưới dạng Markdown Table chuẩn (| Cột 1 | Cột 2 | ...) với đầy đủ tất cả các hàng và các cột, không được bỏ sót bất kỳ ô dữ liệu nào.
+   - BIỂU ĐỒ (Cột, Tròn, Đường): Ghi rõ loại biểu đồ và liệt kê đầy đủ tên nhãn kèm số liệu phần trăm hoặc giá trị (ví dụ: *([Hình vẽ]: Biểu đồ cột biểu diễn tỷ lệ chi phí: Đầu tư 20%, Vận chuyển 12,5%...)* hoặc *([Hình vẽ]: Biểu đồ hình tròn thể hiện Doanh thu: A (22%), B (26%)...)*) để hệ thống tự động vẽ lại biểu đồ tương tác.
+   - HÌNH HỌC / ĐỒ THỊ HÀM SỐ: Mô tả chi tiết hình dạng, đỉnh, trục tọa độ, tiệm cận và các điểm đặc biệt.
+7. CHÙM BÀI ĐỌC (PASSAGES) & CÂU ĐỘC LẬP (SINGLE QUESTIONS):
    - Đoạn văn ngữ cảnh dùng chung đưa vào content của `passages` kèm start_question và end_question.
    - Câu hỏi riêng lẻ đưa vào `single_questions`. Đảm bảo trích xuất đầy đủ toàn bộ câu hỏi từ trang đầu đến trang cuối.
-7. PHÂN TÍCH DẠNG BÀI:
+8. PHÂN TÍCH DẠNG BÀI:
    - Gợi ý tên dạng bài / kỹ năng tương ứng (suggested_skill_name) ngắn gọn, chuẩn xác.";
 
     public GeminiExamParserService(
@@ -54,17 +60,190 @@ QUY TẮC BẮT BUỘC ĐỂ ĐẢM BẢO ĐỘ TRUNG THỰC (ZERO-TOLERANCE RUL
         _logger = logger;
     }
 
-    public async Task<ParsedExamDto> ParsePdfAsync(Stream pdfStream, string fileName, CancellationToken cancellationToken = default)
+    private List<string> ResolveApiKeys()
     {
-        var apiKey = _configuration.GetSection("AiSettings")["GeminiApiKey"];
-        if (string.IsNullOrWhiteSpace(apiKey) || apiKey.StartsWith("YOUR_"))
+        var keys = new List<string>();
+
+        // 1. Lấy từ danh sách mảng AiSettings:GeminiApiKeys nếu có
+        var keysSection = _configuration.GetSection("AiSettings:GeminiApiKeys").Get<string[]>();
+        if (keysSection != null && keysSection.Length > 0)
         {
-            throw new InvalidOperationException("Chưa cấu hình 'AiSettings:GeminiApiKey' hợp lệ trong appsettings.");
+            keys.AddRange(keysSection);
         }
 
-        _logger.LogInformation("Bắt đầu đọc dữ liệu PDF '{FileName}' và mã hóa sang Base64...", fileName);
+        // 2. Lấy từ AiSettings:GeminiApiKey (chuỗi đơn hoặc phân tách bởi dấu phẩy/chấm phẩy)
+        var singleOrDelimited = _configuration.GetSection("AiSettings")["GeminiApiKey"];
+        if (!string.IsNullOrWhiteSpace(singleOrDelimited))
+        {
+            var splitKeys = singleOrDelimited.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            keys.AddRange(splitKeys);
+        }
 
-        // 1. Đọc stream PDF thành Base64
+        // 3. Lấy từ biến môi trường nếu có
+        var envKeys = Environment.GetEnvironmentVariable("GEMINI_API_KEYS") ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+        if (!string.IsNullOrWhiteSpace(envKeys))
+        {
+            keys.AddRange(envKeys.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        return keys
+            .Select(k => k.Trim())
+            .Where(k => !string.IsNullOrWhiteSpace(k) && !k.StartsWith("YOUR_"))
+            .Distinct()
+            .ToList();
+    }
+
+    private string? ResolveOpenAiKey()
+    {
+        var key = _configuration["AiSettings:ApiKey"] 
+                  ?? _configuration["AiSettings:OpenAiApiKey"]
+                  ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+
+        if (string.IsNullOrWhiteSpace(key)) return null;
+
+        key = key.Trim();
+        if (key.StartsWith("YOUR_", StringComparison.OrdinalIgnoreCase)) return null;
+
+        return key;
+    }
+
+    private List<string> ResolveOpenAiModels()
+    {
+        var models = _configuration.GetSection("AiSettings:OpenAiModels").Get<string[]>();
+        if (models != null && models.Length > 0)
+        {
+            return models
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Select(m => m.Trim())
+                .Distinct()
+                .ToList();
+        }
+
+        return new List<string> { "gpt-4o", "gpt-4o-mini", "o3-mini", "chatgpt-4o-latest" };
+    }
+
+    private List<string> ResolveGeminiModels()
+    {
+        var models = _configuration.GetSection("AiSettings:GeminiModels").Get<string[]>();
+        if (models != null && models.Length > 0)
+        {
+            return models
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Select(m => m.Trim())
+                .Distinct()
+                .ToList();
+        }
+
+        var single = _configuration["AiSettings:GeminiModel"];
+        if (!string.IsNullOrWhiteSpace(single))
+        {
+            return new List<string> { single.Trim() };
+        }
+
+        return new List<string> { 
+            "gemini-3.6-flash", 
+            "gemini-3.1-flash-lite", 
+            "gemini-flash-latest", 
+            "gemini-flash-lite-latest", 
+            "gemini-2.5-flash" 
+        };
+    }
+
+    private async Task<string?> TryCallOpenAiAsync(string modelName, string apiKey, string base64Data, CancellationToken cancellationToken)
+    {
+        var requestBody = new JsonObject
+        {
+            ["model"] = modelName,
+            ["messages"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["role"] = "system",
+                    ["content"] = GeminiPrompt
+                },
+                new JsonObject
+                {
+                    ["role"] = "user",
+                    ["content"] = new JsonArray
+                    {
+                        new JsonObject
+                        {
+                            ["type"] = "text",
+                            ["text"] = "Hãy đọc tài liệu đề thi và trích xuất đầy đủ toàn bộ 120 câu hỏi sang đúng định dạng JSON: { \"passages\": [...], \"single_questions\": [...] }."
+                        },
+                        new JsonObject
+                        {
+                            ["type"] = "image_url",
+                            ["image_url"] = new JsonObject
+                            {
+                                ["url"] = $"data:application/pdf;base64,{base64Data}"
+                            }
+                        }
+                    }
+                }
+            },
+            ["response_format"] = new JsonObject { ["type"] = "json_object" }
+        };
+
+        if (modelName.StartsWith("o", StringComparison.OrdinalIgnoreCase))
+        {
+            requestBody["max_completion_tokens"] = 65536;
+        }
+        else
+        {
+            requestBody["temperature"] = 0.0;
+            requestBody["max_tokens"] = 16384;
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions")
+        {
+            Content = new StringContent(requestBody.ToJsonString(), Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("OpenAI mô hình '{Model}' trả về HTTP {Code}: {Content}", modelName, response.StatusCode, content);
+            return null;
+        }
+
+        using var doc = JsonDocument.Parse(content);
+        if (doc.RootElement.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
+        {
+            var choice = choices[0];
+            if (choice.TryGetProperty("message", out var message) &&
+                message.TryGetProperty("content", out var textProp))
+            {
+                return textProp.GetString();
+            }
+        }
+
+        return null;
+    }
+
+    private static string MaskKey(string key)
+    {
+        if (string.IsNullOrEmpty(key) || key.Length <= 8) return "****";
+        return $"{key[..4]}...{key[^4..]}";
+    }
+
+    public async Task<ParsedExamDto> ParsePdfAsync(Stream pdfStream, string fileName, CancellationToken cancellationToken = default)
+    {
+        var apiKeys = ResolveApiKeys();
+        var openAiKey = ResolveOpenAiKey();
+
+        if (apiKeys.Count == 0 && string.IsNullOrEmpty(openAiKey))
+        {
+            throw new InvalidOperationException("Chưa cấu hình API Key hợp lệ cho cả OpenAI và Google Gemini trong appsettings.");
+        }
+
+        _logger.LogInformation("Bắt đầu đọc dữ liệu PDF '{FileName}' và chuẩn bị bóc tách (Gemini Keys: {KeyCount}, OpenAI: {HasOpenAi})...", 
+            fileName, apiKeys.Count, !string.IsNullOrEmpty(openAiKey));
+
+        // 1. Đọc stream PDF thành byte[]
         byte[] pdfBytes;
         if (pdfStream is MemoryStream ms)
         {
@@ -78,7 +257,7 @@ QUY TẮC BẮT BUỘC ĐỂ ĐẢM BẢO ĐỘ TRUNG THỰC (ZERO-TOLERANCE RUL
         }
 
         string base64Data = Convert.ToBase64String(pdfBytes);
-        _logger.LogInformation("Mã hóa Base64 thành công ({SizeKb:F1} KB). Đang gửi payload sang Gemini API...", pdfBytes.Length / 1024.0);
+        _logger.LogInformation("Mã hóa PDF thành công ({SizeKb:F1} KB). Chuẩn bị gửi sang Vision AI...", pdfBytes.Length / 1024.0);
 
         // 2. Xây dựng JSON Schema cho Gemini
         var schema = new JsonObject
@@ -161,51 +340,30 @@ QUY TẮC BẮT BUỘC ĐỂ ĐẢM BẢO ĐỘ TRUNG THỰC (ZERO-TOLERANCE RUL
             ["required"] = new JsonArray { "passages", "single_questions" }
         };
 
-        // 3. Chuẩn bị Request Payload: Render từng trang PDF sang JPEG 150 DPI để loại bỏ hoàn toàn lỗi font ngầm và tình trạng nhòe ảnh
-        var requestParts = new JsonArray();
-        int pageCount = 0;
-        try
+        // 3. Chuẩn bị Request Parts cho Gemini Vision
+        var requestParts = new JsonArray
         {
-            var renderOptions = new PDFtoImage.RenderOptions { Dpi = 150 };
-            foreach (var skBitmap in PDFtoImage.Conversion.ToImages(pdfBytes, options: renderOptions))
-            {
-                using (skBitmap)
-                {
-                    using var imageStream = new MemoryStream();
-                    skBitmap.Encode(imageStream, SkiaSharp.SKEncodedImageFormat.Jpeg, 85);
-                    var pageBase64 = Convert.ToBase64String(imageStream.ToArray());
-                    requestParts.Add(new JsonObject
-                    {
-                        ["inlineData"] = new JsonObject
-                        {
-                            ["mimeType"] = "image/jpeg",
-                            ["data"] = pageBase64
-                        }
-                    });
-                    pageCount++;
-                }
-            }
-            _logger.LogInformation("Đã render thành công {PageCount} trang PDF sang ảnh JPEG sắc nét (150 DPI) để gửi sang Gemini Vision.", pageCount);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Không thể render PDF sang JPEG: {Message}. Tự động fallback sang gửi file PDF trực tiếp.", ex.Message);
-            requestParts.Clear();
-            requestParts.Add(new JsonObject
+            new JsonObject
             {
                 ["inlineData"] = new JsonObject
                 {
                     ["mimeType"] = "application/pdf",
                     ["data"] = base64Data
                 }
-            });
-        }
+            },
+            new JsonObject
+            {
+                ["text"] = GeminiPrompt
+            }
+        };
 
-        // Thêm Prompt kiểm duyệt nghiêm ngặt
-        requestParts.Add(new JsonObject
+        var genConfig = new JsonObject
         {
-            ["text"] = GeminiPrompt
-        });
+            ["responseMimeType"] = "application/json",
+            ["responseSchema"] = schema,
+            ["temperature"] = 0.0,
+            ["maxOutputTokens"] = 65536
+        };
 
         var requestPayload = new JsonObject
         {
@@ -216,92 +374,230 @@ QUY TẮC BẮT BUỘC ĐỂ ĐẢM BẢO ĐỘ TRUNG THỰC (ZERO-TOLERANCE RUL
                     ["parts"] = requestParts
                 }
             },
-            ["generationConfig"] = new JsonObject
-            {
-                ["responseMimeType"] = "application/json",
-                ["responseSchema"] = schema,
-                ["temperature"] = 0.0
-            }
+            ["generationConfig"] = genConfig
         };
 
-        var configuredModel = _configuration.GetSection("AiSettings")["GeminiModel"];
-        var candidateModels = new List<string>();
-        if (!string.IsNullOrWhiteSpace(configuredModel))
-        {
-            candidateModels.Add(configuredModel);
-        }
-        // Các model Flash Vision hoạt động nhanh và ổn định nhất theo kiểm thử thực tế
-        candidateModels.AddRange(new[] { 
-            "gemini-flash-lite-latest", 
-            "gemini-3.1-flash-lite", 
-            "gemini-3.5-flash", 
-            "gemini-3.6-flash", 
-            "gemini-flash-latest"
-        });
+        int maxAttempts = _configuration.GetValue<int>("AiSettings:MaxAttempts", 5);
+        if (maxAttempts <= 0) maxAttempts = 5;
 
-        string responseContent = string.Empty;
+        int attemptCount = 0;
+        string rawJsonText = string.Empty;
+        string bestJsonText = string.Empty;
+        int maxExtractedCount = 0;
         bool isSuccess = false;
 
-        foreach (var modelName in candidateModels.Distinct())
+        // BƯỚC 1: Kiểm tra OpenAI API Key (Ưu tiên GPT 4 models nếu có key thực)
+        if (!string.IsNullOrEmpty(openAiKey))
         {
-            string requestUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{modelName}:generateContent?key={apiKey}";
-            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, requestUrl)
-            {
-                Content = new StringContent(requestPayload.ToJsonString(), Encoding.UTF8, "application/json")
-            };
+            var openAiModels = ResolveOpenAiModels();
+            _logger.LogInformation("Phát hiện OpenAI API Key [{MaskedKey}]. Tiến hành thử {Count} mô hình GPT theo thứ tự ưu tiên (giới hạn {MaxAttempts} lần thử)...", 
+                MaskKey(openAiKey), openAiModels.Count, maxAttempts);
 
-            _logger.LogInformation("Đang gửi yêu cầu tới mô hình '{ModelName}'...", modelName);
-            try
+            foreach (var gptModel in openAiModels)
             {
-                var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
-                responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-
-                if (response.IsSuccessStatusCode)
+                if (attemptCount >= maxAttempts)
                 {
-                    _logger.LogInformation("Mô hình '{ModelName}' phản hồi thành công!", modelName);
-                    isSuccess = true;
+                    _logger.LogWarning("Đã đạt giới hạn tối đa {MaxAttempts} lần thử. Dừng gọi thêm mô hình.", maxAttempts);
                     break;
                 }
 
-                _logger.LogWarning("Mô hình '{ModelName}' trả về lỗi HTTP {StatusCode}. Thử mô hình kế tiếp...", modelName, response.StatusCode);
-                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                attemptCount++;
+                _logger.LogInformation("[Lần thử {Attempt}/{MaxAttempts}] Đang gửi yêu cầu tới mô hình OpenAI '{ModelName}'...", 
+                    attemptCount, maxAttempts, gptModel);
+
+                try
                 {
-                    // Chỉ dừng nếu 400 Bad Request (lỗi cấu trúc payload)
-                    break;
+                    string? gptResult = await TryCallOpenAiAsync(gptModel, openAiKey, base64Data, cancellationToken);
+                    if (!string.IsNullOrWhiteSpace(gptResult))
+                    {
+                        try
+                        {
+                            var testParsed = JsonSerializer.Deserialize<ParsedExamDto>(gptResult, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                            int totalQ = (testParsed?.SingleQuestions?.Count ?? 0) + (testParsed?.Passages?.Sum(p => p.Questions.Count) ?? 0);
+
+                            if (totalQ > maxExtractedCount)
+                            {
+                                maxExtractedCount = totalQ;
+                                bestJsonText = gptResult;
+                            }
+
+                            if (totalQ >= 50)
+                            {
+                                _logger.LogInformation("Mô hình OpenAI '{ModelName}' trích xuất thành công xuất sắc {Total} câu hỏi!", gptModel, totalQ);
+                                rawJsonText = gptResult;
+                                isSuccess = true;
+                                break;
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Mô hình OpenAI '{ModelName}' chỉ trích xuất được {Total} câu. Thử lựa chọn kế tiếp...", gptModel, totalQ);
+                            }
+                        }
+                        catch (Exception parseEx)
+                        {
+                            _logger.LogWarning("Không thể parse JSON từ OpenAI '{ModelName}': {Message}", gptModel, parseEx.Message);
+                        }
+                    }
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.LogWarning(ex, "Lỗi kết nối tới OpenAI '{ModelName}'. Thử phương án tiếp theo...", gptModel);
                 }
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+        }
+        else
+        {
+            _logger.LogInformation("OpenAI API Key chưa được cấu hình hoặc là placeholder mặc định. Hệ thống tự động chuyển sang Google Gemini.");
+        }
+
+        // BƯỚC 2: Thử Google Gemini (Nếu GPT chưa thành công và số lần thử < maxAttempts)
+        if (!isSuccess && attemptCount < maxAttempts && apiKeys.Count > 0)
+        {
+            var geminiModels = ResolveGeminiModels();
+            _logger.LogInformation("Tiến hành chạy Google Gemini: {ModelCount} mô hình, {KeyCount} API Key dự phòng (còn lại {Remaining} lần thử)...",
+                geminiModels.Count, apiKeys.Count, maxAttempts - attemptCount);
+
+            foreach (var modelName in geminiModels)
             {
-                _logger.LogWarning(ex, "Lỗi kết nối tới mô hình '{ModelName}'. Thử mô hình kế tiếp...", modelName);
+                if (attemptCount >= maxAttempts)
+                {
+                    _logger.LogWarning("Đã đạt giới hạn tối đa {MaxAttempts} lần thử. Dừng gọi thêm mô hình.", maxAttempts);
+                    break;
+                }
+
+                // gemini-3.1-flash-lite mặc định bật suy luận ngầm (thinking), cần tắt thinkingBudget để in thẳng JSON câu hỏi
+                if (modelName.Contains("3.1", StringComparison.OrdinalIgnoreCase))
+                {
+                    genConfig["thinkingConfig"] = new JsonObject
+                    {
+                        ["thinkingBudget"] = 0
+                    };
+                }
+                else
+                {
+                    genConfig.Remove("thinkingConfig");
+                }
+
+                var payloadJson = requestPayload.ToJsonString();
+
+                foreach (var currentKey in apiKeys)
+                {
+                    if (attemptCount >= maxAttempts)
+                    {
+                        _logger.LogWarning("Đã đạt giới hạn tối đa {MaxAttempts} lần thử. Dừng gọi thêm mô hình.", maxAttempts);
+                        break;
+                    }
+
+                    attemptCount++;
+                    string maskedKey = MaskKey(currentKey);
+                    string requestUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{modelName}:generateContent?key={currentKey}";
+                    using var requestMessage = new HttpRequestMessage(HttpMethod.Post, requestUrl)
+                    {
+                        Content = new StringContent(payloadJson, Encoding.UTF8, "application/json")
+                    };
+
+                    _logger.LogInformation("[Lần thử {Attempt}/{MaxAttempts}] Đang gửi yêu cầu tới mô hình '{ModelName}' bằng API Key [{MaskedKey}]...", 
+                        attemptCount, maxAttempts, modelName, maskedKey);
+
+                    try
+                    {
+                        var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
+                        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            using var doc = JsonDocument.Parse(content);
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
+                            {
+                                var candidate = candidates[0];
+                                if (candidate.TryGetProperty("content", out var candContent) &&
+                                    candContent.TryGetProperty("parts", out var parts) &&
+                                    parts.GetArrayLength() > 0 &&
+                                    parts[0].TryGetProperty("text", out var textProp))
+                                {
+                                    string textVal = textProp.GetString() ?? string.Empty;
+                                    if (!string.IsNullOrWhiteSpace(textVal) && textVal != "{}")
+                                    {
+                                        try
+                                        {
+                                            var testParsed = JsonSerializer.Deserialize<ParsedExamDto>(textVal, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                                            int totalQ = (testParsed?.SingleQuestions?.Count ?? 0) + (testParsed?.Passages?.Sum(p => p.Questions.Count) ?? 0);
+                                            
+                                            if (totalQ > maxExtractedCount)
+                                            {
+                                                maxExtractedCount = totalQ;
+                                                bestJsonText = textVal;
+                                            }
+
+                                            if (totalQ >= 50)
+                                            {
+                                                _logger.LogInformation("Mô hình '{ModelName}' với API Key [{MaskedKey}] trích xuất thành công xuất sắc {Total} câu hỏi!", modelName, maskedKey, totalQ);
+                                                rawJsonText = textVal;
+                                                isSuccess = true;
+                                                break; // Thoát vòng lặp key
+                                            }
+                                            else
+                                            {
+                                                _logger.LogWarning("Mô hình '{ModelName}' chỉ trích xuất được {Total} câu (chưa đủ 120 câu). Thử lựa chọn kế tiếp...", modelName, totalQ);
+                                            }
+                                        }
+                                        catch (Exception parseEx)
+                                        {
+                                            _logger.LogWarning("Không thể parse kết quả từ '{ModelName}': {Message}. Thử lựa chọn kế tiếp...", modelName, parseEx.Message);
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (!isSuccess)
+                            {
+                                _logger.LogWarning("Mô hình '{ModelName}' phản hồi 200 nhưng không xuất được parts/text hợp lệ. Thử phương án tiếp theo...", modelName);
+                            }
+                            continue;
+                        }
+
+                        if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                        {
+                            _logger.LogWarning("API Key [{MaskedKey}] chạm hạn mức (HTTP 429 Too Many Requests). Tự động fallback sang API Key dự phòng...", maskedKey);
+                            continue;
+                        }
+
+                        if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                        {
+                            _logger.LogWarning("Mô hình '{ModelName}' bị quá tải phía Google (HTTP 503 Service Unavailable). Thử key khác hoặc mô hình kế tiếp...", modelName);
+                            continue;
+                        }
+
+                        _logger.LogWarning("Mô hình '{ModelName}' với Key [{MaskedKey}] trả về HTTP {StatusCode}. Thử lựa chọn kế tiếp...", modelName, maskedKey, response.StatusCode);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        _logger.LogWarning(ex, "Lỗi kết nối tới '{ModelName}' bằng Key [{MaskedKey}]. Thử lựa chọn kế tiếp...", modelName, maskedKey);
+                    }
+                }
+
+                if (isSuccess)
+                {
+                    break; // Thoát vòng lặp model
+                }
             }
         }
 
-        if (!isSuccess)
+        // Nếu không đạt ngưỡng 50 câu nhưng có kết quả tốt nhất > 0, dùng tạm kết quả tốt nhất trước khi gọi Local
+        if (!isSuccess && maxExtractedCount > 0)
         {
-            _logger.LogWarning("Tất cả mô hình Gemini đều quá tải hoặc gặp sự cố (503/404). Tự động kích hoạt Local Fallback Parser để không làm gián đoạn người dùng...");
-            return await RunLocalFallbackParserAsync(pdfBytes, fileName, cancellationToken);
+            _logger.LogInformation("Sử dụng kết quả tốt nhất từ AI ({Attempts}/{MaxAttempts} lần thử): {Count} câu hỏi.", attemptCount, maxAttempts, maxExtractedCount);
+            rawJsonText = bestJsonText;
+            isSuccess = true;
         }
 
-        // 5. Trích xuất Text JSON từ phản hồi của Gemini
-        using var doc = JsonDocument.Parse(responseContent);
-        var root = doc.RootElement;
-
-        if (!root.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0)
+        if (!isSuccess || string.IsNullOrWhiteSpace(rawJsonText))
         {
-            _logger.LogWarning("Gemini không trả về candidates. Tự động chuyển sang Local Fallback Parser...");
+            _logger.LogWarning("Đã thử tối đa {Attempts}/{MaxAttempts} lần. Tất cả mô hình và API Key (GPT/Gemini) đều không hoàn thành hoặc quá tải. Tự động kích hoạt Local Fallback Parser...", 
+                attemptCount, maxAttempts);
             return await RunLocalFallbackParserAsync(pdfBytes, fileName, cancellationToken);
         }
-
-        var candidate = candidates[0];
-        if (!candidate.TryGetProperty("content", out var content) ||
-            !content.TryGetProperty("parts", out var parts) ||
-            parts.GetArrayLength() == 0)
-        {
-            _logger.LogWarning("Gemini không xuất được parts. Tự động chuyển sang Local Fallback Parser...");
-            return await RunLocalFallbackParserAsync(pdfBytes, fileName, cancellationToken);
-        }
-
-        string rawJsonText = parts[0].GetProperty("text").GetString() ?? "{}";
 
         // 6. Deserialize nội dung JSON thành DTO
         var options = new JsonSerializerOptions
