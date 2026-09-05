@@ -24,6 +24,9 @@ public static class DependencyInjection
         // Đăng ký Socratic AI Tutor Service
         services.AddScoped<ISocraticTutorService, SocraticTutorService>();
 
+        // Đăng ký dịch vụ trích xuất ảnh cục bộ từ PDF (PdfPig 100% Offline)
+        services.AddSingleton<PdfImageExtractor>();
+
         return services;
     }
 }

@@ -886,6 +886,14 @@
   <!-- Toast Notification -->
   <div id="toast" class="toast"></div>
 
+  <!-- Image Lightbox Modal (Phóng to ảnh) -->
+  <div id="image-lightbox-modal" style="display:none; position:fixed; inset:0; background:rgba(10,15,29,0.92); z-index:9999; justify-content:center; align-items:center; padding:25px; cursor:zoom-out;" onclick="this.style.display='none'">
+    <div style="position:relative; max-width:92vw; max-height:92vh; text-align:center;" onclick="event.stopPropagation()">
+      <button type="button" style="position:absolute; top:-40px; right:0; background:rgba(255,255,255,0.15); border:none; color:#fff; font-size:18px; border-radius:50%; width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center;" onclick="document.getElementById('image-lightbox-modal').style.display='none'">✕</button>
+      <img id="lightbox-img" src="" style="max-width:100%; max-height:85vh; border-radius:8px; box-shadow:0 8px 32px rgba(0,0,0,0.85); border: 1px solid var(--border);" />
+    </div>
+  </div>
+
   <!-- Loading Overlay -->
   <div class="loading-overlay" id="loading">
     <div class="spinner"></div>
@@ -893,6 +901,14 @@
   </div>
 
   <script>
+    function openImageModal(src) {
+      const modal = document.getElementById('image-lightbox-modal');
+      const img = document.getElementById('lightbox-img');
+      if (modal && img) {
+        img.src = src;
+        modal.style.display = 'flex';
+      }
+    }
     const CONTENT_SERVICE_URL = 'http://localhost:5249';
 
     let currentExamData = null; // Biến lưu trữ kết quả trích xuất tạm thời
@@ -1297,6 +1313,47 @@
       };
       reader.readAsDataURL(file);
     }
+
+    // Hỗ trợ dán ảnh trực tiếp từ Clipboard (Ctrl + V) vào câu hỏi hoặc chùm bài
+    document.addEventListener('paste', (e) => {
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (let item of items) {
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          const blob = item.getAsFile();
+          const activeCard = document.querySelector('.question-card:hover, .passage-card:hover');
+          if (activeCard) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const dataUrl = event.target.result;
+              let preview = activeCard.querySelector('.attached-img-preview, .question-figure-box, .passage-figure-box');
+              if (!preview) {
+                preview = document.createElement('div');
+                preview.className = 'attached-img-preview';
+                preview.style.marginTop = '12px';
+                preview.style.maxWidth = '600px';
+                preview.style.background = 'rgba(15, 23, 42, 0.7)';
+                preview.style.border = '1px solid var(--border)';
+                preview.style.borderRadius = '10px';
+                preview.style.padding = '12px';
+                const controls = activeCard.querySelector('.item-media-controls');
+                if (controls) activeCard.insertBefore(preview, controls);
+                else activeCard.appendChild(preview);
+              }
+              preview.innerHTML = `
+                <img src="${dataUrl}" style="max-width: 100%; border-radius: 6px; display: block; cursor: zoom-in;" onclick="openImageModal(this.src)" />
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 11.5px; color: var(--text-muted);">
+                  <span>📋 Đã dán ảnh từ Clipboard (Ctrl + V)</span>
+                  <button type="button" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight: 500;" onclick="this.closest('.attached-img-preview, .question-figure-box, .passage-figure-box').remove()">✕ Gỡ ảnh</button>
+                </div>
+              `;
+              showToast("Đã dán ảnh thành công vào câu hỏi!", "success");
+            };
+            reader.readAsDataURL(blob);
+          }
+          break;
+        }
+      }
+    });
 
     // Lấy danh sách đề thi từ Content Service
     async function fetchDatabaseExams(notify = false) {
@@ -1705,13 +1762,23 @@
           pCard.dataset.page = firstQPage;
           
           let pImagesHtml = '';
-          if (p.images && p.images.length > 0) {
+          const pImgUrl = p.image_url || p.imageUrl;
+          if (pImgUrl) {
+            pImagesHtml = `
+              <div class="passage-figure-box" style="margin: 14px 0 16px 0; text-align: center; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 10px; padding: 14px; max-width: 720px;">
+                <img src="${pImgUrl}" alt="Sơ đồ/Hình vẽ minh họa chùm bài" style="max-width: 100%; border-radius: 6px; display: inline-block; cursor: zoom-in; box-shadow: 0 4px 14px rgba(0,0,0,0.5);" onclick="openImageModal(this.src)" />
+                <div style="color: var(--text-muted); font-size: 11.5px; margin-top: 8px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                  <span>🖼️ Sơ đồ/Hình vẽ gốc trích xuất từ đề thi (Nhấp để phóng to)</span>
+                </div>
+              </div>
+            `;
+          } else if (p.images && p.images.length > 0) {
             pImagesHtml = `
               <div class="passage-images" style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 10px;">
                 ${p.images.map(img => `
                   <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); padding: 10px; border-radius: 8px; max-width: 500px;">
-                    <img src="/uploads/images/${img}" alt="Đồ thị/Hình vẽ" style="max-width: 100%; border-radius: 4px; display: block;" />
-                    <div style="color: var(--text-muted); font-size: 11px; margin-top: 5px; text-align: center;">Hình vẽ trích xuất: ${img}</div>
+                    <img src="/uploads/images/${img}" alt="Đồ thị/Hình vẽ" style="max-width: 100%; border-radius: 4px; display: block; cursor: zoom-in;" onclick="openImageModal(this.src)" />
+                    <div style="color: var(--text-muted); font-size: 11px; margin-top: 5px; text-align: center;">Hình vẽ: ${img}</div>
                   </div>
                 `).join('')}
               </div>
@@ -1788,13 +1855,23 @@
       }
 
       let qImagesHtml = '';
-      if (q.images && q.images.length > 0) {
+      const qImgUrl = q.image_url || q.imageUrl;
+      if (qImgUrl) {
+        qImagesHtml = `
+          <div class="question-figure-box" style="margin: 12px 0 16px 0; text-align: center; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 10px; padding: 14px; max-width: 600px;">
+            <img src="${qImgUrl}" alt="Đồ thị/Hình vẽ minh họa" style="max-width: 100%; border-radius: 6px; display: inline-block; cursor: zoom-in; box-shadow: 0 4px 14px rgba(0,0,0,0.5);" onclick="openImageModal(this.src)" />
+            <div style="color: var(--text-muted); font-size: 11.5px; margin-top: 8px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+              <span>📊 Đồ thị/Hình vẽ gốc trích xuất từ đề thi (Nhấp để phóng to)</span>
+            </div>
+          </div>
+        `;
+      } else if (q.images && q.images.length > 0) {
         qImagesHtml = `
           <div class="question-images" style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
             ${q.images.map(img => `
               <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); padding: 10px; border-radius: 8px; max-width: 500px;">
-                <img src="/uploads/images/${img}" alt="Đồ thị/Hình vẽ" style="max-width: 100%; border-radius: 4px; display: block;" />
-                <div style="color: var(--text-muted); font-size: 11px; margin-top: 5px; text-align: center;">Hình vẽ trích xuất: ${img}</div>
+                <img src="/uploads/images/${img}" alt="Đồ thị/Hình vẽ" style="max-width: 100%; border-radius: 4px; display: block; cursor: zoom-in;" onclick="openImageModal(this.src)" />
+                <div style="color: var(--text-muted); font-size: 11px; margin-top: 5px; text-align: center;">Hình vẽ: ${img}</div>
               </div>
             `).join('')}
           </div>

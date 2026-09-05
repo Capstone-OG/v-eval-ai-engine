@@ -81,4 +81,7 @@ public class ParsedQuestionDto
 
     [JsonPropertyName("difficulty_level")]
     public int DifficultyLevel { get; set; } = 2;
+
+    [JsonPropertyName("image_url")]
+    public string? ImageUrl { get; set; }
 }

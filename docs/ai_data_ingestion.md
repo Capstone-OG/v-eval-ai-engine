@@ -176,3 +176,24 @@ sequenceDiagram
 3. **Hình vẽ phức tạp & Ảnh gốc**:
    * Cung cấp nút đính kèm/dán ảnh (Ctrl+V) cho từng câu hỏi, cho phép giáo viên/học sinh lưu giữ hình vẽ gốc từ PDF vào database.
 
+---
+
+## 7. Trích Xuất & Kết Xuất Hình Ảnh Cục Bộ (PDFium + SkiaSharp + PdfPig) & Quy Tắc Chống Lộ Đáp Án (Zero-Spoiler)
+
+### 7.1. Kiến trúc Kết Xuất Ảnh Cục Bộ 100% Offline (<0.15s)
+Thay vì bắt Cloud AI Gemini Vision phải gánh việc phát hiện toạ độ bounding box hình ảnh (gây nặng nề, tốn token và tăng nguy cơ lỗi 503/429), phân hệ AI Engine sử dụng kiến trúc **Hybrid Pipeline**:
+1. **Định vị Bounding Box bằng `UglyToad.PdfPig`**:
+   * Quét nhị phân các đối tượng ảnh `XObject` trong cấu trúc PDF để lấy toạ độ biên chuẩn xác (`Bounds.Left`, `Bounds.Top`, `Bounds.Width`, `Bounds.Height`).
+   * Tự động lọc bỏ các icon, bullet points nhỏ (<50px) và logo tiêu đề trường ĐHQG-HCM ở đầu Trang 1.
+2. **Kết xuất Vùng Trang Bằng `PDFtoImage` (Google PDFium Core C++) & `SkiaSharp`**:
+   * *Giải quyết lỗi FlateDecode (Câu 75)*: Các luồng ảnh nén thô không có header PNG được PDFium vẽ lại hoàn hảo kèm đầy đủ hệ trục toạ độ $a-x$, các mốc số $40, -40, 1, -1$ và gốc tọa độ $O$.
+   * *Giải quyết lỗi Mặt nạ trong suốt (SMask) & Chữ bên lề (Chùm 106–108)*: Các ảnh JPEG có nền trong suốt khi trích xuất thô thường bị biến thành mảng đen xì và bị cắt mất chữ chú thích do giáo viên gõ bằng Text Box trong Word. PDFium kết xuất trực tiếp vùng này trên nền trắng tinh khiết (`SKColors.White`), mở rộng lề an toàn 20pt bao trọn vẹn toàn bộ chú thích *"tán", "thân", "gốc", "A. crenulata", "A. mediterranea", "Tế bào ghép hoàn chỉnh 1 & 2"* thành một sơ đồ liên hoàn duy nhất (`p14_combined.png`).
+3. **Bộ Ánh Xạ Thông Minh (Smart Auto-Mapper)**:
+   * Tự động so khớp số trang (`PageNumber`) và từ khóa hình vẽ/đồ thị (`hình`, `đồ thị`, `biểu đồ`, `dụng cụ`, `sơ đồ`, `[hình vẽ]`) để gán chính xác ảnh vào `image_url` của từng câu hỏi và chùm bài đọc.
+
+### 7.2. Quy Tắc Zero-Spoiler trong Multimodal Prompt
+* **Vấn đề**: Khi gặp câu hỏi trắc nghiệm có hình vẽ đố về đồ vật/hiện tượng (như Câu 78: *"Dụng cụ đó là gì?"* kèm 4 đáp án A. Gương cầu lồi, B. Gương cầu lõm...), AI Vision có xu hướng tự động mô tả ảnh là `([Hình vẽ]: Gương cầu lồi...)` dẫn đến làm lộ ngay đáp án trắc nghiệm trước khi học sinh làm bài.
+* **Giải pháp**: Thiết lập điều luật nghiêm ngặt trong System Prompt Rule 6:
+  > *"Khi câu hỏi trắc nghiệm hỏi về tên gọi, bản chất hoặc công dụng của đối tượng trong hình ảnh, phần mô tả trong nội dung câu hỏi CHỈ ĐƯỢC mô tả trung tính đặc điểm trực quan/hiện tượng. TUYỆT ĐỐI KHÔNG ĐƯỢC dùng từ ngữ trùng với đáp án đúng của câu hỏi! (Ví dụ: Ghi trung tính '([Hình vẽ]: Thiết bị dạng mặt gương gắn tại khúc cua đường đèo)', tuyệt đối không ghi 'Gương cầu lồi')."*
+
+

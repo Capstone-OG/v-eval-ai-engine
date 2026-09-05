@@ -13,4 +13,6 @@ appsettings.json.user
 
 # Uploaded test and preview files
 **/wwwroot/uploads/*.pdf
+**/wwwroot/extracted_images/*
+!**/wwwroot/extracted_images/.gitkeep
 

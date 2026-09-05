@@ -17,6 +17,7 @@ public class GeminiExamParserService : IExamParserService
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<GeminiExamParserService> _logger;
+    private readonly PdfImageExtractor _imageExtractor;
 
     private const string GeminiPrompt = @"BẠN LÀ MỘT HỆ THỐNG SCAN & CHUYỂN TỰ QUANG HỌC ĐỘ CHÍNH XÁC CAO (HIGH-PRECISION VERBATIM OCR) DÀNH CHO ĐỀ THI ĐGNL V-ACT.
 Nhiệm vụ: Đọc trực quan toàn bộ tài liệu và sao chép NGUYÊN VĂN 100% TOÀN BỘ 120 CÂU HỎI từ trang đầu đến trang cuối cùng sang JSON, TUYỆT ĐỐI KHÔNG ĐƯỢC SUY DIỄN HOẶC TỰ Ý SỬA ĐỔI.
@@ -40,7 +41,11 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
    - Sử dụng đúng cú pháp LaTeX chuẩn: \le, \ge, \frac{a}{b}, x^2, m_0, \log_2, \int, \pi...
 5. CÂU HỎI TIẾNG ANH TÌM LỖI SAI (GẠCH CHÂN):
    - Ở các câu hỏi gạch chân tương ứng với lựa chọn A, B, C, D, hãy bao bọc từ/cụm từ được gạch chân bằng thẻ <u>...</u> kèm ký hiệu tương ứng (Ví dụ: <u>word</u> (A)).
-6. HÌNH VẼ / BIỂU ĐỒ / ĐỒ THỊ & BẢNG SỐ LIỆU:
+6. HÌNH VẼ / BIỂU ĐỒ / ĐỒ THỊ / ẢNH MINH HỌA & BẢNG SỐ LIỆU:
+   - NGUYÊN TẮC ZERO-SPOILER (TUYỆT ĐỐI CHỐNG LỘ ĐÁP ÁN):
+     + Khi câu hỏi trắc nghiệm hỏi về tên gọi, bản chất hoặc công dụng của đối tượng trong hình ảnh, phần mô tả trong nội dung câu hỏi CHỈ ĐƯỢC mô tả trung tính đặc điểm trực quan/hiện tượng.
+     + TUYỆT ĐỐI KHÔNG ĐƯỢC dùng từ ngữ trùng với đáp án đúng của câu hỏi! Ví dụ: Nếu câu hỏi hỏi 'Dụng cụ đó là gì?' và có đáp án 'Gương cầu lồi', BẮT BUỘC chỉ ghi trung tính: '([Hình vẽ]: Thiết bị dạng mặt gương gắn tại khúc cua đường đèo)', TUYỆT ĐỐI KHÔNG ĐƯỢC ghi chữ 'Gương cầu lồi' vào phần câu hỏi!
+     + Tương tự với các thí nghiệm Hóa học / Sinh học: Chỉ mô tả hiện tượng/sơ đồ thí nghiệm trung tính, không kết luận thay cho các phương án trắc nghiệm.
    - BẢNG SỐ LIỆU: BẮT BUỘC định dạng bảng dưới dạng Markdown Table chuẩn (| Cột 1 | Cột 2 | ...) với đầy đủ tất cả các hàng và các cột, không được bỏ sót bất kỳ ô dữ liệu nào.
    - BIỂU ĐỒ (Cột, Tròn, Đường): Ghi rõ loại biểu đồ và liệt kê đầy đủ tên nhãn kèm số liệu phần trăm hoặc giá trị (ví dụ: *([Hình vẽ]: Biểu đồ cột biểu diễn tỷ lệ chi phí: Đầu tư 20%, Vận chuyển 12,5%...)* hoặc *([Hình vẽ]: Biểu đồ hình tròn thể hiện Doanh thu: A (22%), B (26%)...)*) để hệ thống tự động vẽ lại biểu đồ tương tác.
    - HÌNH HỌC / ĐỒ THỊ HÀM SỐ: Mô tả chi tiết hình dạng, đỉnh, trục tọa độ, tiệm cận và các điểm đặc biệt.
@@ -53,11 +58,13 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
     public GeminiExamParserService(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<GeminiExamParserService> logger)
+        ILogger<GeminiExamParserService> logger,
+        PdfImageExtractor imageExtractor)
     {
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
+        _imageExtractor = imageExtractor;
     }
 
     private List<string> ResolveApiKeys()
@@ -258,6 +265,20 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
 
         string base64Data = Convert.ToBase64String(pdfBytes);
         _logger.LogInformation("Mã hóa PDF thành công ({SizeKb:F1} KB). Chuẩn bị gửi sang Vision AI...", pdfBytes.Length / 1024.0);
+
+        // 1.5. Trích xuất toàn bộ ảnh gốc cục bộ từ PDF bằng PdfPig (100% Cục bộ trong 0.1s)
+        string examId = Guid.NewGuid().ToString("N")[..8];
+        string webRootPath = GetWebRootPath();
+        List<ExtractedPdfImage> localImages = new();
+        try
+        {
+            _logger.LogInformation("Bắt đầu trích xuất nhanh hình ảnh cục bộ từ PDF (ExamId: {ExamId})...", examId);
+            localImages = _imageExtractor.ExtractImages(pdfBytes, webRootPath, examId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Không thể trích xuất ảnh cục bộ từ PDF, tiếp tục luồng OCR...");
+        }
 
         // 2. Xây dựng JSON Schema cho Gemini
         var schema = new JsonObject
@@ -596,7 +617,7 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
         {
             _logger.LogWarning("Đã thử tối đa {Attempts}/{MaxAttempts} lần. Tất cả mô hình và API Key (GPT/Gemini) đều không hoàn thành hoặc quá tải. Tự động kích hoạt Local Fallback Parser...", 
                 attemptCount, maxAttempts);
-            return await RunLocalFallbackParserAsync(pdfBytes, fileName, cancellationToken);
+            return await RunLocalFallbackParserAsync(pdfBytes, fileName, localImages, webRootPath, examId, cancellationToken);
         }
 
         // 6. Deserialize nội dung JSON thành DTO
@@ -626,13 +647,25 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
         _logger.LogInformation("Bóc tách đề thi '{FileName}' bằng Gemini thành công: {Passages} chùm câu hỏi, {Questions} câu hỏi đơn lẻ.",
             fileName, parsedResult.TotalPassages, parsedResult.TotalSingleQuestions);
 
+        // Tự động map ảnh gốc đã trích xuất cục bộ vào các câu hỏi và bài đọc
+        if (localImages.Count > 0)
+        {
+            _imageExtractor.MapImagesToExam(parsedResult, localImages, webRootPath, examId);
+        }
+
         return parsedResult;
     }
 
     /// <summary>
     /// Bộ bóc tách dự phòng cục bộ (Local Fallback Parser) khi Gemini bị lỗi 503 hoặc quá tải
     /// </summary>
-    private async Task<ParsedExamDto> RunLocalFallbackParserAsync(byte[] pdfBytes, string fileName, CancellationToken cancellationToken)
+    private async Task<ParsedExamDto> RunLocalFallbackParserAsync(
+        byte[] pdfBytes, 
+        string fileName, 
+        List<ExtractedPdfImage> localImages, 
+        string webRootPath, 
+        string examId, 
+        CancellationToken cancellationToken)
     {
         string tempFile = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}_{fileName}");
         try
@@ -690,6 +723,11 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
                 _logger.LogInformation("Local Fallback Parser hoàn tất xuất sắc: {Questions} câu hỏi, {Passages} chùm câu hỏi.",
                     localResult.TotalSingleQuestions, localResult.TotalPassages);
 
+                if (localImages.Count > 0)
+                {
+                    _imageExtractor.MapImagesToExam(localResult, localImages, webRootPath, examId);
+                }
+
                 return localResult;
             }
 
@@ -703,5 +741,18 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
                 try { File.Delete(tempFile); } catch { }
             }
         }
+    }
+
+    private string GetWebRootPath()
+    {
+        var currentDir = Directory.GetCurrentDirectory();
+        var wwwroot = Path.Combine(currentDir, "wwwroot");
+        if (Directory.Exists(wwwroot)) return wwwroot;
+
+        var apiWwwroot = Path.Combine(AppContext.BaseDirectory, "wwwroot");
+        if (Directory.Exists(apiWwwroot)) return apiWwwroot;
+
+        Directory.CreateDirectory(wwwroot);
+        return wwwroot;
     }
 }

@@ -98,3 +98,21 @@ Giải quyết triệt để vấn đề giới hạn Output Token để bóc t�
 ### 💡 Kế hoạch tiếp theo
 1. Kết nối chính thức instance Qdrant Vector Database qua gRPC/HTTP Client trên Docker để lưu trữ embedding bài giảng lý thuyết.
 2. Liên thông gRPC giữa `Practice & Adaptive Service` và `AI Engine` để hoàn thiện tính năng gợi mở Socratic AI Tutor trong lúc học sinh làm bài tập.
+
+---
+
+## 📅 Cập nhật ngày 05/09/2026
+
+### 🎯 Mục tiêu hiện tại (Milestone 3.3)
+Giải quyết triệt để các câu hỏi và ngữ cảnh đặc thù không thể biểu diễn thuần túy bằng LaTeX/Văn bản (đồ thị dao động điều hòa $a-x$ Câu 75, hình ảnh thực tế gương cầu lồi khúc cua Câu 78, và chuỗi thí nghiệm ghép rễ-tán tảo *Acetabularia* chùm câu 106-108). Xây dựng công cụ trích xuất ảnh gốc cục bộ siêu tốc (100% offline, 0 token overhead) kết hợp quy tắc chống lộ đáp án (Zero-Spoiler Rule).
+
+### 📋 Danh sách Task & Trạng thái
+
+| Tên Task | Trạng thái | Ghi chú |
+| :--- | :---: | :--- |
+| **Định vị & Kết xuất Hình ảnh Cục bộ (PDFium + SkiaSharp + PdfPig)** | 🟢 Hoàn thành | Định vị toạ độ bằng `UglyToad.PdfPig`, kết xuất trực tiếp bằng `PDFtoImage` (PDFium Core) trên nền trắng tinh khiết (`SKColors.White`). Khắc phục triệt để lỗi FlateDecode (ảnh rỗng Câu 75) và lỗi mất mặt nạ SMask / mất chữ chú thích bên ngoài (Chùm 106-108). |
+| **Tự động Bao bọc & Ghép Sơ đồ Liên hoàn (`SkiaSharp`)** | 🟢 Hoàn thành | Tự động loại bỏ Header logo trường ĐHQG (<160pt top) và icon nhiễu (<50px). Mở rộng lề an toàn 20pt bao trọn vẹn toàn bộ chú thích "tán", "thân", "gốc", "A. crenulata", "Tế bào ghép hoàn chỉnh 1 & 2" ở Chùm 106-108 thành 1 ảnh thống nhất `p14_combined.png`. |
+| **Thiết lập Quy tắc Chống Lộ Đáp án (Zero-Spoiler Rule)** | 🟢 Hoàn thành | Bổ sung Rule 6 vào Gemini Prompt: Cấm tuyệt đối AI tự ý nhắc đến từ khóa mục tiêu / tên thiết bị của 4 phương án lựa chọn trong phần mô tả câu hỏi (tránh làm mất tính bảo mật của đề thi trắc nghiệm). |
+| **Liên kết Tự động ImageUrl vào DTO & Pipeline** | 🟢 Hoàn thành | Bổ sung `image_url` vào `ParsedQuestionDto` và `PassageDto`. Tự động map ảnh trang tương ứng vào đúng Question / Passage trong cả luồng Gemini và Local Fallback. |
+| **Nâng cấp Giao diện Xem Đề (`view-exam.html`)** | 🟢 Hoàn thành | Render ảnh trực quan ở cả Card câu đơn và Card bài đọc. Tích hợp Lightbox Modal phóng to ảnh toàn màn hình khi click. Hỗ trợ sự kiện dán ảnh từ clipboard (`Ctrl + V`) trực tiếp vào câu hỏi đang hover. |
+| **Đồng bộ Lưu trữ Sang `V-Eval-Content_Service`** | 🟢 Hoàn thành | Cập nhật `ImportMockExamCommand` và handler: tự động nhúng cú pháp `![Hình minh họa](image_url)` vào `ContentLatex` của câu hỏi khi lưu vào PostgreSQL. |
