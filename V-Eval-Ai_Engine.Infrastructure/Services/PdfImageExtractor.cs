@@ -206,17 +206,33 @@ public class PdfImageExtractor
             .GroupBy(i => i.PageNumber)
             .ToDictionary(g => g.Key, g => g.OrderBy(i => i.Y).ToList());
 
-        // 1. Ánh xạ vào Passages
+        // 1. Ánh xạ vào Passages (Chỉ gán ảnh cho sơ đồ thí nghiệm, hình vẽ hình học - KHÔNG gán cho Biểu đồ thống kê và Bảng số liệu)
         foreach (var passage in exam.Passages)
         {
-            // Xác định số trang của passage từ các câu hỏi con
             int pageNum = passage.Questions.FirstOrDefault()?.PageNumber ?? 0;
             if (pageNum > 0 && imagesByPage.TryGetValue(pageNum, out var pageImgs) && pageImgs.Count > 0)
             {
                 string contentLower = passage.Content.ToLowerInvariant();
+
+                // Nếu là Biểu đồ cột / tròn hoặc Bảng số liệu: Giữ nguyên dạng Chart.js tương tác và HTML Table như cũ, không cắt ảnh
+                bool isChartOrTable = contentLower.Contains("biểu đồ cột") || 
+                                      contentLower.Contains("biểu đồ tròn") || 
+                                      contentLower.Contains("biểu đồ hình tròn") || 
+                                      contentLower.Contains("bảng số liệu") ||
+                                      passage.Content.Contains("| --- |") ||
+                                      passage.Content.Contains("|:---|");
+
+                if (isChartOrTable)
+                {
+                    _logger.LogInformation("Chùm câu ({Start}-{End}) là Biểu đồ/Bảng số liệu -> Giữ nguyên Canvas Chart.js & HTML Table tương tác (không gán ảnh cắt).",
+                        passage.StartQuestion, passage.EndQuestion);
+                    continue;
+                }
+
+                // Chỉ gán ảnh cắt cho sơ đồ thí nghiệm (như Chùm 106-108), hình vẽ sinh học/hóa học, hoặc đồ thị hàm số
                 bool hasFigureKeyword = contentLower.Contains("hình") || 
                                        contentLower.Contains("sơ đồ") || 
-                                       contentLower.Contains("biểu đồ") || 
+                                       contentLower.Contains("thí nghiệm") ||
                                        contentLower.Contains("đồ thị");
 
                 if (hasFigureKeyword)
@@ -227,16 +243,23 @@ public class PdfImageExtractor
             }
         }
 
-        // 2. Ánh xạ vào Single Questions
+        // 2. Ánh xạ vào Single Questions (Chỉ gán ảnh cho đồ thị tọa độ như Câu 75, hình chụp thực tế như Câu 78)
         foreach (var q in exam.SingleQuestions)
         {
             int pageNum = q.PageNumber;
             if (pageNum > 0 && imagesByPage.TryGetValue(pageNum, out var pageImgs) && pageImgs.Count > 0)
             {
                 string contentLower = q.Content.ToLowerInvariant();
+
+                // Không gán ảnh nếu là câu hỏi có bảng biểu / chart
+                bool isChartOrTable = contentLower.Contains("biểu đồ") || 
+                                      contentLower.Contains("bảng số liệu") ||
+                                      q.Content.Contains("| --- |");
+                if (isChartOrTable) continue;
+
+                // Chỉ gán ảnh cho đồ thị tọa độ dao động điều hòa, dụng cụ gương, hình chụp thực tế, hình học
                 bool hasFigureKeyword = contentLower.Contains("hình") || 
                                        contentLower.Contains("đồ thị") || 
-                                       contentLower.Contains("biểu đồ") || 
                                        contentLower.Contains("dụng cụ") ||
                                        contentLower.Contains("sơ đồ") ||
                                        contentLower.Contains("[hình vẽ]");

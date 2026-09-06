@@ -1097,11 +1097,12 @@
         const text = node.textContent || '';
         
         // 1. Kiểm tra Biểu đồ cột (Bar chart - ví dụ câu 61-63)
-        const barMatch = text.match(/(?:\[Hình vẽ\]:?\s*)?(Biểu đồ cột[^\n:]*):\s*([^\n\)]+)/i);
+        const barMatch = text.match(/(?:\[Hình vẽ\]:?\s*)?(Biểu đồ cột[^\n:]*?):\s*([^\n]+)/i);
         if (barMatch && !node.dataset.chartRendered) {
           node.dataset.chartRendered = 'true';
           const chartTitle = barMatch[1].trim();
-          const { labels, values } = parseChartData(barMatch[2].trim());
+          const cleanDataStr = barMatch[2].trim().replace(/\)+$/, '');
+          const { labels, values } = parseChartData(cleanDataStr);
 
           if (labels.length >= 2) {
             const chartId = 'chart-' + Math.random().toString(36).substr(2, 9);
@@ -1187,11 +1188,12 @@
         }
 
         // 2. Kiểm tra Biểu đồ hình tròn (Pie/Doughnut chart - ví dụ câu 68-70)
-        const pieMatch = text.match(/(?:\[Hình vẽ\]:?\s*)?(Biểu đồ (?:hình tròn|tròn)[^\n:]*):\s*([^\n\)]+)/i);
+        const pieMatch = text.match(/(?:\[Hình vẽ\]:?\s*)?(Biểu đồ (?:hình tròn|tròn)[^\n:]*?):\s*([^\n]+)/i);
         if (pieMatch && !node.dataset.chartRendered) {
           node.dataset.chartRendered = 'true';
           const chartTitle = pieMatch[1].trim();
-          const { labels, values } = parseChartData(pieMatch[2].trim());
+          const cleanDataStr = pieMatch[2].trim().replace(/\)+$/, '');
+          const { labels, values } = parseChartData(cleanDataStr);
 
           if (labels.length >= 2) {
             const chartId = 'chart-' + Math.random().toString(36).substr(2, 9);
@@ -1763,7 +1765,15 @@
           
           let pImagesHtml = '';
           const pImgUrl = p.image_url || p.imageUrl;
-          if (pImgUrl) {
+          const pContentLower = (p.content || '').toLowerCase();
+          const isChartOrTable = pContentLower.includes('biểu đồ cột') || 
+                                 pContentLower.includes('biểu đồ tròn') || 
+                                 pContentLower.includes('biểu đồ hình tròn') || 
+                                 pContentLower.includes('bảng số liệu') ||
+                                 (p.content || '').includes('| --- |') ||
+                                 (p.content || '').includes('<table');
+
+          if (pImgUrl && !isChartOrTable) {
             pImagesHtml = `
               <div class="passage-figure-box" style="margin: 14px 0 16px 0; text-align: center; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 10px; padding: 14px; max-width: 720px;">
                 <img src="${pImgUrl}" alt="Sơ đồ/Hình vẽ minh họa chùm bài" style="max-width: 100%; border-radius: 6px; display: inline-block; cursor: zoom-in; box-shadow: 0 4px 14px rgba(0,0,0,0.5);" onclick="openImageModal(this.src)" />
@@ -1856,7 +1866,13 @@
 
       let qImagesHtml = '';
       const qImgUrl = q.image_url || q.imageUrl;
-      if (qImgUrl) {
+      const qContentLower = (q.content || '').toLowerCase();
+      const isQChartOrTable = qContentLower.includes('biểu đồ') || 
+                              qContentLower.includes('bảng số liệu') ||
+                              (q.content || '').includes('| --- |') ||
+                              (q.content || '').includes('<table');
+
+      if (qImgUrl && !isQChartOrTable) {
         qImagesHtml = `
           <div class="question-figure-box" style="margin: 12px 0 16px 0; text-align: center; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 10px; padding: 14px; max-width: 600px;">
             <img src="${qImgUrl}" alt="Đồ thị/Hình vẽ minh họa" style="max-width: 100%; border-radius: 6px; display: inline-block; cursor: zoom-in; box-shadow: 0 4px 14px rgba(0,0,0,0.5);" onclick="openImageModal(this.src)" />
