@@ -692,6 +692,19 @@
       background: rgba(30, 41, 59, 0.65);
     }
 
+    /* Ngăn KaTeX MathML bị nhân đôi ký tự khi bôi đen / copy text */
+    .katex-mathml {
+      clip: rect(1px, 1px, 1px, 1px) !important;
+      clip-path: inset(50%) !important;
+      height: 1px !important;
+      overflow: hidden !important;
+      position: absolute !important;
+      white-space: nowrap !important;
+      width: 1px !important;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+    }
+
     /* Interactive Chart Box */
     .chart-box {
       margin: 20px auto;
@@ -982,8 +995,64 @@
       return trimmed.includes('|') && (trimmed.split('|').length >= 3 || /^[\|\s\-:]+$/.test(trimmed));
     }
 
+    function sanitizeMathAndLatex(text) {
+      if (!text) return '';
+      let s = text;
+
+      // 1. Phục hồi các ký tự điều khiển ASCII bị nuốt do JSON decode (\f -> \frac, \t -> \times, \b -> \bar)
+      s = s.replace(/\x0crac/g, '\\frac');
+      s = s.replace(/\x09imes/g, '\\times');
+      s = s.replace(/\x09ext/g, '\\text');
+      s = s.replace(/\x08ar/g, '\\bar');
+      s = s.replace(/\x08eta/g, '\\beta');
+      s = s.replace(/\x09heta/g, '\\theta');
+      s = s.replace(/\x09au/g, '\\tau');
+
+      // 2. Sửa lỗi OCR nhìn nhầm ký hiệu biến thiên Delta (∆) thành ar{ ext{A}} hoặc \bar{\text{A}}
+      s = s.replace(/ar\{\s*ext\{A\}\}/g, '\\Delta');
+      s = s.replace(/\\bar\{\\text\{A\}\}/g, '\\Delta');
+      s = s.replace(/\\bar\{A\}/g, '\\Delta');
+      s = s.replace(/\[\s*ext\{([^}]+)\}\]/g, '[\\text{$1}]');
+      s = s.replace(/∆/g, '\\Delta');
+
+      // 3. Chuẩn hóa công thức tốc độ phản ứng (Câu 93)
+      s = s.replace(/R\s*=\s*-?\\Delta\s*\[\\text\{([^}]+)\}\]\s*\/\s*\\Delta\s*([a-zA-Z]+)/g, 
+        '$$R = -\\frac{\\Delta[\\text{$1}]}{\\Delta $2}$$');
+      s = s.replace(/R\s*=\s*-?\\Delta\s*\[([^\]]+)\]\s*\/\s*\\Delta\s*([a-zA-Z]+)/g, 
+        '$$R = -\\frac{\\Delta[\\text{$1}]}{\\Delta $2}$$');
+
+      // Bọc (\Delta[\text{Acetone}]) và (\Delta t)
+      s = s.replace(/\(\\Delta\s*\[\\text\{([^}]+)\}\]\)/g, '($$\\Delta[\\text{$1}]$$)');
+      s = s.replace(/\(\\Delta\s*\[([^\]]+)\]\)/g, '($$\\Delta[\\text{$1}]$$)');
+      s = s.replace(/\(\\Delta\s*([a-zA-Z]+)\)/g, '($$\\Delta $1$$)');
+
+      // 4. Chuẩn hóa công thức hiệu suất truyền tải điện
+      s = s.replace(/(?:^|\n|\s)(H\s*=\s*(?:\\frac|rac)?\{?P_?n?\s*-\s*P_?\{?hp\}?\}?\{?P_?n?\}?(?:\s*(?:\\times|imes)?\s*100\\?%)?)(?=\s|\.|\n|$)/g, () => {
+        return ` $$H = \\frac{P_n - P_{hp}}{P_n} \\times 100\\%$$ `;
+      });
+
+      // 5. Đơn vị hóa học/vật lý có số mũ âm như 2,33.10-3 mol.l-1.phút-1
+      s = s.replace(/(\d+[\.,]\d+)\.10-(\d+)\s*mol\.l-1\.phút-1/g, '$$$1 \\cdot 10^{-$2}\\text{ mol}\\cdot\\text{l}^{-1}\\cdot\\text{phút}^{-1}$$');
+      s = s.replace(/(\d+[\.,]\d+)\s*mol\.l-1\.phút-1/g, '$$$1\\text{ mol}\\cdot\\text{l}^{-1}\\cdot\\text{phút}^{-1}$$');
+
+      // 6. Xử lý các đại lượng ngoài vùng $: P_{hp}, P_n, k^2
+      const parts = s.split(/(\$\$[\s\S]*?\$\$|\$[^\$]+?\$)/g);
+      for (let i = 0; i < parts.length; i++) {
+        if (i % 2 === 0) {
+          parts[i] = parts[i]
+            .replace(/(?<![a-zA-Z0-9_\$])(P_\{hp\}|P_hp)(?![a-zA-Z0-9_\$])/g, '$$P_{hp}$$')
+            .replace(/(?<![a-zA-Z0-9_\$])(P_\{n\}|P_n)(?![a-zA-Z0-9_\$])/g, '$$P_n$$')
+            .replace(/(?<![a-zA-Z0-9_\$])(k\^2)(?![a-zA-Z0-9_\$])/g, '$$k^2$$');
+        }
+      }
+      s = parts.join('');
+
+      return s;
+    }
+
     function markdownToHtml(text) {
       if (!text) return '';
+      text = sanitizeMathAndLatex(text);
 
       // 1. Tự động phát hiện và chuyển đổi khối bảng Markdown sang HTML Table (hỗ trợ cả có và không có dấu | ở hai đầu)
       const lines = text.split('\n');

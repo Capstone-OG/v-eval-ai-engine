@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using V_Eval_Ai_Engine.Application.DTOs;
@@ -36,9 +37,12 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
 3. ĐẶC BIỆT LƯU Ý VỀ CÁC PHƯƠNG ÁN GÂY NHIỄU (BẪY TOÁN HỌC TRẮC NGHIỆM):
    - Trong đề thi trắc nghiệm, tác giả thường cố tình tạo ra các PHƯƠNG ÁN SAI / BẪY TOÁN HỌC để thử thách học sinh (Ví dụ: đưa dấu giá trị tuyệt đối ra bên NGOÀI tích phân: \left| \int_{-1}^1 (x^3 - x) dx \right|).
    - BẠN LÀ MÁY QUÉT, KHÔNG ĐƯỢC 'SỬA SAI GIÙM TÁC GIẢ'! Thấy hai thanh gạch dọc đứng |...| ở hai đầu tích phân thì BẮT BUỘC chép đúng dấu giá trị tuyệt đối: \left| \int_{-1}^1 (x^3 - x) dx \right|, TUYỆT ĐỐI KHÔNG ĐƯỢC tự ý đổi thành ngoặc đơn hay tự giải toán chia tách tích phân ra các cận [-1;0] và [0;1].
-4. CHUYỂN ĐỔI CÔNG THỨC TOÁN HỌC SANG LATEX:
-   - Mọi biểu thức toán học, hàm số, phương trình, tọa độ, biến số (kể cả chữ đơn lẻ như x, y, z, m) BẮT BUỘC phải được bao bọc bởi một cặp dấu đô-la đơn $...$.
-   - Sử dụng đúng cú pháp LaTeX chuẩn: \le, \ge, \frac{a}{b}, x^2, m_0, \log_2, \int, \pi...
+4. CHUYỂN ĐỔI CÔNG THỨC TOÁN HỌC, VẬT LÝ, HÓA HỌC SANG LATEX:
+   - Mọi biểu thức toán học, vật lý, hóa học, hàm số, phương trình, tọa độ, biến số (kể cả chữ đơn lẻ như x, y, z, m, P_n, P_{hp}, k^2) BẮT BUỘC phải được bao bọc bởi một cặp dấu đô-la đơn $...$.
+   - CÁC CÔNG THỨC VẬT LÝ / HÓA HỌC DÀI (Hiệu suất truyền tải điện, Tốc độ phản ứng...): BẮT BUỘC bao bọc bằng dấu $: $H = \frac{P_n - P_{hp}}{P_n} \times 100\%$, $R = -\frac{\Delta[\text{Acetone}]}{\Delta t}$. TUYỆT ĐỐI KHÔNG để công thức trần trụi ngoài dấu $.
+   - KÝ HIỆU BIẾN THIÊN DELTA (\Delta): Ký hiệu tam giác ∆ BẮT BUỘC viết là $\Delta$ (ví dụ: $\Delta[\text{Acetone}]$, $\Delta t$). TUYỆT ĐỐI KHÔNG ĐƯỢC nhìn nhầm ký hiệu tam giác ∆ thành chữ A hay \bar{A} hay \bar{\text{A}}!
+   - ĐƠN VỊ CÓ SỐ MŨ ÂM: Ví dụ mol.l-1.phút-1 hay 10-3 BẮT BUỘC định dạng LaTeX chuẩn: $2,33 \cdot 10^{-3}\text{ mol}\cdot\text{l}^{-1}\cdot\text{phút}^{-1}$.
+   - NGUYÊN TẮC THOÁT KÝ TỰ JSON: Trong JSON, BẮT BUỘC sử dụng hai dấu gạch chéo ngược (\\) cho tất cả các lệnh LaTeX (\\frac, \\times, \\Delta, \\text, \\bar, \\le, \\ge...) để tránh bị JSON Parser hiểu nhầm thành ký tự điều khiển.
 5. CÂU HỎI TIẾNG ANH TÌM LỖI SAI (GẠCH CHÂN):
    - Ở các câu hỏi gạch chân tương ứng với lựa chọn A, B, C, D, hãy bao bọc từ/cụm từ được gạch chân bằng thẻ <u>...</u> kèm ký hiệu tương ứng (Ví dụ: <u>word</u> (A)).
 6. HÌNH VẼ / BIỂU ĐỒ / ĐỒ THỊ / ẢNH MINH HỌA & BẢNG SỐ LIỆU:
@@ -433,6 +437,7 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
                     string? gptResult = await TryCallOpenAiAsync(gptModel, openAiKey, base64Data, cancellationToken);
                     if (!string.IsNullOrWhiteSpace(gptResult))
                     {
+                        gptResult = SanitizeJsonForLatex(gptResult);
                         try
                         {
                             var testParsed = JsonSerializer.Deserialize<ParsedExamDto>(gptResult, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -542,6 +547,7 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
                                     string textVal = textProp.GetString() ?? string.Empty;
                                     if (!string.IsNullOrWhiteSpace(textVal) && textVal != "{}")
                                     {
+                                        textVal = SanitizeJsonForLatex(textVal);
                                         try
                                         {
                                             var testParsed = JsonSerializer.Deserialize<ParsedExamDto>(textVal, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -628,8 +634,11 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
             PropertyNameCaseInsensitive = true
         };
 
+        rawJsonText = SanitizeJsonForLatex(rawJsonText);
         var parsedResult = JsonSerializer.Deserialize<ParsedExamDto>(rawJsonText, options)
             ?? new ParsedExamDto();
+
+        CleanExamDto(parsedResult);
 
         parsedResult.Format = "V-ACT Exam";
         parsedResult.FileName = fileName;
@@ -741,6 +750,74 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
             if (File.Exists(tempFile))
             {
                 try { File.Delete(tempFile); } catch { }
+            }
+        }
+    }
+
+    private static string SanitizeJsonForLatex(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return json;
+
+        // 1. Khôi phục các ký tự điều khiển ASCII bị nuốt do unescaped backslashes
+        var result = json.Replace("\x0crac", "\\\\frac")
+                         .Replace("\x09imes", "\\\\times")
+                         .Replace("\x09ext", "\\\\text")
+                         .Replace("\x08ar", "\\\\bar")
+                         .Replace("\x08eta", "\\\\beta");
+
+        // 2. Chuyển các lệnh LaTeX unescaped \frac, \times, \text, \Delta, \bar thành \\frac, \\times...
+        result = Regex.Replace(result, @"(?<!\\)\\(frac|times|text|Delta|bar|beta|theta|tau|rho|right|left|le|ge|cdot|mu|omega|alpha|sigma|pi)(?=[^a-zA-Z]|$)", "\\\\$1");
+
+        // 3. Sửa lỗi tam giác Delta bị nhầm thành ar{ ext{A}}
+        result = Regex.Replace(result, @"ar\{\s*ext\{A\}\}", "\\\\Delta");
+        result = Regex.Replace(result, @"\\bar\{\\text\{A\}\}", "\\\\Delta");
+        result = Regex.Replace(result, @"\\bar\{A\}", "\\\\Delta");
+        result = result.Replace("∆", "\\\\Delta");
+
+        return result;
+    }
+
+    private static string CleanLatexString(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return text ?? string.Empty;
+        var s = text;
+        s = s.Replace("\x0crac", "\\frac")
+             .Replace("\x09imes", "\\times")
+             .Replace("\x09ext", "\\text")
+             .Replace("\x08ar", "\\bar")
+             .Replace("\x08eta", "\\beta");
+
+        s = Regex.Replace(s, @"ar\{\s*ext\{A\}\}", "\\Delta");
+        s = Regex.Replace(s, @"\\bar\{\\text\{A\}\}", "\\Delta");
+        s = Regex.Replace(s, @"\\bar\{A\}", "\\Delta");
+        s = s.Replace("∆", "\\Delta");
+
+        return s;
+    }
+
+    private static void CleanExamDto(ParsedExamDto exam)
+    {
+        if (exam == null) return;
+        foreach (var p in exam.Passages)
+        {
+            p.Content = CleanLatexString(p.Content);
+            foreach (var q in p.Questions)
+            {
+                q.Content = CleanLatexString(q.Content);
+                if (q.Options != null)
+                {
+                    var keys = q.Options.Keys.ToList();
+                    foreach (var k in keys) q.Options[k] = CleanLatexString(q.Options[k]);
+                }
+            }
+        }
+        foreach (var q in exam.SingleQuestions)
+        {
+            q.Content = CleanLatexString(q.Content);
+            if (q.Options != null)
+            {
+                var keys = q.Options.Keys.ToList();
+                foreach (var k in keys) q.Options[k] = CleanLatexString(q.Options[k]);
             }
         }
     }
