@@ -46,7 +46,9 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
      + Khi câu hỏi trắc nghiệm hỏi về tên gọi, bản chất hoặc công dụng của đối tượng trong hình ảnh, phần mô tả trong nội dung câu hỏi CHỈ ĐƯỢC mô tả trung tính đặc điểm trực quan/hiện tượng.
      + TUYỆT ĐỐI KHÔNG ĐƯỢC dùng từ ngữ trùng với đáp án đúng của câu hỏi! Ví dụ: Nếu câu hỏi hỏi 'Dụng cụ đó là gì?' và có đáp án 'Gương cầu lồi', BẮT BUỘC chỉ ghi trung tính: '([Hình vẽ]: Thiết bị dạng mặt gương gắn tại khúc cua đường đèo)', TUYỆT ĐỐI KHÔNG ĐƯỢC ghi chữ 'Gương cầu lồi' vào phần câu hỏi!
      + Tương tự với các thí nghiệm Hóa học / Sinh học: Chỉ mô tả hiện tượng/sơ đồ thí nghiệm trung tính, không kết luận thay cho các phương án trắc nghiệm.
-   - BẢNG SỐ LIỆU: BẮT BUỘC định dạng bảng dưới dạng Markdown Table chuẩn (| Cột 1 | Cột 2 | ...) với đầy đủ tất cả các hàng và các cột, không được bỏ sót bất kỳ ô dữ liệu nào.
+   - BẢNG SỐ LIỆU:
+     + Với bảng cơ bản: Định dạng bảng dưới dạng Markdown Table chuẩn (| Cột 1 | Cột 2 | ...) với đầy đủ tất cả các hàng và các cột, không được bỏ sót bất kỳ ô dữ liệu nào.
+     + Với bảng có tiêu đề 2 tầng hoặc ô gộp (ví dụ: tiêu đề lớn 'Số giờ chiếu sáng vào ban đêm (giờ)' bao phủ các cột con '0,5', '1', '2', '3', '4', '5'): Có thể xuất dưới dạng thẻ HTML <table> chuẩn mực có rowspan và colspan (ví dụ <th rowspan=""2"">, <th colspan=""6"">) để bảo toàn 100% cấu trúc bảng hình học, TUYỆT ĐỐI KHÔNG ghép nối tiêu đề cha vào một ô con đơn lẻ (như 'Tiêu đề: 0,5') làm các cột khác bị trơ trọi mất ngữ cảnh.
    - BIỂU ĐỒ (Cột, Tròn, Đường): Ghi rõ loại biểu đồ và liệt kê đầy đủ tên nhãn kèm số liệu phần trăm hoặc giá trị (ví dụ: *([Hình vẽ]: Biểu đồ cột biểu diễn tỷ lệ chi phí: Đầu tư 20%, Vận chuyển 12,5%...)* hoặc *([Hình vẽ]: Biểu đồ hình tròn thể hiện Doanh thu: A (22%), B (26%)...)*) để hệ thống tự động vẽ lại biểu đồ tương tác.
    - HÌNH HỌC / ĐỒ THỊ HÀM SỐ: Mô tả chi tiết hình dạng, đỉnh, trục tọa độ, tiệm cận và các điểm đặc biệt.
 7. CHÙM BÀI ĐỌC (PASSAGES) & CÂU ĐỘC LẬP (SINGLE QUESTIONS):
