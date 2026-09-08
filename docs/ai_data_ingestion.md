@@ -196,4 +196,50 @@ Thay vì bắt Cloud AI Gemini Vision phải gánh việc phát hiện toạ đ�
 * **Giải pháp**: Thiết lập điều luật nghiêm ngặt trong System Prompt Rule 6:
   > *"Khi câu hỏi trắc nghiệm hỏi về tên gọi, bản chất hoặc công dụng của đối tượng trong hình ảnh, phần mô tả trong nội dung câu hỏi CHỈ ĐƯỢC mô tả trung tính đặc điểm trực quan/hiện tượng. TUYỆT ĐỐI KHÔNG ĐƯỢC dùng từ ngữ trùng với đáp án đúng của câu hỏi! (Ví dụ: Ghi trung tính '([Hình vẽ]: Thiết bị dạng mặt gương gắn tại khúc cua đường đèo)', tuyệt đối không ghi 'Gương cầu lồi')."*
 
+---
 
+## 8. Phân Tuyến Thông Minh Bộ Trích Xuất Ảnh & Tối Ưu Hóa Chart.js (Cập nhật 06/09/2026)
+
+### 8.1. Bộ lọc Thông minh `isChartOrTable`
+* **Vấn đề trước ngày 06/09**: Bộ trích xuất ảnh cục bộ cắt tất cả các ảnh trên trang, vô tình cắt luôn các biểu đồ cột/tròn và bảng số liệu và gán đè lên giao diện, che mất Canvas Chart.js tương tác và bảng HTML.
+* **Giải pháp**: Bổ sung bộ lọc kiểm tra nội dung trong `PdfImageExtractor.cs`:
+  ```csharp
+  bool isChartOrTable = contentLower.Contains("biểu đồ cột") || 
+                        contentLower.Contains("biểu đồ tròn") || 
+                        contentLower.Contains("biểu đồ hình tròn") || 
+                        contentLower.Contains("bảng số liệu") ||
+                        passage.Content.Contains("| --- |");
+  if (isChartOrTable) continue; // Giữ nguyên Canvas Chart.js & HTML Table, không cắt ảnh
+  ```
+* **Mục tiêu cắt ảnh được thu hẹp chính xác**:
+  - Đồ thị tọa độ dao động điều hòa $a-x$ (Câu 75).
+  - Hình chụp thực tế thiết bị gương cong tại khúc cua đường đèo (Câu 78).
+  - Chuỗi sơ đồ thí nghiệm liên hoàn ghép tế bào tảo (Chùm 106–108).
+
+### 8.2. Sửa lỗi Regex Bóc tách Biểu đồ Lồng Dấu Ngoặc Đơn
+* **Vấn đề**: Khi nhãn của biểu đồ tròn hoặc cột chứa dấu ngoặc đơn (ví dụ: `Đầu tư (20%)`), regex cũ dừng sớm ở dấu `)` đầu tiên, làm mất các danh mục tiếp theo.
+* **Giải pháp**: Tối ưu hóa Regex trong `view-exam.html` để bao quát toàn bộ danh mục, bóc tách chính xác 100% dữ liệu nhãn và số liệu phần trăm.
+
+---
+
+## 9. Bộ Lọc Tiền & Hậu Xử Lý Công Thức Toán - Lý - Hóa & Tái Tạo Bảng 2 Tầng (Cập nhật 07/09/2026)
+
+### 9.1. Khôi phục Ký tự Thoát JSON & Ký hiệu Delta ($\Delta$)
+* **Lỗi nuốt ký tự điều khiển ASCII**: Khi Gemini trả về JSON, các lệnh LaTeX như `\frac`, `\times`, `\text`, `\bar`, `\beta` nếu thiếu dấu gạch chéo ngược thứ hai sẽ bị JSON parser của C# nuốt thành các ký tự điều khiển `\x0c`, `\x09`, `\x08`.
+  - Bộ lọc `SanitizeJsonForLatex` rà soát chuỗi JSON trước khi deserialize:
+    ```csharp
+    result = result.Replace("\x0crac", "\\\\frac")
+                   .Replace("\x09imes", "\\\\times")
+                   .Replace("\x09ext", "\\\\text")
+                   .Replace("\x08ar", "\\\\bar");
+    ```
+* **Sửa lỗi nhận diện nhầm ký hiệu $\Delta$**: Khắc phục OCR nhìn nhầm tam giác biến thiên $\Delta$ thành `ar{ ext{A}}` hoặc `\bar{\text{A}}` đưa về `\Delta` chuẩn mực.
+* **Tự động bọc dấu `$...$`**: Tự động phát hiện các công thức Vật lý/Hóa học dài (hiệu suất truyền tải điện, tốc độ phản ứng) và đơn vị số mũ âm ($2,33 \cdot 10^{-3}\text{ mol}\cdot\text{l}^{-1}\cdot\text{phút}^{-1}$) để bọc thẻ KaTeX.
+* **Chống lỗi nhân đôi chữ KaTeX**: Thêm CSS `.katex-mathml { user-select: none; }` để loại bỏ việc copy dính đúp văn bản ẩn MathML.
+
+### 9.2. Thuật toán Tái Tạo Bảng Tiêu Đề 2 Tầng (`Colspan` / `Rowspan`)
+* **Vấn đề**: Các bảng số liệu phức tạp (như Chùm 109–111) có tiêu đề lớn *"Số giờ chiếu sáng vào ban đêm (giờ): 0,5"* bao trùm 5 cột con *"1, 2, 3, 4, 5"*. Nếu để Markdown thô thì các cột con bị trơ trọi mất ngữ cảnh cha.
+* **Giải pháp**: Nâng cấp hàm `convertMarkdownTableToHtml`:
+  - Phân tích hàng tiêu đề chứa dấu `:` phân cách.
+  - Tự động dựng `<thead>` 2 tầng với `rowspan="2"` cho cột danh mục đầu tiên và `colspan="6"` cho ô tiêu đề cha.
+  - Kẻ viền ô dạng lưới sắc nét `1px solid #334155` qua class `.exam-table`.
