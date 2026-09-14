@@ -6,13 +6,12 @@ obj/
 *.user
 *.suo
 
-# Configuration overrides (prevent API key leakage)
-appsettings.Development.json
-appsettings.local.json
-appsettings.json.user
+# Ignore sensitive appsettings configuration files in production
+**/appsettings.json
+**/appsettings.*.json
+!**/appsettings.example.json
 
 # Uploaded test and preview files
 **/wwwroot/uploads/*.pdf
 **/wwwroot/extracted_images/*
 !**/wwwroot/extracted_images/.gitkeep
-
