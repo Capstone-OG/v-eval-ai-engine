@@ -4,6 +4,20 @@ Tài liệu này dùng để cập nhật tiến độ phát triển thực tế
 
 ---
 
+## 📅 Cập nhật ngày 15/09/2026
+
+### 🎯 Mục tiêu hiện tại (Milestone 5 - Docker Containerization)
+Tạo Dockerfile Multi-stage cho AI Engine (Cổng `:5104`) và tích hợp vào `docker-compose.yml` toàn hệ thống V-Eval.
+
+### 📋 Danh sách Task & Trạng thái
+
+| Tên Task | Trạng thái | Ghi chú |
+| :--- | :---: | :--- |
+| **Tạo `Dockerfile` Multi-stage** | 🟢 Hoàn thành | Build và publish .NET 9 API image trên cổng `5104`. |
+| **Tích hợp Docker Compose** | 🟢 Hoàn thành | Khai báo container `v_eval_ai_engine` tham gia mạng `veval_network`. |
+
+---
+
 ## 📅 Cập nhật ngày 14/09/2026
 
 ### 🎯 Mục tiêu hiện tại (Milestone 4 - Production Security & Config)
@@ -38,5 +52,33 @@ Khắc phục triệt để các lỗi hiển thị công thức Vật lý & Hó
 
 ---
 
-## 📅 Cập nhật ngày 30/08/2026 & 31/08/2026
-*(Xem chi tiết ở các phiên bản lưu trữ trước)*
+## 📅 Cập nhật ngày 31/08/2026
+
+### 🎯 Mục tiêu hiện tại (Milestone 2)
+Tối ưu hóa luồng trích xuất đề thi PDF với Gemini Vision OCR cloud (bản ổn định), đảm bảo tính an toàn chống lộ API Key khi push git, và liên thông lưu dữ liệu sang Content Service Database.
+
+### 📋 Danh sách Task & Trạng thái
+
+| Tên Task | Trạng thái | Ghi chú |
+| :--- | :---: | :--- |
+| **Bảo mật API Key (Leak-proof configuration)** | 🟢 Hoàn thành | Cấu hình `.gitignore` chặn `appsettings.Development.json` và dùng các placeholder an toàn trong `appsettings.json`. |
+| **Tối ưu hóa Ingestion (Raw PDF Base64)** | 🟢 Hoàn thành | Thay vì chuyển sang ảnh PNG (CPU lag 3 phút), gửi trực tiếp PDF base64 sang Gemini để xử lý tức thì (<15s) bằng mô hình ổn định `gemini-2.5-flash`. |
+| **Đồng bộ hóa Progress Logging** | 🟢 Hoàn thành | Thêm logs thời gian thực trong Python (`parse_single_pdf.py`) báo cáo kích thước file và tiến trình tải lên. |
+| **Tích hợp Frontend & Content Service** | 🟢 Hoàn thành | Nút "Lưu vào Database" trên UI `view-exam.html` gọi sang Minimal API `POST /api/content/exams/import` của Content Service để lưu dữ liệu. |
+
+---
+
+## 📅 Cập nhật ngày 30/08/2026
+
+### 🎯 Mục tiêu hiện tại (Milestone 1)
+Triển khai tính năng **2 chiều**: đọc tệp đề thi dạng PDF ở Backend và hiển thị dữ liệu trích xuất được ở API để phục vụ cho các service khác / frontend hiển thị lên.
+
+### 📋 Danh sách Task & Trạng thái
+
+| Tên Task | Trạng thái | Ghi chú |
+| :--- | :---: | :--- |
+| **Tạo tài liệu quản lý tiến độ (.md)** | 🟢 Hoàn thành | Tạo file này và file `ai_data_ingestion.md`. |
+| **Viết bộ parse tài liệu Python (`document_parser.py`)** | 🟢 Hoàn thành | Hỗ trợ đọc PDF (`pypdf`), DOCX (`python-docx`), DOC cũ (COM), Image metadata (`Pillow`). |
+| **Tạo endpoint API hiển thị (`GET /api/ai-engine/parsed-document`)** | 🟢 Hoàn thành | Trả dữ liệu JSON trích xuất từ C# Web API. |
+| **Tạo API Upload PDF trực tiếp (`POST /api/ai-engine/upload-pdf`)** | 🟢 Hoàn thành | Cho phép upload file PDF từ browser/Swagger và parse toàn bộ nội dung. |
+| **Tạo trang UI hiển thị trực quan (`/api/ai-engine/view-exam`)** | 🟢 Hoàn thành | Tách code giao diện ra tệp tĩnh `wwwroot/view-exam.html` riêng biệt, gọi API trích xuất và hiển thị kèm LaTeX. |
