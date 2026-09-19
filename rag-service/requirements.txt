@@ -1,0 +1,29 @@
+# ============================================================
+# Conversational RAG — Python Dependencies
+# ============================================================
+
+# LangChain core & LCEL
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-text-splitters>=0.3.0
+langchain-community>=0.3.0
+
+# Google Gemini integration (LLM + Embeddings)
+langchain-google-genai>=2.0.0
+
+# PostgreSQL + pgvector vector store
+langchain-postgres>=0.0.12
+psycopg[binary]>=3.1.0
+pgvector>=0.3.0
+
+# Document loaders
+pypdf>=4.0.0
+docx2txt>=0.8
+
+# Environment management
+python-dotenv>=1.0.0
+
+# FastAPI web server
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+python-multipart>=0.0.9
