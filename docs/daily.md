@@ -1,5 +1,14 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [21/09/2026] - Thiết Kế Kiến Trúc AI Exam Generation (30 Câu), Multi-Domain RAG & Quy Trình Duyệt Linh Hoạt
+- **Lập Kế Hoạch Kiến Trúc ([ai_question_generation_rag_approval_plan.md](./ai_question_generation_rag_approval_plan.md))**:
+  - Thiết kế chi tiết luồng sinh đề thi 30 câu bất đồng bộ, lưu DB trạng thái `PENDING_APPROVAL`.
+  - Thiết kế mô hình `KnowledgeVectorChunks` (`pgvector`) phân loại theo Môn học (`domain_id`) và Kỹ năng (`skill_id`).
+  - Thiết kế cơ chế Dynamic Web Search (Hybrid Search) kết hợp SGK nội bộ và tin tức thời sự mở rộng.
+  - Cấu hình API sinh 1 câu thay thế tương tương trong 1-2 giây và cho phép Manager linh hoạt tinh chỉnh độ khó/bước tính toán (`difficulty_level`).
+
+---
+
 ## [18/09/2026] - Phát Hành Công Cụ Push Độc Lập `Scripts/push.bat` & Chuẩn Hóa Bộ Docs
 - **Khởi Tạo `Scripts/push.bat`**: Đóng gói công cụ push độc lập hỗ trợ 3 chế độ (nhánh hiện tại, danh sách số nhánh có sẵn, tạo nhánh mới).
 - **Chuẩn Hóa Bộ Docs Service**: Đồng bộ hệ thống tài liệu theo 3 file chuẩn `daily.md`, `process.md` và `architecture_acceptance.md`.
