@@ -17,6 +17,7 @@
   - 10/10 test cases đơn vị và tích hợp HTTP endpoint đạt 100% PASS.
   - Tích hợp và kiểm thử End-to-End thực tế thành công với Practice Service (`POST /api/v1/practice/diagnostic-submissions`).
 - **Cập Nhật Tài Liệu Service**:
+  - Ban hành tài liệu chuyên sâu: [`docs/cong_thuc_psychometrics_irt_bkt.md`](./docs/cong_thuc_psychometrics_irt_bkt.md) tổng hợp toàn bộ 9 mô hình toán học, công thức và lý do lựa chọn trong Psychometrics Engine.
   - Cập nhật [`docs/daily.md`](./docs/daily.md), [`docs/process.md`](./docs/process.md) và [`docs/architecture_acceptance.md`](./docs/architecture_acceptance.md).
 
 ## [21/09/2026] - Thiết Kế Kiến Trúc AI Exam Generation (30 Câu), Vector RAG Môn/Skill & Duyệt Đề Thi Linh Hoạt

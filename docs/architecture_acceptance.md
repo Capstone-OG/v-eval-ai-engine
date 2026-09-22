@@ -23,6 +23,7 @@
   - Unhappy case tolerance: untested skills seamlessly inherit inferred priors from their parent competency domain.
   - Placement tiers: `FOUNDATION` (`theta < -0.5`), `ACCELERATION` (`-0.5 <= theta <= 0.5`), `BREAKTHROUGH` (`theta > 0.5`).
   - Radar chart coordinates: student domain percentages vs benchmark targets calculated from the student's expected V-ACT score.
-  - Socratic pedagogical commentary dynamically generated via Google Gemini (`gemini-3.5-flash`) with robust fallback.
+  - Socratic pedagogical commentary dynamically generated via Google Gemini (`gemini-3.6-flash`) with robust fallback.
 - **Verification Results**:
-  - 10/10 automated tests passing with 100% success rate (`tests/test_diagnostic.py`), covering math kernels and live FastAPI REST endpoints.
+  - 12/12 automated tests passing with 100% success rate (`tests/test_diagnostic.py`), covering math kernels and live FastAPI REST endpoints.
+  - Comprehensive mathematical specifications published at `docs/cong_thuc_psychometrics_irt_bkt.md`.
