@@ -177,3 +177,131 @@ class HealthResponse(BaseModel):
     embedding_model: str = Field(..., description="Configured Gemini embedding model")
     total_active_chunks: int = Field(..., description="Active vector chunks currently serving RAG")
     total_documents: int = Field(..., description="Total logical documents in catalog")
+
+
+# ---------------------------------------------------------------------------
+# Diagnostic Analysis Schemas (Core Flow 1 — Step 4)
+# ---------------------------------------------------------------------------
+
+
+class DiagnosticAnswerItem(BaseModel):
+    """A single student answer from the 30-question diagnostic test."""
+
+    question_id: str = Field(..., description="UUID of the question")
+    skill_id: str = Field(..., description="UUID of the skill this question tests")
+    domain_id: str = Field(
+        default="",
+        description="UUID of the competency domain. If empty, server looks it up.",
+    )
+    difficulty_level: int = Field(
+        ..., ge=1, le=4,
+        description="Item difficulty: 1=Easy, 2=Medium, 3=Hard, 4=Very Hard",
+    )
+    is_correct: bool = Field(..., description="Whether the student answered correctly")
+    time_spent_seconds: int = Field(
+        ..., ge=0,
+        description="Time the student spent on this question (seconds)",
+    )
+
+
+class DiagnosticDomainName(BaseModel):
+    """Mapping of domain_id to display name."""
+
+    domain_id: str = Field(..., description="UUID of the competency domain")
+    domain_name: str = Field(..., description="Display name (e.g. 'Toán học & Giải tích')")
+
+
+class DiagnosticAnalyzeRequest(BaseModel):
+    """Request payload for POST /api/v1/diagnostic/analyze."""
+
+    student_id: str = Field(..., description="UUID of the student")
+    submission_id: str = Field(..., description="UUID of the diagnostic submission")
+    target_score: int = Field(
+        default=800, ge=0, le=1200,
+        description="Student's target V-ACT score (0–1200, default 800)",
+    )
+    answers: list[DiagnosticAnswerItem] = Field(
+        ..., min_length=1,
+        description="List of 30 diagnostic test answers",
+    )
+    domain_names: list[DiagnosticDomainName] = Field(
+        default_factory=list,
+        description="Optional domain_id → name mapping for radar chart labels",
+    )
+    all_skill_ids: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Optional full mapping skill_id → domain_id for ALL skills in the system. "
+            "Skills not in the answers list will receive inferred P(L0) from parent domain."
+        ),
+    )
+
+
+class DiagnosticSkillPriorDto(BaseModel):
+    """BKT prior P(L0) for a single skill."""
+
+    skill_id: str = Field(..., description="UUID of the skill")
+    domain_id: str = Field(..., description="UUID of the parent competency domain")
+    theta_skill: float = Field(..., description="Skill-level ability estimate on IRT scale")
+    p_l0: float = Field(
+        ..., ge=0.0, le=1.0,
+        description="BKT prior P(L0) = Sigmoid(theta_skill), clamped to [0.05, 0.95]",
+    )
+    source: str = Field(
+        ...,
+        description="'measured' (had questions) or 'inferred_from_domain' (no questions)",
+    )
+
+
+class DiagnosticDomainScoreDto(BaseModel):
+    """Aggregated analysis for one competency domain."""
+
+    domain_id: str = Field(..., description="UUID of the domain")
+    domain_name: str = Field(..., description="Display name of the domain")
+    theta_domain: float = Field(..., description="Domain-level ability estimate")
+    total_questions: int = Field(..., description="Number of questions in this domain")
+    correct_count: int = Field(..., description="Number of correct answers")
+    accuracy_pct: float = Field(..., description="Accuracy percentage [0–100]")
+
+
+class DiagnosticRadarAxisDto(BaseModel):
+    """One axis of the radar chart comparing student vs benchmark."""
+
+    domain_id: str = Field(..., description="UUID of the domain")
+    domain_name: str = Field(..., description="Display name of the domain")
+    student_pct: float = Field(..., description="Student's accuracy percentage [0–100]")
+    benchmark_pct: float = Field(..., description="Target benchmark percentage [0–100]")
+
+
+class DiagnosticAnalyzeResponse(BaseModel):
+    """Full response from the diagnostic analysis engine."""
+
+    student_id: str = Field(..., description="UUID of the student")
+    submission_id: str = Field(..., description="UUID of the diagnostic submission")
+    theta_0: float = Field(
+        ...,
+        description="Overall ability estimate on IRT scale [-3.0, +3.0]",
+    )
+    placement_class: str = Field(
+        ...,
+        description=(
+            "Recommended class level: "
+            "'FOUNDATION' (theta < -0.5), "
+            "'ACCELERATION' (-0.5 ≤ theta ≤ +0.5), "
+            "'BREAKTHROUGH' (theta > +0.5)"
+        ),
+    )
+    domain_scores: list[DiagnosticDomainScoreDto] = Field(
+        ..., description="Per-domain ability breakdown",
+    )
+    skill_priors: list[DiagnosticSkillPriorDto] = Field(
+        ..., description="BKT prior P(L0) for each skill",
+    )
+    radar_chart: list[DiagnosticRadarAxisDto] = Field(
+        ..., description="Radar chart coordinates for frontend rendering",
+    )
+    ai_commentary: str = Field(
+        default="",
+        description="AI-generated brief Socratic commentary on student's strengths/weaknesses",
+    )
+

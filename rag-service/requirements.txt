@@ -27,3 +27,7 @@ python-dotenv>=1.0.0
 fastapi>=0.110.0
 uvicorn[standard]>=0.28.0
 python-multipart>=0.0.9
+
+# Scientific computing (IRT / BKT diagnostic engine)
+numpy>=1.26.0
+scipy>=1.12.0
