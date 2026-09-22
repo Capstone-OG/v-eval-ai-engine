@@ -26,6 +26,7 @@ from config import (
     init_vector_store_table,
 )
 from routers.chat import router as chat_router
+from routers.diagnostic import router as diagnostic_router
 from routers.documents import router as documents_router
 from schemas import HealthResponse
 
@@ -91,6 +92,7 @@ app.add_middleware(
 
 app.include_router(chat_router)
 app.include_router(documents_router)
+app.include_router(diagnostic_router)
 
 
 # ---------------------------------------------------------------------------
