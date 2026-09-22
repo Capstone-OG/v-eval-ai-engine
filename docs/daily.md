@@ -1,5 +1,25 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [22/09/2026] - Triển Khai Diagnostic Engine Cho Core Flow 1 (IRT 2PL, BKT Prior & Radar Chart)
+- **Module Tính Toán Năng Lực IRT & BKT (`rag-service/diagnostic_engine.py`)**:
+  - Ước lượng năng lực học sinh `theta_0` bằng mô hình IRT 2-Parameter Logistic (2PL) kết hợp ước lượng hậu nghiệm cực đại (MAP) có hàm phạt Gaussian Prior `N(0, 2.0^2)`.
+  - Tối ưu hóa cực trị 1 chiều bằng thuật toán Brent (`scipy.optimize.minimize_scalar`).
+  - Xử lý câu trả lời đoán mò thần tốc (< 5 giây): chiết giảm tham số phân biệt `a -> 0.1` để tránh thổi phồng năng lực ảo.
+  - Tính toán xác suất thành thạo ban đầu BKT Prior `P(L0) = Sigmoid(theta)` cho từng kỹ năng với cơ chế kẹp an toàn `[0.05, 0.95]`.
+  - Xử lý tình huống không hoàn hảo (unhappy case): các kỹ năng chưa có câu hỏi trong bài kiểm tra rút gọn 30 câu tự động kế thừa `P(L0)` suy diễn từ năng lực miền cha (`domain_level`).
+  - Phân loại xếp lớp chuẩn mực 3 mức: `FOUNDATION` (`theta < -0.5`), `ACCELERATION` (`-0.5 <= theta <= 0.5`), `BREAKTHROUGH` (`theta > 0.5`).
+  - Sinh tọa độ biểu đồ Radar so sánh năng lực học sinh với điểm chuẩn benchmark dựa trên mục tiêu điểm thi (V-ACT target score).
+- **Pydantic Schemas (`rag-service/schemas.py`)**:
+  - Bổ sung `DiagnosticAnswerItem`, `DiagnosticDomainName`, `DiagnosticAnalyzeRequest`, `DiagnosticSkillPriorDto`, `DiagnosticDomainScoreDto`, `DiagnosticRadarAxisDto`, `DiagnosticAnalyzeResponse`.
+- **API Endpoint & LLM Commentary (`rag-service/routers/diagnostic.py`)**:
+  - Triển khai `POST /api/v1/diagnostic/analyze` tiếp nhận dữ liệu 30 câu từ Practice Service và trả về phân tích chẩn đoán hoàn chỉnh.
+  - Sinh lời nhận xét Socratic sư phạm động bằng Google Gemini (`gemini-3.5-flash`), có cơ chế fallback tự động sinh nhận xét mẫu khi offline hoặc thiếu key.
+  - Triển khai `GET /api/v1/diagnostic/config` cung cấp cấu hình ngưỡng phân lớp và tham số IRT.
+- **Kiểm Thử Đơn Vị & Tích Hợp (`rag-service/tests/test_diagnostic.py`)**:
+  - Đạt 10/10 test cases (IRT probability, BKT clamping, MLE all-correct, MLE all-incorrect, rapid guessing penalty, placement tiers, missing skills inference, end-to-end pipeline, GET config, POST analyze endpoint với Gemini thật).
+
+---
+
 ## [21/09/2026] - Thiết Kế Kiến Trúc AI Exam Generation (30 Câu), Multi-Domain RAG & Quy Trình Duyệt Linh Hoạt
 - **Lập Kế Hoạch Kiến Trúc ([ai_question_generation_rag_approval_plan.md](./ai_question_generation_rag_approval_plan.md))**:
   - Thiết kế chi tiết luồng sinh đề thi 30 câu bất đồng bộ, lưu DB trạng thái `PENDING_APPROVAL`.

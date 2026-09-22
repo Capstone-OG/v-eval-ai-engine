@@ -12,3 +12,17 @@
 ## 3. KẾT QUẢ NGHIỆM THU
 - Docker Build: Multi-Stage .NET 9 trên cổng `5104` đạt 100% Succeeded.
 - Tích hợp sẵn sàng cho hạ tầng AI Python/PostgreSQL/Qdrant.
+
+## 4. CORE FLOW 1 — IRT & BKT DIAGNOSTIC ENGINE ACCEPTANCE
+- **Module**: `rag-service/diagnostic_engine.py` & `rag-service/routers/diagnostic.py`.
+- **Psychometric Modeling**:
+  - IRT 2-Parameter Logistic (2PL) model with Maximum A Posteriori (MAP) estimation using a Gaussian prior `N(0, 2.0^2)` to regularize extreme scores.
+  - Scalar optimization solved via Brent's method (`scipy.optimize.minimize_scalar`) bounded in `[-3.0, 3.0]`.
+  - Rapid-guessing suppression: items answered in `< 5s` receive discounted discrimination (`a -> 0.1`) to prevent score inflation.
+  - BKT Initial Mastery Prior: `P(L0) = Sigmoid(theta)` clamped safely to `[0.05, 0.95]`.
+  - Unhappy case tolerance: untested skills seamlessly inherit inferred priors from their parent competency domain.
+  - Placement tiers: `FOUNDATION` (`theta < -0.5`), `ACCELERATION` (`-0.5 <= theta <= 0.5`), `BREAKTHROUGH` (`theta > 0.5`).
+  - Radar chart coordinates: student domain percentages vs benchmark targets calculated from the student's expected V-ACT score.
+  - Socratic pedagogical commentary dynamically generated via Google Gemini (`gemini-3.5-flash`) with robust fallback.
+- **Verification Results**:
+  - 10/10 automated tests passing with 100% success rate (`tests/test_diagnostic.py`), covering math kernels and live FastAPI REST endpoints.
