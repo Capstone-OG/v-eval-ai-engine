@@ -13,10 +13,11 @@
   - Bổ sung `DiagnosticAnswerItem`, `DiagnosticDomainName`, `DiagnosticAnalyzeRequest`, `DiagnosticSkillPriorDto`, `DiagnosticDomainScoreDto`, `DiagnosticRadarAxisDto`, `DiagnosticAnalyzeResponse`.
 - **API Endpoint & LLM Commentary (`rag-service/routers/diagnostic.py`)**:
   - Triển khai `POST /api/v1/diagnostic/analyze` tiếp nhận dữ liệu 30 câu từ Practice Service và trả về phân tích chẩn đoán hoàn chỉnh.
-  - Sinh lời nhận xét Socratic sư phạm động bằng Google Gemini (`gemini-3.5-flash`), có cơ chế fallback tự động sinh nhận xét mẫu khi offline hoặc thiếu key.
+  - Sinh lời nhận xét Socratic sư phạm động bằng Google Gemini (`gemini-3.6-flash`), có cơ chế fallback tự động sinh nhận xét mẫu khi offline hoặc quá tải.
   - Triển khai `GET /api/v1/diagnostic/config` cung cấp cấu hình ngưỡng phân lớp và tham số IRT.
-- **Kiểm Thử Đơn Vị & Tích Hợp (`rag-service/tests/test_diagnostic.py`)**:
-  - Đạt 10/10 test cases (IRT probability, BKT clamping, MLE all-correct, MLE all-incorrect, rapid guessing penalty, placement tiers, missing skills inference, end-to-end pipeline, GET config, POST analyze endpoint với Gemini thật).
+- **Kiểm Thử Đơn Vị, Tích Hợp & End-to-End**:
+  - Đạt 10/10 test cases trong `rag-service/tests/test_diagnostic.py`.
+  - Kiểm thử End-to-End thực tế với Practice Service qua Swagger: Trả về kết quả phân tích psychometrics, biểu đồ Radar, 12 BKT Priors và lời nhận xét Socratic trong thời gian thực.
 
 ---
 

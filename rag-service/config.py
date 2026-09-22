@@ -54,7 +54,7 @@ API_PORT: int = int(os.environ.get("API_PORT", "8000"))
 # ---------------------------------------------------------------------------
 # Model Constants
 # ---------------------------------------------------------------------------
-LLM_MODEL: str = "gemini-3.5-flash"
+LLM_MODEL: str = os.environ.get("LLM_MODEL", "gemini-3.6-flash")
 EMBEDDING_MODEL: str = "models/gemini-embedding-001"
 EMBEDDING_DIMENSIONS: int = 3072  # gemini-embedding-001 default output size
 

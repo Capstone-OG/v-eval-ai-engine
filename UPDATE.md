@@ -11,10 +11,11 @@
 - **Pydantic Schemas & Data Contracts (`rag-service/schemas.py`)**:
   - Khai báo trọn bộ contract REST API: `DiagnosticAnswerItem`, `DiagnosticDomainName`, `DiagnosticAnalyzeRequest`, `DiagnosticSkillPriorDto`, `DiagnosticDomainScoreDto`, `DiagnosticRadarAxisDto`, `DiagnosticAnalyzeResponse`.
 - **API Endpoints & Socratic Commentary (`rag-service/routers/diagnostic.py`)**:
-  - `POST /api/v1/diagnostic/analyze`: Nhận kết quả bài làm 30 câu, tính toán psychometrics và gọi Google Gemini (`gemini-3.5-flash`) tạo lời nhận xét sư phạm tích cực, có cơ chế fallback tự động.
+  - `POST /api/v1/diagnostic/analyze`: Nhận kết quả bài làm 30 câu, tính toán psychometrics và gọi Google Gemini (`gemini-3.6-flash`) tạo lời nhận xét sư phạm tích cực, có cơ chế fallback tự động.
   - `GET /api/v1/diagnostic/config`: Cung cấp tham số cấu hình ngưỡng và thang đo cho frontend/Practice Service.
 - **Kiểm Thử Toàn Diện (`rag-service/tests/test_diagnostic.py`)**:
   - 10/10 test cases đơn vị và tích hợp HTTP endpoint đạt 100% PASS.
+  - Tích hợp và kiểm thử End-to-End thực tế thành công với Practice Service (`POST /api/v1/practice/diagnostic-submissions`).
 - **Cập Nhật Tài Liệu Service**:
   - Cập nhật [`docs/daily.md`](./docs/daily.md), [`docs/process.md`](./docs/process.md) và [`docs/architecture_acceptance.md`](./docs/architecture_acceptance.md).
 
