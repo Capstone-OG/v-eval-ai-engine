@@ -16,8 +16,10 @@
   - Sinh lời nhận xét Socratic sư phạm động bằng Google Gemini (`gemini-3.6-flash`), có cơ chế fallback tự động sinh nhận xét mẫu khi offline hoặc quá tải.
   - Triển khai `GET /api/v1/diagnostic/config` cung cấp cấu hình ngưỡng phân lớp và tham số IRT.
 - **Kiểm Thử Đơn Vị, Tích Hợp & End-to-End**:
-  - Đạt 10/10 test cases trong `rag-service/tests/test_diagnostic.py`.
+  - Đạt 12/12 test cases trong `rag-service/tests/test_diagnostic.py`.
   - Kiểm thử End-to-End thực tế với Practice Service qua Swagger: Trả về kết quả phân tích psychometrics, biểu đồ Radar, 12 BKT Priors và lời nhận xét Socratic trong thời gian thực.
+- **Tài Liệu Đặc Tả Toán Học ([cong_thuc_psychometrics_irt_bkt.md](./cong_thuc_psychometrics_irt_bkt.md))**:
+  - Biên soạn và ban hành tài liệu toán học toàn diện trình bày chi tiết toàn bộ các công thức IRT 2PL, MAP Brent, SEM, BKT Sigmoid, Domain Inference, Radar Benchmark và lý giải bài toán thực tế cho V-ACT.
 
 ---
 
