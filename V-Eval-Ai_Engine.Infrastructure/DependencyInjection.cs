@@ -17,6 +17,13 @@ public static class DependencyInjection
 
         // Đăng ký Background Job Manager quản lý tiến trình nền
         services.AddSingleton<IExamJobManager, InMemoryExamJobManager>();
+        services.AddSingleton<ITextbookJobManager, InMemoryTextbookJobManager>();
+
+        // Đăng ký dịch vụ nạp tri thức SGK local offline & Vision OCR
+        services.AddHttpClient<ITextbookParserService, PdfPigTextbookParserService>(client =>
+        {
+            client.Timeout = TimeSpan.FromMinutes(10);
+        });
 
         // Đăng ký Vector Database Service cho RAG
         services.AddSingleton<IVectorDbService, QdrantVectorDbService>();
@@ -26,6 +33,9 @@ public static class DependencyInjection
 
         // Đăng ký dịch vụ trích xuất ảnh cục bộ từ PDF (PdfPig 100% Offline)
         services.AddSingleton<PdfImageExtractor>();
+
+        // Đăng ký Repository lưu tri thức SGK vào Supabase PostgreSQL (Schema v_eval_ai)
+        services.AddScoped<ITextbookRepository, V_Eval_Ai_Engine.Infrastructure.Repositories.TextbookRepository>();
 
         return services;
     }

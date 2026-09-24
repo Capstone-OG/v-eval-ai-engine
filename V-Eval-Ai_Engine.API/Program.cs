@@ -1,9 +1,23 @@
+using Microsoft.AspNetCore.Http.Features;
 using V_Eval_Ai_Engine.API.Endpoints;
 using V_Eval_Ai_Engine.API.GrpcServices;
 using V_Eval_Ai_Engine.Application;
 using V_Eval_Ai_Engine.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 0. Cấu hình Kestrel & FormOptions cho phép nạp tệp SGK lớn (lên tới 250 MB)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 262_144_000; // 250 MB
+});
+
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartBodyLengthLimit = 262_144_000; // 250 MB
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
 
 // 1. Cấu hình dịch vụ hạ tầng & ứng dụng theo chuẩn Clean Architecture
 builder.Services.AddOpenApi();
@@ -49,11 +63,15 @@ if (app.Environment.IsDevelopment())
     .ExcludeFromDescription();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseStaticFiles();
 
 // 3. Đăng ký các endpoints và gRPC Services
 app.MapGrpcService<AiGrpcService>();
 app.MapExamEndpoints();
+app.MapTextbookEndpoints();
 
 app.Run();

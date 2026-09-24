@@ -1,5 +1,42 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [25/09/2026] - Triển Khai Phân Loại OCR Mode, RapidOCR Offline Speed-Up & API Lưu Tri Thức Database (`v_eval_ai`)
+- **Giao Diện Trang Web Nạp Tri Thức SGK (`wwwroot/view-textbook.html`)**:
+  - Xây dựng giao diện Web UI hiện đại với Glassmorphic design, thanh tab chuyển đổi mượt mà giữa Ngân Hàng Đề Thi (`/api/ai-engine/view-exam`) và Nạp Tri Thức SGK (`/api/ai-engine/view-textbook`).
+  - Tích hợp menu tùy chọn **Chế độ xử lý chữ (OCR Mode)**:
+    - 📖 **Văn Bản Thuần - Ngữ Văn, Anh Văn, KHXH** *(Gọi Python PyMuPDF + RapidOCR Local Engine)*.
+    - 📄 **Tự Động / Text Local** *(Đọc siêu tốc local offline bằng `PdfPig` cho PDF có lớp chữ sẵn)*.
+    - 🧪 **Tự Nhiên & Công Thức - Toán, Lý, Hóa** *(Giữ nguyên định dạng LaTeX)*.
+  - Tích hợp nút bấm **💾 Lưu Tri Thức Vào Database (`v_eval_ai`)** gửi payload Vector Chunks về CSDL.
+  - Bảng điều khiển tiến độ ngầm (Background Job Dashboard) hiển thị phần trăm tiến trình %, live console log real-time và preview các Chunks tri thức.
+- **Tối Ưu Hóa & Đồng Bộ Hóa Tuần Tự RapidOCR (`textbook_local_parser.py`)**:
+  - Khôi phục luồng xử lý tuần tự (Sequential Order) 100% chuẩn xác theo thứ tự trang từ `1..N`.
+  - Sử dụng ánh xạ bộ nhớ trực tiếp (Direct Numpy Buffer) từ `pix.samples`, loại bỏ hoàn toàn chi phí nén/giải nén PNG/JPEG trung gian.
+  - Phân tích số trang `[Trang X/Y]` để đồng bộ thanh tiến độ phần trăm `%` tăng dần mượt mà từ 15% đến 80% trên UI.
+- **Khởi Tạo Schema `v_eval_ai` Trên Supabase & Tích Hợp Npgsql Repository**:
+  - Đã khởi tạo thành công Schema `v_eval_ai` và extension `vector` (pgvector) trên CSDL Supabase Cloud PostgreSQL.
+  - Ban hành kịch bản DDL chuẩn tại [`docs/SQL/V_EVAL_AI_SCHEMA.sql`](./docs/SQL/V_EVAL_AI_SCHEMA.sql) bao gồm 2 bảng:
+    - `v_eval_ai."KnowledgeSources"`: Quản lý metadata tài liệu SGK, mã Hash SHA-256, số trang, số chunks.
+    - `v_eval_ai."KnowledgeVectorChunks"`: Lưu trữ các đoạn phân đoạn tri thức (chunks) kèm trường `embedding vector(768)` và chỉ mục HNSW (`idx_knowledge_vector_hnsw`).
+  - Triển khai `TextbookRepository` (`ITextbookRepository`) sử dụng Npgsql kết nối Supabase, ghi trực tiếp các Chunks tri thức vào CSDL khi bấm nút trên UI.
+- **REST Endpoints & Database Persistence (`TextbookEndpoints.cs`)**:
+  - `POST /api/ai-engine/textbooks/upload-pdf`: Tiếp nhận PDF + `ocrMode`, khởi chạy Background Job async và trả về `202 Accepted` kèm JobId.
+  - `GET /api/ai-engine/textbooks/jobs/{jobId}`: Endpoint Polling tiến độ ngầm real-time.
+  - `POST /api/ai-engine/textbooks/save-db`: Gọi `ITextbookRepository` lưu thực tế các Vector Chunks tri thức vào Supabase PostgreSQL (Schema `v_eval_ai`).
+  - `GET /api/ai-engine/view-textbook`: Phục vụ giao diện HTML UI nạp SGK.
+
+---
+
+## [24/09/2026] - Cấu Hình Supabase Connection & Phân Chi Schema `v_eval_ai`
+- **Cấu Hình Chuỗi Kết Nối PostgreSQL (Supabase Cloud)**:
+  - Bổ sung `ConnectionStrings:DefaultConnection` trong `appsettings.json` kết nối trực tiếp Supabase Cloud PostgreSQL.
+  - Khởi tạo và cập nhật `DATABASE_URL` trong `rag-service/.env` & `.env.example` cấu hình kết nối Python RAG Engine với Supabase (`postgresql+psycopg`).
+- **Phân Chi Schema `v_eval_ai` & `v_eval_system`**:
+  - Xác nhận tạo Schema `v_eval_ai`, `v_eval_system` và `pgvector` extension trên Supabase SQL Editor.
+  - Đảm bảo hạ tầng Vector RAG Store cho `KnowledgeVectorChunks` (`v_eval_ai`) phục vụ bài toán RAG Engine cho Môn/Skill.
+
+---
+
 ## [22/09/2026] - Triển Khai Diagnostic Engine Cho Core Flow 1 (IRT 2PL, BKT Prior & Radar Chart)
 - **Module Tính Toán Năng Lực IRT & BKT (`rag-service/diagnostic_engine.py`)**:
   - Ước lượng năng lực học sinh `theta_0` bằng mô hình IRT 2-Parameter Logistic (2PL) kết hợp ước lượng hậu nghiệm cực đại (MAP) có hàm phạt Gaussian Prior `N(0, 2.0^2)`.

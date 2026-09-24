@@ -27,3 +27,15 @@
 - **Verification Results**:
   - 12/12 automated tests passing with 100% success rate (`tests/test_diagnostic.py`), covering math kernels and live FastAPI REST endpoints.
   - Comprehensive mathematical specifications published at `docs/cong_thuc_psychometrics_irt_bkt.md`.
+
+## 5. CORE FLOW 2 — TEXTBOOK RAG INGESTION & SUPABASE `v_eval_ai` SCHEMA ACCEPTANCE
+- **Local Textbook Ingestion Engine**:
+  - Python PyMuPDF + RapidOCR local offline hybrid parser (`textbook_local_parser.py`) extracting pure-text subjects (Humanities, English) in 1s for searchable PDFs, with ONNX-based local OCR fallback for scanned images.
+  - Multi-model Vision AI rotation (`gemini-1.5-flash`, `gemini-2.0-flash`, `gpt-4o-mini`) for STEM subjects (Math, Physics, Chemistry) ensuring LaTeX formulas wrapped in `$...\$`.
+- **Database Persistence (`v_eval_ai` Schema on Supabase PostgreSQL)**:
+  - Database extension `vector` (pgvector) enabled.
+  - `v_eval_ai."KnowledgeSources"` table storing document metadata, total pages, character counts, and SHA-256 hashes.
+  - `v_eval_ai."KnowledgeVectorChunks"` table storing semantic chunks (~1000 chars, ~200 overlap), `embedding vector(768)` and HNSW cosine index (`idx_knowledge_vector_hnsw`).
+  - Implemented `TextbookRepository` (`ITextbookRepository`) using `Npgsql` to persist textbooks and chunks directly into Supabase.
+- **Web Studio Frontend**:
+  - Glassmorphic responsive interface at `/api/ai-engine/view-textbook` with navbar tab switching, real-time background job polling, progress console, chunk preview cards, and direct "Lưu Tri Thức Vào Database" button.
