@@ -15,7 +15,8 @@ using V_Eval_Ai_Engine.Application.Interfaces;
 namespace V_Eval_Ai_Engine.Infrastructure.Services;
 
 /// <summary>
-/// Trích xuất tri thức SGK: Dùng Python PyMuPDF Local OCR siêu tốc cho Ngữ Văn/Anh Văn (1-2s), và tự động fallback sang Vision AI cho PDF Scan Ảnh hoặc Toán/Lý/Hóa
+/// Trích xuất tri thức SGK: Hỗ trợ nạp ngầm, lưu tiến trình liên tục (Checkpointing) vào Database,
+/// cho phép Resume tiếp tục nạp ngay vị trí ngắt, kết hợp tối ưu ảnh thấp điểm ảnh (Low-DPI) để tiết kiệm token Vision AI Free Tier.
 /// </summary>
 public class PdfPigTextbookParserService : ITextbookParserService
 {
@@ -25,15 +26,18 @@ public class PdfPigTextbookParserService : ITextbookParserService
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<PdfPigTextbookParserService> _logger;
+    private readonly ITextbookRepository _repository;
 
     public PdfPigTextbookParserService(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<PdfPigTextbookParserService> logger)
+        ILogger<PdfPigTextbookParserService> logger,
+        ITextbookRepository repository)
     {
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
+        _repository = repository;
     }
 
     public async Task<TextbookIngestResultDto> ParseAndIngestTextbookAsync(
@@ -43,6 +47,7 @@ public class PdfPigTextbookParserService : ITextbookParserService
         string skillId,
         string docType,
         string ocrMode = "TEXT_HUMANITIES",
+        bool forceReingest = false,
         Action<string, int>? onProgress = null,
         CancellationToken cancellationToken = default)
     {
@@ -61,224 +66,177 @@ public class PdfPigTextbookParserService : ITextbookParserService
         using var document = PdfDocument.Open(pdfBytes);
         int totalPages = document.NumberOfPages;
 
-        var pageTextMap = new List<(int PageNumber, string Text)>();
-        int totalChars = 0;
+        // 3. KIỂM TRA CHECKPOINT TIẾN TRÌNH TRONG CSDL SUPABASE (v_eval_ai)
+        var checkpoint = await _repository.GetCheckpointByFileHashAsync(fileHash, cancellationToken);
+        Guid sourceId;
+        int startPage = 1;
+        int runningCharCount = 0;
+        int runningChunkCount = 0;
 
-        // 3. LUỒNG 1: DÀNH CHO VĂN BẢN THUẦN (Ngữ Văn, Tiếng Anh, Sử, Địa) -> Chạy Python PyMuPDF Local OCR siêu tốc (1-2s)
-        if (ocrMode == "TEXT_HUMANITIES" || ocrMode == "AUTO_LOCAL")
+        if (!forceReingest && checkpoint != null && checkpoint.Value.LastProcessedPage > 0)
         {
-            onProgress?.Invoke($"Phát hiện {totalPages} trang PDF (Chế độ: Văn Bản Thuần Ngữ Văn/Anh Văn). Đang kích hoạt Python PyMuPDF Local OCR siêu tốc...", 15);
+            sourceId = checkpoint.Value.SourceId;
+            runningCharCount = checkpoint.Value.TotalChars;
+            runningChunkCount = checkpoint.Value.TotalChunks;
 
-            pageTextMap = await RunPythonLocalParserAsync(pdfBytes, onProgress);
-            
-            if (pageTextMap.Count > 0)
+            // Nếu tệp này đã nạp xong 100% trước đó -> Tái sử dụng ngay lập tức
+            if (checkpoint.Value.LastProcessedPage >= totalPages)
             {
-                totalChars = pageTextMap.Sum(p => p.Text.Length);
-            }
-
-            // Fallback nếu C# PdfPig đọc local khi Python trả rỗng
-            if (totalChars == 0)
-            {
-                onProgress?.Invoke("Thử trích xuất bằng C# PdfPig Local Engine...", 25);
-                for (int i = 1; i <= totalPages; i++)
+                onProgress?.Invoke($"🎉 Tài liệu '{fileName}' đã được nạp hoàn tất từ trước trong CSDL! Đang khôi phục...", 100);
+                var existingChunks = await _repository.GetChunksBySourceIdAsync(sourceId, cancellationToken);
+                return new TextbookIngestResultDto
                 {
-                    var page = document.GetPage(i);
-                    string pageText = page.Text ?? string.Empty;
-                    pageText = string.Join('\n', pageText.Split('\n').Select(l => l.Trim()).Where(l => !string.IsNullOrWhiteSpace(l)));
-
-                    if (!string.IsNullOrWhiteSpace(pageText))
-                    {
-                        pageTextMap.Add((i, pageText));
-                        totalChars += pageText.Length;
-                    }
-                }
+                    DocumentId = sourceId.ToString(),
+                    FileName = fileName,
+                    FileHash = fileHash,
+                    DomainId = domainId,
+                    SkillId = skillId,
+                    DocumentType = docType,
+                    TotalPages = totalPages,
+                    TotalChars = runningCharCount,
+                    TotalChunks = existingChunks.Count,
+                    Chunks = existingChunks
+                };
             }
 
-            // Nếu VẪN RỖNG (File PDF Scan dạng HÌNH ẢNH 100%) -> Tự động chuyển Vision OCR bóc chữ từ ảnh scan
-            if (totalChars == 0)
-            {
-                onProgress?.Invoke($"⚠️ Phát hiện {totalPages} trang PDF Scan dạng HÌNH ẢNH (không chứa lớp chữ text). Đang kích hoạt Vision OCR bóc chữ từ ảnh...", 30);
-
-                List<string> geminiKeys = ResolveGeminiKeys();
-                List<string> geminiModels = ResolveGeminiModels();
-
-                for (int i = 1; i <= totalPages; i++)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    onProgress?.Invoke($"[Trang {i}/{totalPages}] Đang Vision OCR chữ từ ảnh scan...", 30 + (int)((float)i / totalPages * 50));
-
-                    string ocrText = await OcrPageWithVisionModelsAsync(pdfBytes, i, geminiKeys, geminiModels, cancellationToken);
-                    if (!string.IsNullOrWhiteSpace(ocrText))
-                    {
-                        pageTextMap.Add((i, ocrText));
-                        totalChars += ocrText.Length;
-                    }
-                }
-            }
-            else
-            {
-                onProgress?.Invoke($"Đã trích xuất thành công {totalChars} ký tự từ {pageTextMap.Count}/{totalPages} trang bằng Local Fast Engine!", 75);
-            }
+            // Nếu đang dở dang -> Tiếp tục ngay trang tiếp theo
+            startPage = checkpoint.Value.LastProcessedPage + 1;
+            onProgress?.Invoke($"⚡ Phát hiện checkpoint tại trang {checkpoint.Value.LastProcessedPage}/{totalPages}. Tiếp tục nạp tự động từ trang {startPage}...", 
+                (int)((float)(startPage - 1) / totalPages * 100));
         }
         else
         {
-            // LUỒNG 2: DÀNH CHO TỰ NHIÊN & CÔNG THỨC (Toán, Lý, Hóa) -> Giữ nguyên luồng Vision AI cho LaTeX
-            onProgress?.Invoke($"Phát hiện {totalPages} trang PDF (Chế độ: Tự Nhiên & Công Thức Toán/Lý/Hóa). Đang chạy luồng Vision OCR...", 15);
+            sourceId = await _repository.GetOrCreateSourceAsync(
+                fileHash, fileName, $"/uploads/textbooks/{fileName}", totalPages, domainId, skillId, docType, cancellationToken);
 
-            List<string> geminiKeys = ResolveGeminiKeys();
-            List<string> geminiModels = ResolveGeminiModels();
-
-            for (int i = 1; i <= totalPages; i++)
+            if (forceReingest)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var page = document.GetPage(i);
-                string pageText = page.Text ?? string.Empty;
-                pageText = string.Join('\n', pageText.Split('\n').Select(l => l.Trim()).Where(l => !string.IsNullOrWhiteSpace(l)));
-
-                if (string.IsNullOrWhiteSpace(pageText) || pageText.Length < 10)
-                {
-                    onProgress?.Invoke($"[Trang {i}/{totalPages}] Đang OCR công thức Toán/Lý/Hóa bằng Vision AI...", 15 + (int)((float)i / totalPages * 60));
-                    string ocrText = await OcrPageWithVisionModelsAsync(pdfBytes, i, geminiKeys, geminiModels, cancellationToken);
-                    if (!string.IsNullOrWhiteSpace(ocrText))
-                    {
-                        pageText = ocrText;
-                    }
-                }
-
-                if (!string.IsNullOrWhiteSpace(pageText))
-                {
-                    pageTextMap.Add((i, pageText));
-                    totalChars += pageText.Length;
-                }
+                await _repository.ResetSourceChunksAsync(sourceId, totalPages, cancellationToken);
+                onProgress?.Invoke($"🔄 Chế độ Nạp lại từ đầu: Đã dọn dẹp các chunk cũ để bóc tách lại chuẩn xác!", 0);
             }
         }
 
-        onProgress?.Invoke("Đang tiến hành cắt Chunk tri thức theo ranh giới Semantic...", 85);
+        List<string> geminiKeys = ResolveGeminiKeys();
+        List<string> geminiModels = ResolveGeminiModels();
 
-        // 4. Cắt Chunking (Chunk Size ~1000, Overlap ~200)
-        var chunks = BuildSemanticChunks(pageTextMap);
-
-        onProgress?.Invoke($"Đã hoàn tất cắt {chunks.Count} Chunks tri thức. Đang chuẩn bị hoàn tất...", 95);
-
-        var result = new TextbookIngestResultDto
+        // 4. TIẾN HÀNH TRÍCH XUẤT VÀ LƯU CHECKPOINT TỪNG TRANG VÀO DATABASE
+        for (int i = startPage; i <= totalPages; i++)
         {
-            DocumentId = Guid.NewGuid().ToString(),
+            cancellationToken.ThrowIfCancellationRequested();
+
+            int progressPct = (int)((float)i / totalPages * 100);
+            string pageText = string.Empty;
+
+            // Ưu tiên 1: Đọc nhanh lớp chữ số nếu có (PDF searchable) trừ khi chế độ yêu cầu bóc tách công thức STEM hoặc chế độ ép Vision AI
+            if (ocrMode != "STEM_FORMULAS" && ocrMode != "VISION_AI")
+            {
+                try
+                {
+                    var page = document.GetPage(i);
+                    string rawText = page.Text ?? string.Empty;
+                    rawText = string.Join('\n', rawText.Split('\n').Select(l => l.Trim()).Where(l => !string.IsNullOrWhiteSpace(l)));
+                    
+                    if (!string.IsNullOrWhiteSpace(rawText) && rawText.Length >= 30)
+                    {
+                        // Kiểm tra lỗi mã hóa font InDesign / CID subset (mojibake)
+                        if (IsCorruptedFontEncoding(rawText))
+                        {
+                            _logger.LogWarning("[Trang {Page}/{TotalPages}] Phát hiện lớp chữ số bị lỗi mã hóa font InDesign/CID (mojibake). Bỏ qua lớp chữ số và kích hoạt Vision AI...", i, totalPages);
+                            onProgress?.Invoke($"[Trang {i}/{totalPages}] ⚠️ Phát hiện lớp text bị lỗi font InDesign/CID (mojibake). Tự động kích hoạt Vision AI để bóc tách từ ảnh...", progressPct);
+                        }
+                        else
+                        {
+                            pageText = rawText;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "[Trang {Page}/{TotalPages}] Lỗi đọc text PdfPig, chuyển sang Vision OCR", i, totalPages);
+                }
+            }
+
+            // Ưu tiên 2: Nếu không có chữ số (PDF scan dạng ảnh 100%) hoặc bị lỗi font hoặc chế độ Toán/Lý/Hóa/Vision -> Gọi Vision AI với ảnh nhẹ (DPI 96)
+            if (string.IsNullOrWhiteSpace(pageText))
+            {
+                onProgress?.Invoke($"[Trang {i}/{totalPages}] Đang bóc tách bằng Vision AI (Ảnh tối ưu DPI 96 tiết kiệm token)...", progressPct);
+
+                pageText = await OcrPageWithVisionModelsAsync(pdfBytes, i, geminiKeys, geminiModels, cancellationToken);
+
+                // Giãn cách nhẹ (3.5s) cho Free Tier Google 15 RPM nếu chỉ có 1 API Key
+                if (geminiKeys.Count <= 1)
+                {
+                    await Task.Delay(3500, cancellationToken);
+                }
+            }
+
+            // Nếu vẫn không đọc được chữ nào, đặt placeholder tối thiểu để không bỏ lửng trang
+            if (string.IsNullOrWhiteSpace(pageText))
+            {
+                pageText = $"[Nội dung hình ảnh/minh họa không chứa ký tự tại Trang {i}]";
+            }
+
+            // LƯU NGAY TIẾN TRÌNH VÀO CSDL SUPABASE (CHECKPOINT PER PAGE)
+            runningChunkCount++;
+            runningCharCount += pageText.Length;
+
+            await _repository.SavePageChunkAsync(
+                sourceId,
+                i,
+                runningChunkCount,
+                pageText,
+                domainId,
+                skillId,
+                docType,
+                cancellationToken
+            );
+
+            await _repository.UpdateSourceProgressAsync(
+                sourceId,
+                totalPages,
+                runningCharCount,
+                runningChunkCount,
+                "PROCESSING",
+                cancellationToken
+            );
+
+            onProgress?.Invoke($"[Trang {i}/{totalPages}] Đã lưu CSDL thành công ({pageText.Length} ký tự). Tiến trình: {progressPct}%", progressPct);
+        }
+
+        // 5. HOÀN TẤT TOÀN BỘ CÁC TRANG -> CẬP NHẬT TRẠNG THÁI 'COMPLETED'
+        await _repository.UpdateSourceProgressAsync(
+            sourceId,
+            totalPages,
+            runningCharCount,
+            runningChunkCount,
+            "COMPLETED",
+            cancellationToken
+        );
+
+        onProgress?.Invoke($"🎉 Đã hoàn tất 100% nạp và lưu trữ {totalPages} trang SGK vào Supabase Database!", 100);
+
+        var finalChunks = await _repository.GetChunksBySourceIdAsync(sourceId, cancellationToken);
+
+        return new TextbookIngestResultDto
+        {
+            DocumentId = sourceId.ToString(),
             FileName = fileName,
             FileHash = fileHash,
             DomainId = domainId,
             SkillId = skillId,
-            DocumentType = string.IsNullOrWhiteSpace(docType) ? "TEXTBOOK" : docType,
+            DocumentType = docType,
             TotalPages = totalPages,
-            TotalChars = totalChars,
-            TotalChunks = chunks.Count,
-            Chunks = chunks
+            TotalChars = runningCharCount,
+            TotalChunks = finalChunks.Count,
+            Chunks = finalChunks
         };
-
-        onProgress?.Invoke($"Nạp hoàn tất {totalPages} trang, {totalChars} ký tự, {chunks.Count} Chunks!", 100);
-
-        return result;
     }
 
-    /// <summary>
-    /// Chạy Python script local (textbook_local_parser.py) trích xuất chữ thuần 100% offline trong 1-2 giây
-    /// </summary>
-    private async Task<List<(int PageNumber, string Text)>> RunPythonLocalParserAsync(byte[] pdfBytes, Action<string, int>? onProgress)
-    {
-        var pageTextMap = new List<(int PageNumber, string Text)>();
-        string tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.pdf");
-
-        try
-        {
-            await File.WriteAllBytesAsync(tempPath, pdfBytes);
-
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string scriptPath = Path.Combine(baseDir, "Parsers", "textbook_local_parser.py");
-            if (!File.Exists(scriptPath))
-            {
-                scriptPath = Path.Combine(Directory.GetCurrentDirectory(), "Parsers", "textbook_local_parser.py");
-            }
-            if (!File.Exists(scriptPath))
-            {
-                scriptPath = @"e:\CapStone\All Services\V-Eval-Ai_Engine\V-Eval-Ai_Engine.Infrastructure\Parsers\textbook_local_parser.py";
-            }
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "python",
-                Arguments = $"\"{scriptPath}\" \"{tempPath}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8
-            };
-
-            using var process = new Process { StartInfo = startInfo };
-
-            process.ErrorDataReceived += (sender, e) =>
-            {
-                if (!string.IsNullOrWhiteSpace(e.Data))
-                {
-                    if (e.Data.StartsWith("[PROGRESS]"))
-                    {
-                        string logMsg = e.Data.Replace("[PROGRESS]", "").Trim();
-                        var match = System.Text.RegularExpressions.Regex.Match(logMsg, @"\[Trang (\d+)/(\d+)\]");
-                        if (match.Success && int.TryParse(match.Groups[1].Value, out int curP) && int.TryParse(match.Groups[2].Value, out int totP) && totP > 0)
-                        {
-                            int pct = 15 + (int)((float)curP / totP * 65);
-                            onProgress?.Invoke(logMsg, pct);
-                        }
-                        else
-                        {
-                            onProgress?.Invoke(logMsg, 20);
-                        }
-                    }
-                    _logger.LogInformation("[Python Local Parser] {Log}", e.Data);
-                }
-            };
-
-            process.Start();
-            process.BeginErrorReadLine();
-
-            string jsonOutput = await process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            if (!string.IsNullOrWhiteSpace(jsonOutput))
-            {
-                using var doc = JsonDocument.Parse(jsonOutput);
-                if (doc.RootElement.TryGetProperty("pages", out var pagesElement))
-                {
-                    foreach (var item in pagesElement.EnumerateArray())
-                    {
-                        int pageNum = item.GetProperty("page").GetInt32();
-                        string text = item.GetProperty("text").GetString() ?? "";
-                        if (!string.IsNullOrWhiteSpace(text))
-                        {
-                            pageTextMap.Add((pageNum, text));
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Lỗi khi chạy Python Local Parser, chuyển sang luồng fallback...");
-        }
-        finally
-        {
-            if (File.Exists(tempPath))
-            {
-                try { File.Delete(tempPath); } catch { }
-            }
-        }
-
-        return pageTextMap;
-    }
+    private static int _keyCounter = 0;
 
     /// <summary>
-    /// Kết xuất trang PDF scan thành hình ảnh JPEG và gọi Vision API (Gemini/OpenAI) cho bài toán Toán/Lý/Hóa
+    /// Kết xuất trang PDF scan thành hình ảnh JPEG độ phân giải vừa phải (96 DPI) và gọi Vision API
+    /// Giúp tiết kiệm tối đa token, tối thiểu chi phí và tăng tốc độ xử lý trên Free Tier
     /// </summary>
     private async Task<string> OcrPageWithVisionModelsAsync(
         byte[] pdfBytes,
@@ -290,48 +248,61 @@ public class PdfPigTextbookParserService : ITextbookParserService
         try
         {
             using var pdfStream = new MemoryStream(pdfBytes);
-            using var skBitmap = PDFtoImage.Conversion.ToImage(pdfStream, page: pageNumber - 1);
+            
+            // TỐI ƯU HÓA: Render ở 96 DPI (vừa vặn nét cho OCR chữ/công thức mà kích thước chỉ ~800x1100 px, <80KB)
+            using var skBitmap = Conversion.ToImage(pdfStream, page: pageNumber - 1, options: new RenderOptions { Dpi = 96 });
             if (skBitmap == null) return string.Empty;
 
             using var imageStream = new MemoryStream();
-            skBitmap.Encode(imageStream, SKEncodedImageFormat.Jpeg, quality: 80);
+            skBitmap.Encode(imageStream, SKEncodedImageFormat.Jpeg, quality: 70);
             byte[] imageBytes = imageStream.ToArray();
             string base64Image = Convert.ToBase64String(imageBytes);
 
-            string prompt = "BẠN LÀ BỘ ĐỌC OCR CHÍNH XÁC CAO CHO ĐỀ THI VÀ TÀI LIỆU TOÁN, VẬT LÝ, HÓA HỌC.\nNhiệm vụ: Hãy đọc và trích xuất NGUYÊN VĂN 100% nội dung chữ và công thức trong hình ảnh này. Mọi công thức toán/lý/hóa phải được bao bọc bởi cặp dấu đô-la $...$ theo đúng cú pháp LaTeX.";
+            string prompt = "BẠN LÀ MÁY SCAN OCR ĐỘ CHÍNH XÁC CAO. Đọc và trích xuất NGUYÊN VĂN 100% nội dung chữ, bảng biểu (dạng Markdown table), thơ và công thức trong hình ảnh này. Mọi công thức Toán/Lý/Hóa bao bọc bằng cặp dấu đô-la $...$ theo cú pháp LaTeX.";
 
-            // 1. Thử các API Keys & các Mô Hình Gemini hợp lệ (gemini-1.5-flash, gemini-2.0-flash...)
-            foreach (var apiKey in geminiKeys)
+            // 1. Chuẩn bị payload JSON (không kèm thinkingConfig để tương thích 100% với các dòng Lite & Flash mới)
+            var payloadObj = new JsonObject
             {
-                foreach (var model in geminiModels)
+                ["contents"] = new JsonArray
+                {
+                    new JsonObject
+                    {
+                        ["parts"] = new JsonArray
+                        {
+                            new JsonObject { ["text"] = prompt },
+                            new JsonObject
+                            {
+                                ["inline_data"] = new JsonObject
+                                {
+                                    ["mime_type"] = "image/jpeg",
+                                    ["data"] = base64Image
+                                }
+                            }
+                        }
+                    }
+                },
+                ["generationConfig"] = new JsonObject
+                {
+                    ["temperature"] = 0.0
+                }
+            };
+            string jsonString = payloadObj.ToJsonString();
+
+            // 2. Sắp xếp xoay vòng API Key luân phiên (Round-Robin) tăng gấp đôi thông lượng
+            var orderedKeys = new List<string>(geminiKeys);
+            if (orderedKeys.Count > 1)
+            {
+                int shift = (Interlocked.Increment(ref _keyCounter) & 0x7FFFFFFF) % orderedKeys.Count;
+                orderedKeys = orderedKeys.Skip(shift).Concat(orderedKeys.Take(shift)).ToList();
+            }
+
+            foreach (var model in geminiModels)
+            {
+                foreach (var apiKey in orderedKeys)
                 {
                     try
                     {
                         string url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
-                        
-                        var payload = new
-                        {
-                            contents = new[]
-                            {
-                                new
-                                {
-                                    parts = new object[]
-                                    {
-                                        new { text = prompt },
-                                        new
-                                        {
-                                            inline_data = new
-                                            {
-                                                mime_type = "image/jpeg",
-                                                data = base64Image
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        };
-
-                        string jsonString = JsonSerializer.Serialize(payload);
                         using var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
 
                         var response = await _httpClient.PostAsync(url, content, cancellationToken);
@@ -339,11 +310,33 @@ public class PdfPigTextbookParserService : ITextbookParserService
                         {
                             string responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
                             var jsonNode = JsonNode.Parse(responseBody);
-                            string extractedText = jsonNode?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString() ?? string.Empty;
+                            var partsNode = jsonNode?["candidates"]?[0]?["content"]?["parts"]?.AsArray();
+
+                            var sb = new StringBuilder();
+                            if (partsNode != null)
+                            {
+                                foreach (var part in partsNode)
+                                {
+                                    if (part?["thought"]?.GetValue<bool>() == true) continue;
+                                    var txt = part?["text"]?.ToString();
+                                    if (!string.IsNullOrWhiteSpace(txt))
+                                    {
+                                        sb.AppendLine(txt);
+                                    }
+                                }
+                            }
+
+                            string extractedText = sb.ToString().Trim();
                             if (!string.IsNullOrWhiteSpace(extractedText))
                             {
-                                return extractedText.Trim();
+                                return extractedText;
                             }
+                        }
+                        else
+                        {
+                            string errBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                            _logger.LogWarning("[Trang {PageNumber}] Gọi Gemini Model '{Model}' thất bại (HTTP {Status}): {Error}", 
+                                pageNumber, model, (int)response.StatusCode, errBody.Length > 250 ? errBody[..250] : errBody);
                         }
                     }
                     catch (Exception ex)
@@ -353,7 +346,7 @@ public class PdfPigTextbookParserService : ITextbookParserService
                 }
             }
 
-            // 2. Fallback sang OpenAI Vision gpt-4o-mini
+            // 2. Fallback sang OpenAI Vision gpt-4o-mini nếu cấu hình
             string? openAiKey = ResolveOpenAiKey();
             if (!string.IsNullOrWhiteSpace(openAiKey))
             {
@@ -453,20 +446,12 @@ public class PdfPigTextbookParserService : ITextbookParserService
     private List<string> ResolveGeminiModels()
     {
         var models = _configuration.GetSection("AiSettings:GeminiModels").Get<string[]>();
-        var list = new List<string>();
-
         if (models != null && models.Length > 0)
         {
-            list.AddRange(models.Where(m => !string.IsNullOrWhiteSpace(m)).Select(m => m.Trim()));
+            return models.Where(m => !string.IsNullOrWhiteSpace(m)).Select(m => m.Trim()).ToList();
         }
 
-        var defaultModels = new[] { "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp" };
-        foreach (var def in defaultModels)
-        {
-            if (!list.Contains(def)) list.Add(def);
-        }
-
-        return list.Distinct().ToList();
+        return new List<string> { "gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-3.6-flash" };
     }
 
     private string? ResolveOpenAiKey()
@@ -475,59 +460,138 @@ public class PdfPigTextbookParserService : ITextbookParserService
                   ?? _configuration["AiSettings:OpenAiApiKey"]
                   ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 
-        if (string.IsNullOrWhiteSpace(key)) return null;
-
-        key = key.Trim();
-        if (key.StartsWith("YOUR_", StringComparison.OrdinalIgnoreCase)) return null;
-
-        return key;
+        if (string.IsNullOrWhiteSpace(key) || key.StartsWith("YOUR_")) return null;
+        return key.Trim();
     }
 
-    private static List<TextbookChunkDto> BuildSemanticChunks(List<(int PageNumber, string Text)> pageTextMap)
+    private static readonly HashSet<char> VietnameseVowels = new HashSet<char>
     {
-        var chunks = new List<TextbookChunkDto>();
-        int chunkIndex = 1;
-        var currentChunkBuilder = new StringBuilder();
-        int currentStartPage = 1;
+        'a', 'ă', 'â', 'e', 'ê', 'i', 'o', 'ô', 'ơ', 'u', 'ư', 'y',
+        'á', 'à', 'ả', 'ã', 'ạ',
+        'ắ', 'ằ', 'ẳ', 'ẵ', 'ặ',
+        'ấ', 'ầ', 'ẩ', 'ẫ', 'ậ',
+        'é', 'è', 'ẻ', 'ẽ', 'ẹ',
+        'ế', 'ề', 'ể', 'ễ', 'ệ',
+        'í', 'ì', 'ỉ', 'ĩ', 'ị',
+        'ó', 'ò', 'ỏ', 'õ', 'ọ',
+        'ố', 'ồ', 'ổ', 'ỗ', 'ộ',
+        'ớ', 'ờ', 'ở', 'ỡ', 'ợ',
+        'ú', 'ù', 'ủ', 'ũ', 'ụ',
+        'ứ', 'ừ', 'ử', 'ữ', 'ự',
+        'ý', 'ỳ', 'ỷ', 'ỹ', 'ỵ',
+        'A', 'Ă', 'Â', 'E', 'Ê', 'I', 'O', 'Ô', 'Ơ', 'U', 'Ư', 'Y',
+        'Á', 'À', 'Ả', 'Ã', 'Ạ',
+        'Ắ', 'Ằ', 'Ẳ', 'Ẵ', 'Ặ',
+        'Ấ', 'Ầ', 'Ẩ', 'Ẫ', 'Ậ',
+        'É', 'È', 'Ẻ', 'Ẽ', 'Ẹ',
+        'Ế', 'Ề', 'Ể', 'Ễ', 'Ệ',
+        'Í', 'Ì', 'Ỉ', 'Ĩ', 'Ị',
+        'Ó', 'Ò', 'Ỏ', 'Õ', 'Ọ',
+        'Ố', 'Ồ', 'Ổ', 'Ỗ', 'Ộ',
+        'Ớ', 'Ờ', 'Ở', 'Ỡ', 'Ợ',
+        'Ú', 'Ù', 'Ủ', 'Ũ', 'Ụ',
+        'Ứ', 'Ừ', 'Ử', 'Ữ', 'Ự',
+        'Ý', 'Ỳ', 'Ỷ', 'Ỹ', 'Ỵ'
+    };
 
-        foreach (var (pageNumber, text) in pageTextMap)
+    private static readonly HashSet<char> CorruptedGlyphs = new HashSet<char>
+    {
+        '{', '}', '\\', '^', '~', '|', '¶', '§', '©', '®', '½', '¼', '¾', '¿', '±', '`', '¤', '°',
+        'ł', 'Ċ', 'ī', 'Ť', 'Š', 'ś', 'ř', 'œ', 'ż', 'ź', 'č', 'ď', 'ń', 'ň', 'ħ', 'Ĉ', 'Ў', 'Č', 'Г', 'ə',
+        'Ä', 'Å', 'Ö', 'Ā', 'Ś', 'Ĩ', 'Ũ', 'Ð', 'þ', 'Ñ', 'ť', 'Ğ', 'ï'
+    };
+
+    /// <summary>
+    /// Phát hiện lớp text trích xuất từ PDF có bị lỗi mã hóa font InDesign/CID subset (mojibake) hay không.
+    /// Nếu bị lỗi font, văn bản đọc từ PdfPig sẽ là các chuỗi vô nghĩa (&IFHPkFVLQK, QKQKL, v.v.).
+    /// </summary>
+    public static bool IsCorruptedFontEncoding(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text) || text.Length < 30) return false;
+
+        int corruptedCount = 0;
+        int totalLetters = 0;
+        int vowelCount = 0;
+
+        foreach (char c in text)
         {
-            if (currentChunkBuilder.Length == 0)
+            if (CorruptedGlyphs.Contains(c)) corruptedCount++;
+            if (char.IsLetter(c))
             {
-                currentStartPage = pageNumber;
+                totalLetters++;
+                if (VietnameseVowels.Contains(c)) vowelCount++;
+            }
+        }
+
+        // 1. Nếu mật độ ký tự rác / glyph bất thường >= 1.0% (hoặc có từ 4 ký tự lạ trở lên và chiếm >= 0.8%) -> Lỗi font
+        if (corruptedCount >= 4 && ((double)corruptedCount / text.Length) >= 0.008)
+        {
+            return true;
+        }
+
+        // 2. Kiểm tra tỷ lệ nguyên âm: Văn bản Tiếng Việt / Tiếng Anh thông thường có 32% - 50% nguyên âm.
+        // Khi bị lỗi font CID InDesign, tỷ lệ nguyên âm sụt giảm mạnh (< 24%) do mã glyph bị dịch sang phụ âm.
+        if (totalLetters >= 30)
+        {
+            double vowelRatio = (double)vowelCount / totalLetters;
+            if (vowelRatio < 0.23)
+            {
+                return true;
+            }
+        }
+
+        // 3. Phân tích các từ có độ dài >= 4:
+        var words = text.Split(new[] { ' ', '\t', '\r', '\n', ',', '.', ';', ':', '!', '?', '(', ')', '[', ']', '{', '}', '/', '\\', '"', '\'', '`' }, 
+            StringSplitOptions.RemoveEmptyEntries);
+
+        int vowellessWordCount = 0;
+        int totalSignificantWords = 0;
+        int consecutiveConsonantBombCount = 0;
+
+        foreach (var word in words)
+        {
+            string cleanWord = new string(word.Where(char.IsLetter).ToArray());
+            if (cleanWord.Length < 4) continue;
+
+            totalSignificantWords++;
+
+            bool hasVowel = cleanWord.Any(c => VietnameseVowels.Contains(c));
+            if (!hasVowel)
+            {
+                vowellessWordCount++;
             }
 
-            currentChunkBuilder.AppendLine(text);
-
-            while (currentChunkBuilder.Length >= CHUNK_SIZE)
+            int currentConsonants = 0;
+            foreach (char c in cleanWord)
             {
-                string chunkContent = currentChunkBuilder.ToString(0, CHUNK_SIZE);
-                chunks.Add(new TextbookChunkDto
+                if (!VietnameseVowels.Contains(c))
                 {
-                    ChunkIndex = chunkIndex++,
-                    PageNumber = currentStartPage,
-                    Text = chunkContent,
-                    CharCount = chunkContent.Length
-                });
-
-                int keepLength = Math.Min(CHUNK_OVERLAP, currentChunkBuilder.Length);
-                string overlapText = currentChunkBuilder.ToString(currentChunkBuilder.Length - keepLength, keepLength);
-                currentChunkBuilder.Clear();
-                currentChunkBuilder.Append(overlapText);
+                    currentConsonants++;
+                    if (currentConsonants >= 5)
+                    {
+                        consecutiveConsonantBombCount++;
+                        break;
+                    }
+                }
+                else
+                {
+                    currentConsonants = 0;
+                }
             }
         }
 
-        if (currentChunkBuilder.Length > 0)
+        // Nếu có từ 2 từ dài không chứa nguyên âm nào trở lên VÀ chiếm >= 15% số từ quan trọng -> Lỗi font
+        if (totalSignificantWords >= 5 && vowellessWordCount >= 2 && ((double)vowellessWordCount / totalSignificantWords) >= 0.15)
         {
-            chunks.Add(new TextbookChunkDto
-            {
-                ChunkIndex = chunkIndex++,
-                PageNumber = currentStartPage,
-                Text = currentChunkBuilder.ToString(),
-                CharCount = currentChunkBuilder.Length
-            });
+            return true;
         }
 
-        return chunks;
+        // Nếu có từ 3 từ chứa cụm phụ âm liên tiếp >= 5 trở lên (VD: WKKQPQC, tFKWKtFKWt)
+        if (consecutiveConsonantBombCount >= 3)
+        {
+            return true;
+        }
+
+        return false;
     }
 }

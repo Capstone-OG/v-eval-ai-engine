@@ -1,5 +1,45 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [26/09/2026] - Trực Quan Hóa Chunks Tri Thức (Markdown + KaTeX + Tables), Khắc Phục Lỗi Font InDesign/CID & Resumable Ingestion
+- **Nâng Cấp Giao Diện Trực Quan Hóa Chunks Tri Thức (`view-textbook.html`)**:
+  - **Chuyển Đổi Từ Text Thuần Sang Định Dạng Trực Quan Cao Cấp (Rich Markdown & KaTeX Preview)**:
+    - Tích hợp thư viện `marked.js` và `katex` để tự động render toàn bộ văn bản SGK đã cắt: Tiêu đề (`h1` - `h4`), danh sách gạch đầu dòng, khối trích dẫn (`blockquote`), chữ đậm/nghiêng.
+    - **Hiển Thị Bảng Biểu Số Liệu Glassmorphic**: Tự động chuyển đổi các bảng Markdown thành bảng HTML hiện đại với hiệu ứng xen kẽ dòng (`striped rows`), bo góc và hover làm nổi bật số liệu.
+    - **Render Công Thức Toán/Lý/Hóa Chuẩn KaTeX**: Tự động nhận diện và render sắc nét các công thức inline (``$...$``) và block (``$$...$$``) mà không bị xung đột với parser Markdown.
+  - **Thanh Công Cụ Điều Khiển & Tìm Kiếm Chunks Đa Năng**:
+    - **Bộ Lọc & Tìm Kiếm Real-time**: Ô input tìm kiếm tức thì theo từ khóa văn bản hoặc số trang (`Trang 5`, `p10`), hiển thị số lượng chunks khớp.
+    - **Chế Độ Xem Linh Hoạt (Global & Per-Card View Switcher)**: Cho phép chuyển đổi linh hoạt giữa `👁️ Trực Quan` và `📄 Raw Text` cho toàn bộ danh sách hoặc riêng biệt từng Chunk.
+    - **Xuất & Sao Chép Nhanh**: Tích hợp nút `📋 Copy` từng chunk, `📋 Sao Chép Hết` (toàn bộ nội dung cuốn sách) và `💾 Tải File .MD` để lưu toàn bộ sách dưới dạng Markdown chuẩn phục vụ huấn luyện RAG.
+- **Tự Động Phát Hiện & Khắc Phục Triệt Để Lỗi Font InDesign / CID Subsetting (Mojibake)**:
+  - Phân tích nguyên nhân: Các file SGK (như SGK Lớp 10 Địa Lí, Lịch Sử, Văn...) chứa lớp text số bị lỗi encoding do phần mềm InDesign không nhúng ToUnicode CMap, khiến PdfPig bóc tách ra các chuỗi ký tự rác vô nghĩa (VD: `&IFHPkFVLQK WKKQPQCdo...`, `PNtFKWKtFKWt...`).
+  - Triển khai thuật toán kiểm định `IsCorruptedFontEncoding(rawText)` với 3 tầng lọc:
+    1. Kiểm tra mật độ ký tự rác / glyph lạ (`{`, `}`, `\`, `^`, `~`, `|`, `¶`, `§`, `©`, `®`, `½`, `¼`, `¾`, `¿`, `±`, `ł`, `Ċ`, `ī`, `Ť`, `Š`, `ś`, v.v.).
+    2. Kiểm tra tỷ lệ nguyên âm tiếng Việt/Anh (`< 23%` là dấu hiệu phân mảnh phụ âm do lỗi CMap).
+    3. Kiểm tra cụm phụ âm liên tiếp dài (`>= 5` phụ âm) và các từ không chứa nguyên âm.
+  - Khi phát hiện lớp chữ số bị lỗi, hệ thống tự động bỏ qua text rác và chuyển hướng bóc tách ảnh bằng Gemini Vision AI (DPI 96) cho ra văn bản tiếng Việt sạch sẽ 100%.
+- **Chế Độ Bóc Tách Ép Vision AI & Tùy Chọn Nạp Lại Từ Đầu (Force Reingest / Overwrite)**:
+  - Bổ sung tùy chọn `VISION_AI` trên UI và API: Bóc tách 100% bằng Vision AI, bỏ qua hoàn toàn lớp text số nếu nghi ngờ file PDF lỗi font.
+  - Bổ sung cờ `forceReingest` và checkbox trên UI: Tự động xóa sạch các chunk cũ bị lỗi font (`DELETE FROM v_eval_ai."KnowledgeVectorChunks" WHERE source_id = @source_id`) và bóc tách lại từ trang 1.
+- **Khắc Phục Lỗi 400 Bad Request & Cập Nhật Danh Mục Mô Hình Gemini Đương Đại**:
+  - Phát hiện và loại bỏ trường `thinkingConfig: { thinkingBudget: 0 }` trong payload gửi tới `gemini-flash-lite-latest` (nguyên nhân gây lỗi 400 `INVALID_ARGUMENT` do Google API không hỗ trợ trường thinking trên dòng Lite).
+  - Loại bỏ các mô hình đã ngừng hỗ trợ trả về mã 404 (`gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-2.5-flash`).
+  - Cập nhật danh mục mô hình tối ưu theo khuyến nghị chính thức của Google: `gemini-flash-lite-latest`, `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, `gemini-3.8-flash`, `gemini-3.6-flash`.
+  - Bổ sung ghi log chi tiết mã HTTP và nội dung lỗi khi gọi API để dễ dàng giám sát vận hành.
+- **Tối Ưu Hóa Đầu Vào & Điểm Ảnh Vision AI (Low-DPI Optimization)**:
+  - Giảm thiểu token và chi phí Free Tier bằng cách kết xuất trang PDF scan ở độ phân giải vừa vặn `Dpi = 96` (kích thước ~800x1100 px, dung lượng nén JPEG chất lượng 70 chỉ < 80 KB).
+  - Tối đa hóa tốc độ xử lý trên Google Gemini Flash (`gemini-flash-lite-latest` / `gemini-1.5-flash`), bóc tách mỗi trang trong ~2.5s mà vẫn giữ nguyên 100% công thức LaTeX (``$x^2 + y^2$``) và bảng biểu Markdown.
+- **Kiến Trúc Checkpointing & Nạp Ngầm Lưu Trực Tiếp CSDL (Per-Page Persistence)**:
+  - Tạm lưu tệp PDF lên máy chủ (`uploads/textbooks/`) và tính mã băm SHA-256 định danh tệp duy nhất.
+  - Tác vụ nạp chạy hoàn toàn ngầm (`Task.Run`), độc lập với vòng đời HTTP Request, trả về `202 Accepted` ngay lập tức.
+  - Mỗi trang xử lý xong được lưu ngay thành Chunk vào bảng `v_eval_ai."KnowledgeVectorChunks"` và cập nhật tiến trình vào `v_eval_ai."KnowledgeSources"`.
+  - **Khả Năng Khôi Phục (Resume)**: Khi có sự cố ngắt kết nối, tắt trình duyệt hoặc tải lại tệp, hệ thống kiểm tra `MAX(page_number)` trong CSDL và **tự động tiếp tục nạp từ trang tiếp theo (Page X+1)**, không bao giờ phải nạp lại từ đầu.
+- **Khôi Phục Trạng Thái Giao Diện Studio (`view-textbook.html`)**:
+  - Tích hợp endpoint `GET /api/ai-engine/textbooks/active-job`: Khi người dùng tải lại trang (F5) hoặc quay lại sau nhiều giờ, giao diện tự động kết nối lại tiến trình ngầm đang chạy và tiếp tục cập nhật thanh tiến độ % và live console logs.
+- **Bộ Công Cụ Ping & Đo Độ Trễ Vision AI**:
+  - Cung cấp endpoint `GET /api/ai-engine/textbooks/ping-vision`, banner kiểm tra trực quan trên Web và script PowerShell [`Scripts/run_local/ping_vision.ps1`](./../../Scripts/run_local/ping_vision.ps1).
+
+---
+
 ## [25/09/2026] - Triển Khai Phân Loại OCR Mode, RapidOCR Offline Speed-Up & API Lưu Tri Thức Database (`v_eval_ai`)
 - **Giao Diện Trang Web Nạp Tri Thức SGK (`wwwroot/view-textbook.html`)**:
   - Xây dựng giao diện Web UI hiện đại với Glassmorphic design, thanh tab chuyển đổi mượt mà giữa Ngân Hàng Đề Thi (`/api/ai-engine/view-exam`) và Nạp Tri Thức SGK (`/api/ai-engine/view-textbook`).

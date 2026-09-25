@@ -14,6 +14,7 @@ public interface ITextbookParserService
         string skillId,
         string docType,
         string ocrMode = "TEXT_HUMANITIES",
+        bool forceReingest = false,
         Action<string, int>? onProgress = null,
         CancellationToken cancellationToken = default);
 }

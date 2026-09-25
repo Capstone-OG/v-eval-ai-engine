@@ -36,10 +36,16 @@ public class TextbookProcessingJobDto
 {
     public string JobId { get; set; } = string.Empty;
     public string FileName { get; set; } = string.Empty;
-    public string Status { get; set; } = "PROCESSING"; // PROCESSING, COMPLETED, FAILED
+    public string FileHash { get; set; } = string.Empty;
+    public string SourceId { get; set; } = string.Empty;
+    public string Status { get; set; } = "PROCESSING"; // PROCESSING, COMPLETED, FAILED, PAUSED
     public int ProgressPercent { get; set; } = 0;
     public string CurrentStep { get; set; } = "Đang chuẩn bị...";
     public int ElapsedSeconds { get; set; } = 0;
+    public int CurrentPage { get; set; } = 0;
+    public int TotalPages { get; set; } = 0;
+    public int StartPage { get; set; } = 1;
+    public bool IsResumed { get; set; } = false;
     public TextbookIngestResultDto? Result { get; set; }
     public string? ErrorMessage { get; set; }
 }
