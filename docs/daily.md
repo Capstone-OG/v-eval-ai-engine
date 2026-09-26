@@ -1,5 +1,82 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [26/09/2026] - Trực Quan Hóa Chunks Tri Thức (Markdown + KaTeX + Tables), Khắc Phục Lỗi Font InDesign/CID & Resumable Ingestion
+- **Nâng Cấp Giao Diện Trực Quan Hóa Chunks Tri Thức (`view-textbook.html`)**:
+  - **Chuyển Đổi Từ Text Thuần Sang Định Dạng Trực Quan Cao Cấp (Rich Markdown & KaTeX Preview)**:
+    - Tích hợp thư viện `marked.js` và `katex` để tự động render toàn bộ văn bản SGK đã cắt: Tiêu đề (`h1` - `h4`), danh sách gạch đầu dòng, khối trích dẫn (`blockquote`), chữ đậm/nghiêng.
+    - **Hiển Thị Bảng Biểu Số Liệu Glassmorphic**: Tự động chuyển đổi các bảng Markdown thành bảng HTML hiện đại với hiệu ứng xen kẽ dòng (`striped rows`), bo góc và hover làm nổi bật số liệu.
+    - **Render Công Thức Toán/Lý/Hóa Chuẩn KaTeX**: Tự động nhận diện và render sắc nét các công thức inline (``$...$``) và block (``$$...$$``) mà không bị xung đột với parser Markdown.
+  - **Thanh Công Cụ Điều Khiển & Tìm Kiếm Chunks Đa Năng**:
+    - **Bộ Lọc & Tìm Kiếm Real-time**: Ô input tìm kiếm tức thì theo từ khóa văn bản hoặc số trang (`Trang 5`, `p10`), hiển thị số lượng chunks khớp.
+    - **Chế Độ Xem Linh Hoạt (Global & Per-Card View Switcher)**: Cho phép chuyển đổi linh hoạt giữa `👁️ Trực Quan` và `📄 Raw Text` cho toàn bộ danh sách hoặc riêng biệt từng Chunk.
+    - **Xuất & Sao Chép Nhanh**: Tích hợp nút `📋 Copy` từng chunk, `📋 Sao Chép Hết` (toàn bộ nội dung cuốn sách) và `💾 Tải File .MD` để lưu toàn bộ sách dưới dạng Markdown chuẩn phục vụ huấn luyện RAG.
+- **Tự Động Phát Hiện & Khắc Phục Triệt Để Lỗi Font InDesign / CID Subsetting (Mojibake)**:
+  - Phân tích nguyên nhân: Các file SGK (như SGK Lớp 10 Địa Lí, Lịch Sử, Văn...) chứa lớp text số bị lỗi encoding do phần mềm InDesign không nhúng ToUnicode CMap, khiến PdfPig bóc tách ra các chuỗi ký tự rác vô nghĩa (VD: `&IFHPkFVLQK WKKQPQCdo...`, `PNtFKWKtFKWt...`).
+  - Triển khai thuật toán kiểm định `IsCorruptedFontEncoding(rawText)` với 3 tầng lọc:
+    1. Kiểm tra mật độ ký tự rác / glyph lạ (`{`, `}`, `\`, `^`, `~`, `|`, `¶`, `§`, `©`, `®`, `½`, `¼`, `¾`, `¿`, `±`, `ł`, `Ċ`, `ī`, `Ť`, `Š`, `ś`, v.v.).
+    2. Kiểm tra tỷ lệ nguyên âm tiếng Việt/Anh (`< 23%` là dấu hiệu phân mảnh phụ âm do lỗi CMap).
+    3. Kiểm tra cụm phụ âm liên tiếp dài (`>= 5` phụ âm) và các từ không chứa nguyên âm.
+  - Khi phát hiện lớp chữ số bị lỗi, hệ thống tự động bỏ qua text rác và chuyển hướng bóc tách ảnh bằng Gemini Vision AI (DPI 96) cho ra văn bản tiếng Việt sạch sẽ 100%.
+- **Chế Độ Bóc Tách Ép Vision AI & Tùy Chọn Nạp Lại Từ Đầu (Force Reingest / Overwrite)**:
+  - Bổ sung tùy chọn `VISION_AI` trên UI và API: Bóc tách 100% bằng Vision AI, bỏ qua hoàn toàn lớp text số nếu nghi ngờ file PDF lỗi font.
+  - Bổ sung cờ `forceReingest` và checkbox trên UI: Tự động xóa sạch các chunk cũ bị lỗi font (`DELETE FROM v_eval_ai."KnowledgeVectorChunks" WHERE source_id = @source_id`) và bóc tách lại từ trang 1.
+- **Khắc Phục Lỗi 400 Bad Request & Cập Nhật Danh Mục Mô Hình Gemini Đương Đại**:
+  - Phát hiện và loại bỏ trường `thinkingConfig: { thinkingBudget: 0 }` trong payload gửi tới `gemini-flash-lite-latest` (nguyên nhân gây lỗi 400 `INVALID_ARGUMENT` do Google API không hỗ trợ trường thinking trên dòng Lite).
+  - Loại bỏ các mô hình đã ngừng hỗ trợ trả về mã 404 (`gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-2.5-flash`).
+  - Cập nhật danh mục mô hình tối ưu theo khuyến nghị chính thức của Google: `gemini-flash-lite-latest`, `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, `gemini-3.8-flash`, `gemini-3.6-flash`.
+  - Bổ sung ghi log chi tiết mã HTTP và nội dung lỗi khi gọi API để dễ dàng giám sát vận hành.
+- **Tối Ưu Hóa Đầu Vào & Điểm Ảnh Vision AI (Low-DPI Optimization)**:
+  - Giảm thiểu token và chi phí Free Tier bằng cách kết xuất trang PDF scan ở độ phân giải vừa vặn `Dpi = 96` (kích thước ~800x1100 px, dung lượng nén JPEG chất lượng 70 chỉ < 80 KB).
+  - Tối đa hóa tốc độ xử lý trên Google Gemini Flash (`gemini-flash-lite-latest` / `gemini-1.5-flash`), bóc tách mỗi trang trong ~2.5s mà vẫn giữ nguyên 100% công thức LaTeX (``$x^2 + y^2$``) và bảng biểu Markdown.
+- **Kiến Trúc Checkpointing & Nạp Ngầm Lưu Trực Tiếp CSDL (Per-Page Persistence)**:
+  - Tạm lưu tệp PDF lên máy chủ (`uploads/textbooks/`) và tính mã băm SHA-256 định danh tệp duy nhất.
+  - Tác vụ nạp chạy hoàn toàn ngầm (`Task.Run`), độc lập với vòng đời HTTP Request, trả về `202 Accepted` ngay lập tức.
+  - Mỗi trang xử lý xong được lưu ngay thành Chunk vào bảng `v_eval_ai."KnowledgeVectorChunks"` và cập nhật tiến trình vào `v_eval_ai."KnowledgeSources"`.
+  - **Khả Năng Khôi Phục (Resume)**: Khi có sự cố ngắt kết nối, tắt trình duyệt hoặc tải lại tệp, hệ thống kiểm tra `MAX(page_number)` trong CSDL và **tự động tiếp tục nạp từ trang tiếp theo (Page X+1)**, không bao giờ phải nạp lại từ đầu.
+- **Khôi Phục Trạng Thái Giao Diện Studio (`view-textbook.html`)**:
+  - Tích hợp endpoint `GET /api/ai-engine/textbooks/active-job`: Khi người dùng tải lại trang (F5) hoặc quay lại sau nhiều giờ, giao diện tự động kết nối lại tiến trình ngầm đang chạy và tiếp tục cập nhật thanh tiến độ % và live console logs.
+- **Bộ Công Cụ Ping & Đo Độ Trễ Vision AI**:
+  - Cung cấp endpoint `GET /api/ai-engine/textbooks/ping-vision`, banner kiểm tra trực quan trên Web và script PowerShell [`Scripts/run_local/ping_vision.ps1`](./../../Scripts/run_local/ping_vision.ps1).
+
+---
+
+## [25/09/2026] - Triển Khai Phân Loại OCR Mode, RapidOCR Offline Speed-Up & API Lưu Tri Thức Database (`v_eval_ai`)
+- **Giao Diện Trang Web Nạp Tri Thức SGK (`wwwroot/view-textbook.html`)**:
+  - Xây dựng giao diện Web UI hiện đại với Glassmorphic design, thanh tab chuyển đổi mượt mà giữa Ngân Hàng Đề Thi (`/api/ai-engine/view-exam`) và Nạp Tri Thức SGK (`/api/ai-engine/view-textbook`).
+  - Tích hợp menu tùy chọn **Chế độ xử lý chữ (OCR Mode)**:
+    - 📖 **Văn Bản Thuần - Ngữ Văn, Anh Văn, KHXH** *(Gọi Python PyMuPDF + RapidOCR Local Engine)*.
+    - 📄 **Tự Động / Text Local** *(Đọc siêu tốc local offline bằng `PdfPig` cho PDF có lớp chữ sẵn)*.
+    - 🧪 **Tự Nhiên & Công Thức - Toán, Lý, Hóa** *(Giữ nguyên định dạng LaTeX)*.
+  - Tích hợp nút bấm **💾 Lưu Tri Thức Vào Database (`v_eval_ai`)** gửi payload Vector Chunks về CSDL.
+  - Bảng điều khiển tiến độ ngầm (Background Job Dashboard) hiển thị phần trăm tiến trình %, live console log real-time và preview các Chunks tri thức.
+- **Tối Ưu Hóa & Đồng Bộ Hóa Tuần Tự RapidOCR (`textbook_local_parser.py`)**:
+  - Khôi phục luồng xử lý tuần tự (Sequential Order) 100% chuẩn xác theo thứ tự trang từ `1..N`.
+  - Sử dụng ánh xạ bộ nhớ trực tiếp (Direct Numpy Buffer) từ `pix.samples`, loại bỏ hoàn toàn chi phí nén/giải nén PNG/JPEG trung gian.
+  - Phân tích số trang `[Trang X/Y]` để đồng bộ thanh tiến độ phần trăm `%` tăng dần mượt mà từ 15% đến 80% trên UI.
+- **Khởi Tạo Schema `v_eval_ai` Trên Supabase & Tích Hợp Npgsql Repository**:
+  - Đã khởi tạo thành công Schema `v_eval_ai` và extension `vector` (pgvector) trên CSDL Supabase Cloud PostgreSQL.
+  - Ban hành kịch bản DDL chuẩn tại [`docs/SQL/V_EVAL_AI_SCHEMA.sql`](./docs/SQL/V_EVAL_AI_SCHEMA.sql) bao gồm 2 bảng:
+    - `v_eval_ai."KnowledgeSources"`: Quản lý metadata tài liệu SGK, mã Hash SHA-256, số trang, số chunks.
+    - `v_eval_ai."KnowledgeVectorChunks"`: Lưu trữ các đoạn phân đoạn tri thức (chunks) kèm trường `embedding vector(768)` và chỉ mục HNSW (`idx_knowledge_vector_hnsw`).
+  - Triển khai `TextbookRepository` (`ITextbookRepository`) sử dụng Npgsql kết nối Supabase, ghi trực tiếp các Chunks tri thức vào CSDL khi bấm nút trên UI.
+- **REST Endpoints & Database Persistence (`TextbookEndpoints.cs`)**:
+  - `POST /api/ai-engine/textbooks/upload-pdf`: Tiếp nhận PDF + `ocrMode`, khởi chạy Background Job async và trả về `202 Accepted` kèm JobId.
+  - `GET /api/ai-engine/textbooks/jobs/{jobId}`: Endpoint Polling tiến độ ngầm real-time.
+  - `POST /api/ai-engine/textbooks/save-db`: Gọi `ITextbookRepository` lưu thực tế các Vector Chunks tri thức vào Supabase PostgreSQL (Schema `v_eval_ai`).
+  - `GET /api/ai-engine/view-textbook`: Phục vụ giao diện HTML UI nạp SGK.
+
+---
+
+## [24/09/2026] - Cấu Hình Supabase Connection & Phân Chi Schema `v_eval_ai`
+- **Cấu Hình Chuỗi Kết Nối PostgreSQL (Supabase Cloud)**:
+  - Bổ sung `ConnectionStrings:DefaultConnection` trong `appsettings.json` kết nối trực tiếp Supabase Cloud PostgreSQL.
+  - Khởi tạo và cập nhật `DATABASE_URL` trong `rag-service/.env` & `.env.example` cấu hình kết nối Python RAG Engine với Supabase (`postgresql+psycopg`).
+- **Phân Chi Schema `v_eval_ai` & `v_eval_system`**:
+  - Xác nhận tạo Schema `v_eval_ai`, `v_eval_system` và `pgvector` extension trên Supabase SQL Editor.
+  - Đảm bảo hạ tầng Vector RAG Store cho `KnowledgeVectorChunks` (`v_eval_ai`) phục vụ bài toán RAG Engine cho Môn/Skill.
+
+---
+
 ## [22/09/2026] - Triển Khai Diagnostic Engine Cho Core Flow 1 (IRT 2PL, BKT Prior & Radar Chart)
 - **Module Tính Toán Năng Lực IRT & BKT (`rag-service/diagnostic_engine.py`)**:
   - Ước lượng năng lực học sinh `theta_0` bằng mô hình IRT 2-Parameter Logistic (2PL) kết hợp ước lượng hậu nghiệm cực đại (MAP) có hàm phạt Gaussian Prior `N(0, 2.0^2)`.

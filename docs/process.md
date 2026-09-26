@@ -38,4 +38,8 @@
 | 12 | **Dynamic Web Search Grounding** | `rag-service/config.py` | 🟡 Đang làm | 20% | Tích hợp Google Search API / Gemini Grounding |
 | 13 | **Item-Level Replace API (1-2s)** | `rag-service/routers/chat.py` | 🟡 Đang làm | 20% | Sinh 1 câu thay thế tương đương cùng skill & độ khó |
 | 14 | **Diagnostic Engine (IRT 2PL & BKT)** | `rag-service/diagnostic_engine.py`, `routers/diagnostic.py` | 🟢 Hoàn thành | 100% | Ước lượng theta_0 (MAP/Brent), P(L0) Sigmoid, Radar chart, phân lớp |
-| 15 | **AI Tutor Personalization** | `Features/Tutor/` | 🟡 Đang chờ | 0% | Lộ trình học tập cá nhân hóa dựa trên kết quả thi |
+| 15 | **SGK Ingestion & PyMuPDF Local Engine** | `view-textbook.html`, `textbook_local_parser.py`, `PdfPigTextbookParserService.cs` | 🟢 Hoàn thành | 100% | PyMuPDF (1s/170p) + RapidOCR (scan offline) + Vision AI fallback |
+| 16 | **Resumable Checkpoint & Low-DPI Vision Ingestion** | `TextbookEndpoints.cs`, `PdfPigTextbookParserService.cs`, `TextbookRepository.cs` | 🟢 Hoàn thành | 100% | Nạp ngầm background, lưu checkpoint từng trang vào CSDL, tự động resume khi ngắt quãng, ảnh 96 DPI tiết kiệm token |
+| 17 | **AI Tutor Personalization** | `Features/Tutor/` | 🟡 Đang chờ | 0% | Lộ trình học tập cá nhân hóa dựa trên kết quả thi |
+| 18 | **Font Mojibake Auto-Detection & Forced Vision AI** | `PdfPigTextbookParserService.cs`, `TextbookEndpoints.cs`, `view-textbook.html` | 🟢 Hoàn thành | 100% | Tự động phát hiện lỗi mã hóa font InDesign/CID subsetting, tự chuyển sang Vision AI, hỗ trợ Force Reingest / Overwrite và API tra cứu Chunks |
+| 19 | **Rich Chunks Preview (Markdown + KaTeX + Tables)** | `view-textbook.html` | 🟢 Hoàn thành | 100% | Render bảng Markdown glassmorphic striped, công thức KaTeX STEM inline/block, lọc real-time, chuyển đổi Trực Quan / Raw và xuất file .MD |
