@@ -1,5 +1,32 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [27/09/2026] - Chuẩn Hóa IRT 2PL Theo Thang Đo Bloom 6 Mức Độ, AI Exam Studio & Kiến Trúc Chế Độ Kép (Dual Engine: Gemini Cloud vs Siêu Tốc Calibrated)
+- **Chuẩn Hóa Ánh Xạ Độ Khó IRT 2PL Theo 6 Mức Độ Tư Duy Bloom (`diagnostic_engine.py`)**:
+  - Nâng cấp từ 4 cấp độ cũ lên đầy đủ 6 mức độ tư duy chuẩn Bloom cải tiến (Revised Bloom's Taxonomy):
+    - Mức 1: Nhận biết (Remembering) $\to b = -1.8$
+    - Mức 2: Thông hiểu (Understanding) $\to b = -1.0$
+    - Mức 3: Vận dụng (Applying) $\to b = -0.2$
+    - Mức 4: Phân tích (Analyzing) $\to b = +0.6$
+    - Mức 5: Đánh giá (Evaluating) $\to b = +1.4$
+    - Mức 6: Sáng tạo (Creating) $\to b = +2.2$
+  - Cập nhật schema Pydantic `DiagnosticAnswerItem` (`rag-service/schemas.py`) mở rộng `difficulty_level` từ `[1..4]` lên `[1..6]`.
+- **Triển Khai AI Exam Studio & Kiến Trúc Chế Độ Kép (Dual Engine Architecture)**:
+  - Bổ sung endpoint `POST /api/v1/diagnostic/generate-exam` (FastAPI port 8000) với 2 chế độ sinh đề:
+    1. **🧠 Google Gemini Live Cloud (`gemini-flash-lite-latest`)**: Gọi trực tiếp Google Gemini API sử dụng cấu trúc `responseSchema` nghiêm ngặt, cho phép AI suy nghĩ và sáng tác 100% câu hỏi mới toanh bám sát prompt, định hướng môn học và phân bổ Bloom (~3-6s).
+    2. **⚡ Siêu Tốc Calibrated Bank (< 0.1s)**: Tổ hợp câu hỏi chuẩn hóa tâm lý học từ bộ nhớ RAM với phân bổ đáp án đều (A/B/C/D 25%), phục vụ tức thì cho nhu cầu kiểm thử nhanh và demo luồng mà không phụ thuộc độ trễ mạng.
+  - Tự động cơ chế phục hồi (Graceful Fallback): Khi Gemini Cloud chạm trần quota hoặc timeout, hệ thống tự động fallback sang kho Calibrated Bank và cảnh báo rõ ràng trên UI.
+  - **Cơ Chế Nhận Diện Ý Định & Khắc Phục Xung Đột Lĩnh Vực (Strict Domain Conflict Resolution)**:
+    - Bổ sung cơ chế phát hiện từ khóa chuyên sâu (cả có dấu và không dấu: `ngữ văn`, `văn học`, `tiếng việt`, `đọc hiểu`, `toán học`, `logic`...) trong câu prompt của giáo viên.
+    - Tự động đồng bộ và cưỡng chế `domain_id` chuẩn (ví dụ: `Full Ngữ Văn` -> `dom_lang`), vô hiệu hóa tình trạng rơi vào cấu hình mặc định 5 lĩnh vực (`ALL`).
+    - Nâng cấp System Prompt cho Gemini với quy chuẩn sư phạm nghiêm ngặt: Tuyệt đối 100% câu hỏi thuộc đúng môn học được yêu cầu (xóa bỏ hoàn toàn tình trạng đề Văn bị lọt câu hỏi Toán/KHTN); loại bỏ triệt để các lời giải tự nhận sai hoặc giả định sửa đề.
+    - **Ưu Tiên Tuyệt Đối Lựa Chọn Dropdown Của Giáo Viên (Dropdown Precedence Fix)**: Chỉ kích hoạt suy luận domain từ prompt khi `domain_id == 'ALL'`. Nếu giáo viên chủ động chọn môn trong dropdown (như Khoa học Xã hội / Địa lý `dom_soc_sci`), hệ thống giữ nguyên 100%, chấm dứt hoàn toàn lỗi tự động nhảy dropdown sang Ngữ văn khi prompt có từ khóa chung như 'đọc hiểu'.
+- **Cung Cấp Giao Diện Web Runner Khảo Sát Năng Lực (`/api/ai-engine/view-diagnostic`)**:
+  - Bổ sung endpoint `GET /api/ai-engine/view-diagnostic` trong `ExamEndpoints.cs`.
+  - Triển khai tệp giao diện `view-diagnostic.html` (`wwwroot/view-diagnostic.html`) phục vụ trực quan hóa toàn diện bài thi chẩn đoán 30 câu, tính toán Psychometrics và biểu đồ Radar Chart.
+- **Kiểm Thử Vận Hành & Biên Dịch**: `dotnet build` giải pháp `V-Eval-Ai_Engine.sln` thành công 100% (**0 Error**); Kiểm thử HTTP cả 2 chế độ Gemini Cloud (`ms: 7245`) và Fast Calibrated (`ms: 0`) trả về 200 OK; Kiểm thử với prompt `Full Ngữ Văn` sinh chính xác 100% câu hỏi Ngôn ngữ & Văn học; Kiểm thử với `dom_soc_sci` sinh chính xác 100% câu hỏi Sử - Địa.
+
+---
+
 ## [26/09/2026] - Trực Quan Hóa Chunks Tri Thức (Markdown + KaTeX + Tables), Khắc Phục Lỗi Font InDesign/CID & Resumable Ingestion
 - **Nâng Cấp Giao Diện Trực Quan Hóa Chunks Tri Thức (`view-textbook.html`)**:
   - **Chuyển Đổi Từ Text Thuần Sang Định Dạng Trực Quan Cao Cấp (Rich Markdown & KaTeX Preview)**:
