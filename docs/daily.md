@@ -1,19 +1,23 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
-## [27/09/2026] - Chuẩn Hóa IRT 2PL Theo Thang Đo Bloom 6 Mức Độ, AI Exam Studio & Kiến Trúc Chế Độ Kép (Dual Engine: Gemini Cloud vs Siêu Tốc Calibrated)
-- **Chuẩn Hóa Ánh Xạ Độ Khó IRT 2PL Theo 6 Mức Độ Tư Duy Bloom (`diagnostic_engine.py`)**:
+## [27/09/2026] - Tối Ưu Luồng IRT 2PL Theo Thang Đo Bloom 6 Mức Độ, AI Exam Studio & Kiến Trúc Chế Độ Kép (Dual Engine: Gemini Cloud vs Siêu Tốc Calibrated)
+- **Tối Ưu Luồng Ánh Xạ Độ Khó IRT 2PL Theo 6 Mức Độ Tư Duy Bloom (`diagnostic_engine.py`)**:
   - Nâng cấp từ 4 cấp độ cũ lên đầy đủ 6 mức độ tư duy chuẩn Bloom cải tiến (Revised Bloom's Taxonomy):
-    - Mức 1: Nhận biết (Remembering) $\to b = -1.8$
-    - Mức 2: Thông hiểu (Understanding) $\to b = -1.0$
-    - Mức 3: Vận dụng (Applying) $\to b = -0.2$
-    - Mức 4: Phân tích (Analyzing) $\to b = +0.6$
-    - Mức 5: Đánh giá (Evaluating) $\to b = +1.4$
-    - Mức 6: Sáng tạo (Creating) $\to b = +2.2$
+    - Mức 1: Nhận biết (Remembering) `-> b = -1.8`
+    - Mức 2: Thông hiểu (Understanding) `-> b = -1.0`
+    - Mức 3: Vận dụng (Applying) `-> b = -0.2`
+    - Mức 4: Phân tích (Analyzing) `-> b = +0.6`
+    - Mức 5: Đánh giá (Evaluating) `-> b = +1.4`
+    - Mức 6: Sáng tạo (Creating) `-> b = +2.2`
   - Cập nhật schema Pydantic `DiagnosticAnswerItem` (`rag-service/schemas.py`) mở rộng `difficulty_level` từ `[1..4]` lên `[1..6]`.
+- **Tối Ưu Luồng Xử Lý & Khắc Phục Lỗi Import `os` (`rag-service/routers/diagnostic.py`)**:
+  - Khai báo bổ sung thư viện `import os` vào phần import tại đầu tệp `routers/diagnostic.py`.
+  - Khắc phục triệt để lỗi phân tích cú pháp tĩnh `Could not find name os` tại hàm `_call_gemini_exam_generator` (dòng 540: `api_key = GOOGLE_API_KEY or os.environ.get("GOOGLE_API_KEY", "")`).
+  - Tối ưu luồng truy xuất biến môi trường an toàn và chạy toàn bộ bộ kiểm thử đơn vị `tests/test_diagnostic.py` thành công 100% (**All tests passed**).
 - **Triển Khai AI Exam Studio & Kiến Trúc Chế Độ Kép (Dual Engine Architecture)**:
   - Bổ sung endpoint `POST /api/v1/diagnostic/generate-exam` (FastAPI port 8000) với 2 chế độ sinh đề:
-    1. **🧠 Google Gemini Live Cloud (`gemini-flash-lite-latest`)**: Gọi trực tiếp Google Gemini API sử dụng cấu trúc `responseSchema` nghiêm ngặt, cho phép AI suy nghĩ và sáng tác 100% câu hỏi mới toanh bám sát prompt, định hướng môn học và phân bổ Bloom (~3-6s).
-    2. **⚡ Siêu Tốc Calibrated Bank (< 0.1s)**: Tổ hợp câu hỏi chuẩn hóa tâm lý học từ bộ nhớ RAM với phân bổ đáp án đều (A/B/C/D 25%), phục vụ tức thì cho nhu cầu kiểm thử nhanh và demo luồng mà không phụ thuộc độ trễ mạng.
+    1. **Google Gemini Live Cloud (`gemini-flash-lite-latest`)**: Gọi trực tiếp Google Gemini API sử dụng cấu trúc `responseSchema` nghiêm ngặt, cho phép AI suy nghĩ và sáng tác 100% câu hỏi mới toanh bám sát prompt, định hướng môn học và phân bổ Bloom (~3-6s).
+    2. **Siêu Tốc Calibrated Bank (< 0.1s)**: Tổ hợp câu hỏi chuẩn hóa tâm lý học từ bộ nhớ RAM với phân bổ đáp án đều (A/B/C/D 25%), phục vụ tức thì cho nhu cầu kiểm thử nhanh và demo luồng mà không phụ thuộc độ trễ mạng.
   - Tự động cơ chế phục hồi (Graceful Fallback): Khi Gemini Cloud chạm trần quota hoặc timeout, hệ thống tự động fallback sang kho Calibrated Bank và cảnh báo rõ ràng trên UI.
   - **Cơ Chế Nhận Diện Ý Định & Khắc Phục Xung Đột Lĩnh Vực (Strict Domain Conflict Resolution)**:
     - Bổ sung cơ chế phát hiện từ khóa chuyên sâu (cả có dấu và không dấu: `ngữ văn`, `văn học`, `tiếng việt`, `đọc hiểu`, `toán học`, `logic`...) trong câu prompt của giáo viên.

@@ -34,7 +34,7 @@
 | 8 | **Dockerfile & Compose** | `Dockerfile` | 🟢 Hoàn thành | 100% | Multi-Stage .NET 9 cổng 5104 trên `veval_network` |
 | 9 | **Script Push Độc Lập** | `Scripts/push.bat` | 🟢 Hoàn thành | 100% | Hỗ trợ 3 chế độ push kèm kiểm tra lịch sử |
 | 10 | **pgvector Multi-Domain RAG** | `rag-service/` | 🟡 Đang làm | 40% | Thiết kế `KnowledgeVectorChunks` phân loại Môn & Skill |
-| 11 | **Async AI Exam Generator (Dual Engine)** | `rag-service/routers/diagnostic.py` | 🟢 Hoàn thành | 100% | `POST /api/v1/diagnostic/generate-exam` (Gemini Cloud + Calibrated RAM) |
+| 11 | **Async AI Exam Generator (Dual Engine)** | `rag-service/routers/diagnostic.py` | 🟢 Hoàn thành | 100% | `POST /api/v1/diagnostic/generate-exam` (Gemini Cloud + Calibrated RAM), tối ưu luồng import os an toàn |
 | 12 | **Dynamic Web Search Grounding** | `rag-service/config.py` | 🟡 Đang làm | 20% | Tích hợp Google Search API / Gemini Grounding |
 | 13 | **Item-Level Replace API (1-2s)** | `rag-service/routers/chat.py` | 🟡 Đang làm | 20% | Sinh 1 câu thay thế tương đương cùng skill & độ khó |
 | 14 | **Diagnostic Engine (IRT 2PL & BKT)** | `rag-service/diagnostic_engine.py`, `routers/diagnostic.py` | 🟢 Hoàn thành | 100% | Ước lượng theta_0 (MAP/Brent), P(L0) Sigmoid, Radar chart, phân lớp |
@@ -44,4 +44,4 @@
 | 18 | **Font Mojibake Auto-Detection & Forced Vision AI** | `PdfPigTextbookParserService.cs`, `TextbookEndpoints.cs`, `view-textbook.html` | 🟢 Hoàn thành | 100% | Tự động phát hiện lỗi mã hóa font InDesign/CID subsetting, tự chuyển sang Vision AI, hỗ trợ Force Reingest / Overwrite và API tra cứu Chunks |
 | 19 | **Rich Chunks Preview (Markdown + KaTeX + Tables)** | `view-textbook.html` | 🟢 Hoàn thành | 100% | Render bảng Markdown glassmorphic striped, công thức KaTeX STEM inline/block, lọc real-time, chuyển đổi Trực Quan / Raw và xuất file .MD |
 | 20 | **AI Exam Studio & Custom Prompting** | `view-diagnostic.html` & `ExamEndpoints.cs` | 🟢 Hoàn thành | 100% | Web studio tạo và duyệt đề, nhận diện môn prompt, chọn Bloom 6 cấp, lưu CSDL chờ duyệt |
-| 21 | **Chuẩn Hóa Bloom 6 Cấp IRT 2PL** | `rag-service/diagnostic_engine.py`, `schemas.py` | 🟢 Hoàn thành | 100% | Ánh xạ difficulty level 1-6 sang tham số IRT 2PL [-1.8 .. +2.2] |
+| 21 | **Tối Ưu Luồng Bloom 6 Cấp IRT 2PL** | `rag-service/diagnostic_engine.py`, `schemas.py` | 🟢 Hoàn thành | 100% | Ánh xạ difficulty level 1-6 sang tham số IRT 2PL [-1.8 .. +2.2] |
