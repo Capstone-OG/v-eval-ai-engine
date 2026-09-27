@@ -61,25 +61,38 @@ public static class TextbookEndpoints
 
             try
             {
-                // 1. Lưu file tạm thời lên server
-                using (var fileStream = new FileStream(savedFilePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(fileStream);
-                }
-
-                // 2. Tính mã Hash SHA-256 của tệp
+                // 1. Lưu file lên đĩa và đồng thời tính mã băm SHA-256 trong 1 lượt đọc (Single-Pass CryptoStream)
+                // Giảm 50% Disk I/O cho file lớn (100MB-250MB), không cần mở lại file từ đĩa để tính hash
                 byte[] hashBytes;
                 using (var sha = System.Security.Cryptography.SHA256.Create())
                 {
-                    await using var checkStream = new FileStream(savedFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    hashBytes = await sha.ComputeHashAsync(checkStream);
+                    await using (var fileStream = new FileStream(savedFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    await using (var cryptoStream = new System.Security.Cryptography.CryptoStream(fileStream, sha, System.Security.Cryptography.CryptoStreamMode.Write, leaveOpen: true))
+                    {
+                        await file.CopyToAsync(cryptoStream);
+                        await cryptoStream.FlushFinalBlockAsync();
+                    }
+                    hashBytes = sha.Hash!;
                 }
-                string fileHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+                string fileHash = Convert.ToHexStringLower(hashBytes);
 
-                // 3. Kiểm tra xem file này đã có tác vụ ngầm đang chạy hay chưa
+                // 2. Kiểm tra xem file này đã có tác vụ ngầm đang chạy hay chưa (Deduplication)
                 var existingJob = jobManager.GetJobByFileHash(fileHash);
                 if (!forceReingest && existingJob != null && existingJob.Status == "PROCESSING")
                 {
+                    // Dọn dẹp file vừa tải lên vì đã có tác vụ đang xử lý cùng file hash này
+                    try
+                    {
+                        if (File.Exists(savedFilePath))
+                        {
+                            File.Delete(savedFilePath);
+                        }
+                    }
+                    catch
+                    {
+                        // Nuốt lỗi nếu tệp bị khóa tạm thời
+                    }
+
                     return Results.Accepted($"/api/ai-engine/textbooks/jobs/{existingJob.JobId}", existingJob);
                 }
 
@@ -316,13 +329,23 @@ public static class TextbookEndpoints
                 }
             }
 
-            var geminiModels = new[]
+            // 2. Xác định danh sách Gemini Models từ cấu hình (appsettings.json)
+            var configuredGeminiModels = configuration.GetSection("AiSettings:GeminiModels").Get<string[]>();
+            var geminiModelList = (configuredGeminiModels != null && configuredGeminiModels.Length > 0)
+                ? configuredGeminiModels.Where(m => !string.IsNullOrWhiteSpace(m)).Select(m => m.Trim()).ToList()
+                : new List<string> { "gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-3.6-flash" };
+
+            string GetGeminiRoleDescription(string modelId) => modelId switch
             {
-                new { Id = "gemini-1.5-flash", Role = "Top 1 Khuyến nghị: Tốc độ < 1s/trang, nhận diện LaTeX/Bảng chuẩn, Free Tier 15 RPM" },
-                new { Id = "gemini-2.0-flash", Role = "Top 1 Khuyến nghị: Đa phương thức thế hệ mới, tối ưu sơ đồ/hình vẽ/thí nghiệm" },
-                new { Id = "gemini-1.5-flash-8b", Role = "Chi phí siêu rẻ ($0.0375/1M), tốc độ cao nhất, thích hợp SGK thuần chữ" },
-                new { Id = "gemini-1.5-pro", Role = "Tư duy sâu nhất, tối ưu đề thi 120 câu mẹo bẫy, latency ~2.5s-4s" }
+                "gemini-flash-lite-latest" => "Top 1 Khuyến nghị: Tốc độ < 1s/trang, nhận diện LaTeX/Bảng chuẩn, tiết kiệm token tối đa",
+                "gemini-3.5-flash-lite" => "Dòng Flash-Lite mới: Nhận diện ảnh scan tiếng Việt chính xác cao, chi phí tối ưu",
+                "gemini-3.1-flash-lite" => "Dòng Flash-Lite ổn định: Tốc độ cao, tối ưu bóc tách công thức STEM",
+                "gemini-3.8-flash" => "Thế hệ Flash 3.8: Đa phương thức nâng cao, xử lý sơ đồ/hình vẽ/bảng biểu phức tạp",
+                "gemini-3.6-flash" => "Thế hệ Flash 3.6: Tư duy phân tích sâu, bóc tách tri thức và bài toán khó",
+                _ => $"Mô hình Gemini cấu hình từ appsettings ({modelId})"
             };
+
+            var geminiModels = geminiModelList.Select(m => new { Id = m, Role = GetGeminiRoleDescription(m) }).ToList();
 
             if (string.IsNullOrWhiteSpace(geminiKey))
             {
@@ -395,8 +418,13 @@ public static class TextbookEndpoints
                 }
             }
 
-            // 2. OpenAI Model Ping (gpt-4o-mini)
+            // 3. OpenAI Model Ping từ cấu hình (appsettings.json)
             string? openAiKey = configuration["AiSettings:ApiKey"] ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+            var configuredOpenAiModels = configuration.GetSection("AiSettings:OpenAiModels").Get<string[]>();
+            string openAiModel = (configuredOpenAiModels != null && configuredOpenAiModels.Length > 0 && !string.IsNullOrWhiteSpace(configuredOpenAiModels[0]))
+                ? configuredOpenAiModels[0].Trim()
+                : "gpt-4o-mini";
+
             if (!string.IsNullOrWhiteSpace(openAiKey) && !openAiKey.StartsWith("YOUR_"))
             {
                 var sw = Stopwatch.StartNew();
@@ -404,7 +432,7 @@ public static class TextbookEndpoints
                 {
                     var openAiPayload = new
                     {
-                        model = "gpt-4o-mini",
+                        model = openAiModel,
                         messages = new[] { new { role = "user", content = "Ping test! Reply 'OK'." } },
                         max_tokens = 5
                     };
@@ -419,8 +447,8 @@ public static class TextbookEndpoints
                     results.Add(new
                     {
                         provider = "OpenAI",
-                        model = "gpt-4o-mini",
-                        role = "Dự phòng số 1: Tốc độ ~1.5s, nhận diện tiếng Việt tốt, không có Free Tier",
+                        model = openAiModel,
+                        role = $"Dự phòng Cloud: Mô hình {openAiModel} nhận diện tiếng Việt tốt, dự phòng khi Google Cloud chạm quota",
                         status = resp.IsSuccessStatusCode ? "OK" : "ERROR",
                         httpCode = (int)resp.StatusCode,
                         latencyMs = sw.ElapsedMilliseconds,
@@ -434,8 +462,8 @@ public static class TextbookEndpoints
                     results.Add(new
                     {
                         provider = "OpenAI",
-                        model = "gpt-4o-mini",
-                        role = "Dự phòng số 1",
+                        model = openAiModel,
+                        role = "Dự phòng Cloud",
                         status = "EXCEPTION",
                         httpCode = 0,
                         latencyMs = sw.ElapsedMilliseconds,
@@ -451,9 +479,9 @@ public static class TextbookEndpoints
                 hasActiveKey = !string.IsNullOrWhiteSpace(geminiKey),
                 recommendations = new
                 {
-                    bestSpeedAndQuality = "gemini-1.5-flash & gemini-2.0-flash (Latency < 1s, Miễn phí 15 RPM, chuẩn LaTeX/Bảng)",
-                    bestComplexDiagrams = "gemini-2.0-flash (Đa phương thức thế hệ mới)",
-                    bestFallback = "gpt-4o-mini (OpenAI khi hết quota Google)"
+                    bestSpeedAndQuality = "gemini-flash-lite-latest & gemini-3.5-flash-lite (Latency < 1s, chuẩn LaTeX/Bảng, tiết kiệm token)",
+                    bestComplexDiagrams = "gemini-3.8-flash & gemini-3.6-flash (Đa phương thức thế hệ mới, tối ưu sơ đồ/hình vẽ)",
+                    bestFallback = $"{openAiModel} (OpenAI khi hết quota Google)"
                 },
                 models = results
             });
