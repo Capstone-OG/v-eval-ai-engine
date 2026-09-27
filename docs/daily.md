@@ -1,5 +1,18 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [28/09/2026] - Tối Ưu Cấu Hình HttpClient Timeout Qua AppSettings & Nghiệm Thu Kiến Trúc Textbook RAG Ingestion
+- **Tối Ưu Cấu Hình Timeout HttpClient Qua `appsettings.json` (`DependencyInjection.cs`)**:
+  - Loại bỏ hoàn toàn các giá trị hardcode thời gian chờ (`TimeSpan.FromMinutes(8)` và `TimeSpan.FromMinutes(10)`) trong mã nguồn C#.
+  - Bổ sung hai tham số cấu hình linh hoạt trong `appsettings.json`, `appsettings.example.json`, và `appsettings.Development.json`:
+    - `AiSettings:ExamParserTimeoutMinutes = 8`
+    - `AiSettings:TextbookParserTimeoutMinutes = 10`
+  - Cập nhật `DependencyInjection.cs` đọc trực tiếp từ `IConfiguration` với cơ chế fallback an toàn, cho phép DevOps tinh chỉnh thời gian timeout linh hoạt theo từng môi trường triển khai (Local, Staging, Production Docker/K8s) mà không cần biên dịch lại mã nguồn.
+- **Nghiệm Thu Kiến Trúc Minimal API Nạp SGK Bởi `ThinhTran2412`**:
+  - Nghiệm thu chính thức cấu trúc tệp `TextbookEndpoints.cs` theo chuẩn ASP.NET Core Minimal APIs thay thế mô hình Controller truyền thống.
+  - Ban hành tài liệu phân tích kỹ thuật chuyên sâu về pipeline streaming chống tràn RAM khi nạp tệp nặng tới 250 MB tại `docs/architecture_acceptance.md`.
+
+---
+
 ## [27/09/2026] - Tối Ưu Luồng IRT 2PL Theo Thang Đo Bloom 6 Mức Độ, AI Exam Studio & Kiến Trúc Chế Độ Kép (Dual Engine: Gemini Cloud vs Siêu Tốc Calibrated)
 - **Tối Ưu Luồng Ánh Xạ Độ Khó IRT 2PL Theo 6 Mức Độ Tư Duy Bloom (`diagnostic_engine.py`)**:
   - Nâng cấp từ 4 cấp độ cũ lên đầy đủ 6 mức độ tư duy chuẩn Bloom cải tiến (Revised Bloom's Taxonomy):

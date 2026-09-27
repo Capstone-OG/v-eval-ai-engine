@@ -9,20 +9,24 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        // Đăng ký HttpClient cho Gemini Parser với timeout thoải mái cho đề thi phức tạp (8 phút)
+        // Đọc cấu hình Timeout từ appsettings (Fallback an toàn 8 phút và 10 phút)
+        int examTimeoutMinutes = configuration.GetValue<int>("AiSettings:ExamParserTimeoutMinutes", 8);
+        int textbookTimeoutMinutes = configuration.GetValue<int>("AiSettings:TextbookParserTimeoutMinutes", 10);
+
+        // Đăng ký HttpClient cho Gemini Parser với timeout cấu hình linh hoạt từ appsettings
         services.AddHttpClient<IExamParserService, GeminiExamParserService>(client =>
         {
-            client.Timeout = TimeSpan.FromMinutes(8);
+            client.Timeout = TimeSpan.FromMinutes(examTimeoutMinutes);
         });
 
         // Đăng ký Background Job Manager quản lý tiến trình nền
         services.AddSingleton<IExamJobManager, InMemoryExamJobManager>();
         services.AddSingleton<ITextbookJobManager, InMemoryTextbookJobManager>();
 
-        // Đăng ký dịch vụ nạp tri thức SGK local offline & Vision OCR
+        // Đăng ký dịch vụ nạp tri thức SGK local offline & Vision OCR với timeout cấu hình linh hoạt từ appsettings
         services.AddHttpClient<ITextbookParserService, PdfPigTextbookParserService>(client =>
         {
-            client.Timeout = TimeSpan.FromMinutes(10);
+            client.Timeout = TimeSpan.FromMinutes(textbookTimeoutMinutes);
         });
 
         // Đăng ký Vector Database Service cho RAG
