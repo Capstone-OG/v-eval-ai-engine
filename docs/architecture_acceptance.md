@@ -26,12 +26,12 @@
   - Socratic pedagogical commentary dynamically generated via Google Gemini (`gemini-3.6-flash`) with robust fallback.
 - **Verification Results**:
   - 12/12 automated tests passing with 100% success rate (`tests/test_diagnostic.py`), covering math kernels and live FastAPI REST endpoints.
-  - Comprehensive mathematical specifications published at `docs/cong_thuc_psychometrics_irt_bkt.md`.
+  - Comprehensive mathematical specifications published at [`cong_thuc_psychometrics_irt_bkt.md`](./cong_thuc_psychometrics_irt_bkt.md).
 
 ## 5. CORE FLOW 2 — TEXTBOOK RAG INGESTION & SUPABASE `v_eval_ai` SCHEMA ACCEPTANCE
 - **Local Textbook Ingestion Engine**:
   - Python PyMuPDF + RapidOCR local offline hybrid parser (`textbook_local_parser.py`) extracting pure-text subjects (Humanities, English) in 1s for searchable PDFs, with ONNX-based local OCR fallback for scanned images.
-  - Multi-model Vision AI rotation (`gemini-1.5-flash`, `gemini-2.0-flash`, `gpt-4o-mini`) for STEM subjects (Math, Physics, Chemistry) ensuring LaTeX formulas wrapped in `$...\$`.
+  - Multi-model Vision AI rotation (`gemini-1.5-flash`, `gemini-2.0-flash`, `gpt-4o-mini`) for STEM subjects (Math, Physics, Chemistry) ensuring LaTeX formulas wrapped in ``$...\$``.
 - **Database Persistence (`v_eval_ai` Schema on Supabase PostgreSQL)**:
   - Database extension `vector` (pgvector) enabled.
   - `v_eval_ai."KnowledgeSources"` table storing document metadata, total pages, character counts, and SHA-256 hashes.
