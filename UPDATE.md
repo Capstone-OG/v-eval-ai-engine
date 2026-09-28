@@ -1,47 +1,30 @@
 # Nhật Ký Cập Nhật (Update Log) - AI Engine
 
-## [22/09/2026] - Triển Khai Diagnostic Engine Cho Core Flow 1 (IRT 2PL, BKT Prior, Placement & Radar Chart)
-- **Module Tính Toán Năng Lực IRT 2PL & BKT Prior (`rag-service/diagnostic_engine.py`)**:
-  - Triển khai thuật toán ước lượng năng lực học sinh `theta_0` bằng mô hình IRT 2PL và MAP Estimation (Gaussian Prior `N(0, 2.0^2)`), tối ưu hóa bằng Brent's method (`scipy.optimize.minimize_scalar`).
-  - Xử lý câu trả lời đoán mò dưới 5 giây: giảm tham số phân biệt `a -> 0.1` để ngăn ngừa lạm phát năng lực do ăn may.
-  - Tính toán xác suất thành thạo ban đầu BKT Prior `P(L0) = Sigmoid(theta)` cho từng kỹ năng với cơ chế kẹp an toàn `[0.05, 0.95]`.
-  - Tự động suy diễn `P(L0)` từ năng lực miền (`domain_level`) cho các kỹ năng chưa xuất hiện trong 30 câu hỏi chẩn đoán (unhappy case handling).
-  - Phân loại xếp lớp chuẩn mực: `FOUNDATION` (`theta < -0.5`), `ACCELERATION` (`-0.5 <= theta <= 0.5`), `BREAKTHROUGH` (`theta > 0.5`).
-  - Dựng tọa độ biểu đồ Radar so sánh năng lực học sinh theo từng miền với điểm chuẩn benchmark dựa trên mục tiêu điểm thi (V-ACT target score).
-- **Pydantic Schemas & Data Contracts (`rag-service/schemas.py`)**:
-  - Khai báo trọn bộ contract REST API: `DiagnosticAnswerItem`, `DiagnosticDomainName`, `DiagnosticAnalyzeRequest`, `DiagnosticSkillPriorDto`, `DiagnosticDomainScoreDto`, `DiagnosticRadarAxisDto`, `DiagnosticAnalyzeResponse`.
-- **API Endpoints & Socratic Commentary (`rag-service/routers/diagnostic.py`)**:
-  - `POST /api/v1/diagnostic/analyze`: Nhận kết quả bài làm 30 câu, tính toán psychometrics và gọi Google Gemini (`gemini-3.6-flash`) tạo lời nhận xét sư phạm tích cực, có cơ chế fallback tự động.
-  - `GET /api/v1/diagnostic/config`: Cung cấp tham số cấu hình ngưỡng và thang đo cho frontend/Practice Service.
-- **Kiểm Thử Toàn Diện (`rag-service/tests/test_diagnostic.py`)**:
-  - 10/10 test cases đơn vị và tích hợp HTTP endpoint đạt 100% PASS.
-  - Tích hợp và kiểm thử End-to-End thực tế thành công với Practice Service (`POST /api/v1/practice/diagnostic-submissions`).
-- **Cập Nhật Tài Liệu Service**:
-  - Ban hành tài liệu chuyên sâu: [`docs/cong_thuc_psychometrics_irt_bkt.md`](./docs/cong_thuc_psychometrics_irt_bkt.md) tổng hợp toàn bộ 9 mô hình toán học, công thức và lý do lựa chọn trong Psychometrics Engine.
-  - Cập nhật [`docs/daily.md`](./docs/daily.md), [`docs/process.md`](./docs/process.md) và [`docs/architecture_acceptance.md`](./docs/architecture_acceptance.md).
+## [28/09/2026] - Hợp Nhất Hoàn Chỉnh Core Flow 1 (Diagnostic Psychometrics) & Core Flow 2 (Textbook RAG Ingestion)
 
-## [21/09/2026] - Thiết Kế Kiến Trúc AI Exam Generation (30 Câu), Vector RAG Môn/Skill & Duyệt Đề Thi Linh Hoạt
-- **Tạo Tài Liệu Thiết Kế Kế Hoạch Kiến Trúc ([ai_question_generation_rag_approval_plan.md](./docs/ai_question_generation_rag_approval_plan.md))**:
-  - Đã xây dựng và tổng hợp chi tiết toàn bộ thiết kế hệ thống cho tính năng Sinh đề thi 30 câu tự động bằng AI, Vector RAG theo Môn/Skill và Quy trình Kiểm duyệt Linh hoạt dành cho Academic Manager.
-  - Định nghĩa mô hình cơ sở dữ liệu `KnowledgeVectorChunks` (`pgvector`) phân loại tài liệu theo Môn (`domain_id`), Kỹ năng (`skill_id`) và nguồn tri thức (`document_type`).
-  - Thiết lập luồng Hybrid Search (SGK Nội bộ + Dynamic Web Search tin tức mới nhất) khi bật flag `enable_web_search = true`.
-  - Cấu hình luồng duyệt 2 tầng (`Questions.moderation_status` & `MockExams.approval_status`), cho phép Manager sinh câu tương đương thay thế chỉ trong 1-2 giây hoặc tự tinh chỉnh độ khó/bước tính toán (`difficulty_level`).
-- **Cập Nhật Tài Liệu Tiến Độ Service**:
-  - Cập nhật nhật ký kiểm tra hàng ngày [`docs/daily.md`](./docs/daily.md) và bảng tiến độ chủ thể [`docs/process.md`](./docs/process.md).
-
-## [19/09/2026] - Gộp Conversational RAG Service (Python) Vào AI Engine
-- **Merge `v-act-ai-service` → `rag-service/` (Sidecar Sub-Project)**:
-  - Gộp toàn bộ Python Conversational RAG service vào thư mục `rag-service/` bên trong AI Engine.
-  - Tech stack: Python 3.12 / FastAPI / LangChain LCEL / Google Gemini / PostgreSQL pgvector.
-  - Không thay đổi bất kỳ file C# nào hiện có trong project .NET.
-- **10 Commits Incremental**:
-  - `config.py` — Config, env vars, model factories (LLM, Embeddings), PGEngine, PGVectorStore.
-  - `schemas.py` — Pydantic request/response models (Chat, Document, Health, Versioning).
-  - `requirements.txt` + `.env.example` — Python dependencies và environment template.
-  - `ingestion.py` — Document ingestion pipeline (PDF/DOCX/Text, SHA-256 hashing, versioning, graceful swap).
-  - `rag_engine.py` — Conversational RAG engine (History-Aware Retriever, LCEL, streaming, session store).
-  - `routers/chat.py` — Chat endpoints (POST, SSE stream, session management).
-  - `routers/documents.py` — Document CRUD (upload, text ingest, versions, rollback, soft delete, purge, stats).
-  - `main.py` — FastAPI application entrypoint với CORS, lifespan events, health check.
-  - `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `.gitignore` — Docker containerization.
-  - `README.md` — Documentation cho RAG sidecar service.
+- **Hợp Nhất Toàn Diện Nhánh `develop`**:
+  - Giải quyết xung đột tài liệu và đồng bộ hóa toàn bộ mã nguồn giữa Core Flow 1 (Psychometrics IRT & BKT Engine) và Core Flow 2 (Textbook RAG Ingestion, Supabase Schema & Rich Visualization).
+- **Core Flow 1 — Đánh Giá Năng Lực Đầu Vào & Phân Lớp (Diagnostic & Placement Engine)**:
+  - **Module Tính Toán Năng Lực IRT 2PL & BKT Prior (`rag-service/diagnostic_engine.py`)**:
+    - Thuật toán ước lượng năng lực học sinh `theta_0` bằng mô hình IRT 2PL kết hợp MAP Estimation (Gaussian Prior `N(0, 2.0^2)`), tối ưu hóa bằng Brent's method (`scipy.optimize.minimize_scalar`).
+    - Ngăn ngừa lạm phát năng lực do đoán mò dưới 5 giây (`a -> 0.1`).
+    - Tính toán xác suất thành thạo ban đầu BKT Prior `P(L0) = Sigmoid(theta)` kẹp an toàn `[0.05, 0.95]`.
+    - Xử lý unhappy case: tự động suy diễn `P(L0)` từ năng lực miền (`domain_level`) cho các kỹ năng chưa xuất hiện trong 30 câu hỏi chẩn đoán.
+    - Phân loại xếp lớp chuẩn mực 3 mức: `FOUNDATION` (`theta < -0.5`), `ACCELERATION` (`-0.5 <= theta <= 0.5`), `BREAKTHROUGH` (`theta > 0.5`).
+    - Dựng tọa độ biểu đồ Radar so sánh năng lực học sinh với điểm chuẩn benchmark dựa trên mục tiêu điểm thi (V-ACT target score).
+  - **REST Endpoints & Socratic Commentary (`rag-service/routers/diagnostic.py`)**:
+    - `POST /api/v1/diagnostic/analyze`: Tiếp nhận kết quả bài chẩn đoán, tính toán psychometrics và gọi Gemini (`gemini-3.6-flash`) tạo nhận xét sư phạm cá nhân hóa.
+    - `GET /api/v1/diagnostic/config`: Cung cấp cấu hình ngưỡng phân lớp và tham số IRT.
+  - **Tài Liệu Đặc Tả Toán Học**:
+    - Biên soạn toàn diện [`docs/cong_thuc_psychometrics_irt_bkt.md`](./docs/cong_thuc_psychometrics_irt_bkt.md) tổng hợp 9 mô hình toán học và lý giải bài toán V-ACT.
+- **Core Flow 2 — Nạp Tri Thức SGK, Supabase `v_eval_ai` & Giao Diện Trực Quan Hóa Chunks**:
+  - **Giao Diện Trực Quan Hóa Chunks Tri Thức (`view-textbook.html`)**:
+    - Tích hợp `marked.js` và `katex` render bảng biểu Glassmorphic, công thức toán/lý/hóa inline (``$...$``) và block (``$$...$$``).
+    - Bộ lọc real-time theo từ khóa/số trang, chuyển đổi chế độ `👁️ Trực Quan` và `📄 Raw Text`, xuất file `.MD` và sao chép chunks nhanh.
+  - **Tự Động Phát Hiện & Khắc Phục Lỗi Font InDesign / CID Subsetting (Mojibake)**:
+    - Thuật toán `IsCorruptedFontEncoding` với 3 tầng lọc tự động chuyển hướng sang Gemini Vision AI (DPI 96) cho văn bản sạch sẽ 100%.
+    - Bổ sung tùy chọn `VISION_AI` và cờ `forceReingest` dọn sạch chunk rác cũ trong Supabase (`v_eval_ai."KnowledgeVectorChunks"`).
+  - **Resumable Ingestion & Background Job Persistence**:
+    - Checkpoint từng trang trực tiếp vào Supabase PostgreSQL, tự động tiếp tục nạp từ trang gián đoạn, tự động khôi phục giao diện Studio khi F5 hoặc quay lại.
+- **Kiểm Thử & Nghiệm Thu**:
+  - Đồng bộ và hoàn tất kiểm thử đơn vị, kiểm thử tích hợp 100% PASS, nghiệm thu kiến trúc tại [`docs/architecture_acceptance.md`](./docs/architecture_acceptance.md).

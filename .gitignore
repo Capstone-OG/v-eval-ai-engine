@@ -12,6 +12,7 @@ obj/
 !**/appsettings.example.json
 
 # Uploaded test and preview files
-**/wwwroot/uploads/*.pdf
+**/wwwroot/uploads/**
+!**/wwwroot/uploads/.gitkeep
 **/wwwroot/extracted_images/*
 !**/wwwroot/extracted_images/.gitkeep
