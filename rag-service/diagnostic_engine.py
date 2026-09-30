@@ -18,7 +18,10 @@ import logging
 import math
 from dataclasses import dataclass, field
 
-from scipy.optimize import minimize_scalar
+try:
+    from scipy.optimize import minimize_scalar  # type: ignore
+except ImportError:  # pragma: no cover
+    minimize_scalar = None
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +29,15 @@ logger = logging.getLogger(__name__)
 # Constants: Difficulty Level → IRT b-parameter mapping
 # ---------------------------------------------------------------------------
 
-# Maps Content Service difficulty_level (1–4) to IRT difficulty (b) on the
+# Maps Content Service difficulty_level (1–6 Bloom's Taxonomy) to IRT difficulty (b) on the
 # theta scale [-3.0, +3.0].
 DIFFICULTY_TO_B: dict[int, float] = {
-    1: -1.2,   # Dễ (Nhận biết)
-    2: -0.2,   # Trung bình (Thông hiểu)
-    3:  0.8,   # Khó (Vận dụng)
-    4:  1.6,   # Rất khó (Vận dụng cao)
+    1: -1.8,   # Mức 1: Nhận biết (Remembering)
+    2: -1.0,   # Mức 2: Thông hiểu (Understanding)
+    3: -0.2,   # Mức 3: Vận dụng (Applying)
+    4:  0.6,   # Mức 4: Phân tích (Analyzing)
+    5:  1.4,   # Mức 5: Đánh giá (Evaluating)
+    6:  2.2,   # Mức 6: Sáng tạo (Creating)
 }
 
 # Default IRT discrimination parameter (a) — uniform across items for the
@@ -204,11 +209,47 @@ def _neg_log_likelihood(theta: float, answers: list[AnswerItem]) -> float:
     return nll + prior_penalty
 
 
+def _golden_section_search(f, a: float, b: float, tol: float = 1e-4) -> tuple[float, float]:
+    """Find local minimum of 1D unimodal function f on [a, b] using Golden Section Search."""
+    invphi = (math.sqrt(5.0) - 1.0) / 2.0
+    invphi2 = (3.0 - math.sqrt(5.0)) / 2.0
+
+    h = b - a
+    if h <= tol:
+        mid = (a + b) / 2.0
+        return mid, f(mid)
+
+    c = a + invphi2 * h
+    d = a + invphi * h
+    yc = f(c)
+    yd = f(d)
+
+    while h > tol:
+        if yc < yd:
+            b = d
+            d = c
+            yd = yc
+            h = invphi * h
+            c = a + invphi2 * h
+            yc = f(c)
+        else:
+            a = c
+            c = d
+            yc = yd
+            h = invphi * h
+            d = a + invphi * h
+            yd = f(d)
+
+    if yc < yd:
+        return c, yc
+    return d, yd
+
+
 def estimate_theta(answers: list[AnswerItem]) -> float:
     """Estimate overall student ability theta_0 via MLE.
 
-    Uses Brent's method (scalar optimization) to find the theta that
-    maximizes the log-likelihood over all 30 diagnostic items.
+    Uses Brent's method (scalar optimization) via scipy if installed,
+    or falls back to a pure Python Golden Section Search on [THETA_MIN, THETA_MAX].
 
     Parameters
     ----------
@@ -224,18 +265,28 @@ def estimate_theta(answers: list[AnswerItem]) -> float:
         logger.warning("No answers provided for theta estimation, returning 0.0")
         return 0.0
 
-    result = minimize_scalar(
-        _neg_log_likelihood,
-        bounds=(THETA_MIN, THETA_MAX),
-        method="bounded",
-        args=(answers,),
-    )
+    if minimize_scalar is not None:
+        result = minimize_scalar(
+            _neg_log_likelihood,
+            bounds=(THETA_MIN, THETA_MAX),
+            method="bounded",
+            args=(answers,),
+        )
+        theta_0 = float(result.x)
+        converged = bool(result.success)
+        nll = float(result.fun)
+    else:
+        theta_0, nll = _golden_section_search(
+            lambda th: _neg_log_likelihood(th, answers),
+            THETA_MIN,
+            THETA_MAX,
+        )
+        converged = True
 
-    theta_0 = float(result.x)
     theta_0 = max(THETA_MIN, min(THETA_MAX, theta_0))
 
     logger.info("MLE theta_0 = %.4f (converged=%s, nll=%.4f)",
-                theta_0, result.success, result.fun)
+                theta_0, converged, nll)
     return round(theta_0, 4)
 
 

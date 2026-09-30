@@ -154,11 +154,11 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
         }
 
         return new List<string> { 
-            "gemini-3.6-flash", 
-            "gemini-3.1-flash-lite", 
-            "gemini-flash-latest", 
-            "gemini-flash-lite-latest", 
-            "gemini-2.5-flash" 
+            "gemini-flash-lite-latest",
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-flash-lite",
+            "gemini-3.8-flash",
+            "gemini-3.6-flash"
         };
     }
 
@@ -208,7 +208,8 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
             requestBody["max_tokens"] = 16384;
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/chat/completions")
+        string openAiUrl = _configuration["AiSettings:OpenAiBaseUrl"] ?? "https://api.openai.com/v1/chat/completions";
+        using var request = new HttpRequestMessage(HttpMethod.Post, openAiUrl)
         {
             Content = new StringContent(requestBody.ToJsonString(), Encoding.UTF8, "application/json")
         };
@@ -407,6 +408,9 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
         int maxAttempts = _configuration.GetValue<int>("AiSettings:MaxAttempts", 5);
         if (maxAttempts <= 0) maxAttempts = 5;
 
+        int minQuestionThreshold = _configuration.GetValue<int>("AiSettings:MinQuestionThreshold", 50);
+        if (minQuestionThreshold <= 0) minQuestionThreshold = 50;
+
         int attemptCount = 0;
         string rawJsonText = string.Empty;
         string bestJsonText = string.Empty;
@@ -449,9 +453,9 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
                                 bestJsonText = gptResult;
                             }
 
-                            if (totalQ >= 50)
+                            if (totalQ >= minQuestionThreshold)
                             {
-                                _logger.LogInformation("Mô hình OpenAI '{ModelName}' trích xuất thành công xuất sắc {Total} câu hỏi!", gptModel, totalQ);
+                                _logger.LogInformation("Mô hình OpenAI '{ModelName}' trích xuất thành công xuất sắc {Total} câu hỏi (vượt ngưỡng {MinThreshold})!", gptModel, totalQ, minQuestionThreshold);
                                 rawJsonText = gptResult;
                                 isSuccess = true;
                                 break;
@@ -518,7 +522,8 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
 
                     attemptCount++;
                     string maskedKey = MaskKey(currentKey);
-                    string requestUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{modelName}:generateContent?key={currentKey}";
+                    string geminiBaseUrl = _configuration["AiSettings:GeminiBaseUrl"] ?? "https://generativelanguage.googleapis.com/v1beta";
+                    string requestUrl = $"{geminiBaseUrl.TrimEnd('/')}/models/{modelName}:generateContent?key={currentKey}";
                     using var requestMessage = new HttpRequestMessage(HttpMethod.Post, requestUrl)
                     {
                         Content = new StringContent(payloadJson, Encoding.UTF8, "application/json")
@@ -559,9 +564,9 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
                                                 bestJsonText = textVal;
                                             }
 
-                                            if (totalQ >= 50)
+                                            if (totalQ >= minQuestionThreshold)
                                             {
-                                                _logger.LogInformation("Mô hình '{ModelName}' với API Key [{MaskedKey}] trích xuất thành công xuất sắc {Total} câu hỏi!", modelName, maskedKey, totalQ);
+                                                _logger.LogInformation("Mô hình '{ModelName}' với API Key [{MaskedKey}] trích xuất thành công xuất sắc {Total} câu hỏi (vượt ngưỡng {MinThreshold})!", modelName, maskedKey, totalQ, minQuestionThreshold);
                                                 rawJsonText = textVal;
                                                 isSuccess = true;
                                                 break; // Thoát vòng lặp key
@@ -701,8 +706,12 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
 
             _logger.LogInformation("Đang thực thi Local Fallback Parser với script: '{ScriptPath}'...", scriptPath);
 
+            string pythonExe = _configuration["AiSettings:PythonExecutable"] 
+                ?? Environment.GetEnvironmentVariable("PYTHON_PATH") 
+                ?? (OperatingSystem.IsWindows() ? "python" : "python3");
+
             using var process = new System.Diagnostics.Process();
-            process.StartInfo.FileName = "python";
+            process.StartInfo.FileName = pythonExe;
             process.StartInfo.Arguments = $"\"{scriptPath}\" \"{tempFile}\"";
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;

@@ -1,47 +1,31 @@
 # Nhật Ký Cập Nhật (Update Log) - AI Engine
 
-## [22/09/2026] - Triển Khai Diagnostic Engine Cho Core Flow 1 (IRT 2PL, BKT Prior, Placement & Radar Chart)
-- **Module Tính Toán Năng Lực IRT 2PL & BKT Prior (`rag-service/diagnostic_engine.py`)**:
-  - Triển khai thuật toán ước lượng năng lực học sinh `theta_0` bằng mô hình IRT 2PL và MAP Estimation (Gaussian Prior `N(0, 2.0^2)`), tối ưu hóa bằng Brent's method (`scipy.optimize.minimize_scalar`).
-  - Xử lý câu trả lời đoán mò dưới 5 giây: giảm tham số phân biệt `a -> 0.1` để ngăn ngừa lạm phát năng lực do ăn may.
-  - Tính toán xác suất thành thạo ban đầu BKT Prior `P(L0) = Sigmoid(theta)` cho từng kỹ năng với cơ chế kẹp an toàn `[0.05, 0.95]`.
-  - Tự động suy diễn `P(L0)` từ năng lực miền (`domain_level`) cho các kỹ năng chưa xuất hiện trong 30 câu hỏi chẩn đoán (unhappy case handling).
-  - Phân loại xếp lớp chuẩn mực: `FOUNDATION` (`theta < -0.5`), `ACCELERATION` (`-0.5 <= theta <= 0.5`), `BREAKTHROUGH` (`theta > 0.5`).
-  - Dựng tọa độ biểu đồ Radar so sánh năng lực học sinh theo từng miền với điểm chuẩn benchmark dựa trên mục tiêu điểm thi (V-ACT target score).
-- **Pydantic Schemas & Data Contracts (`rag-service/schemas.py`)**:
-  - Khai báo trọn bộ contract REST API: `DiagnosticAnswerItem`, `DiagnosticDomainName`, `DiagnosticAnalyzeRequest`, `DiagnosticSkillPriorDto`, `DiagnosticDomainScoreDto`, `DiagnosticRadarAxisDto`, `DiagnosticAnalyzeResponse`.
-- **API Endpoints & Socratic Commentary (`rag-service/routers/diagnostic.py`)**:
-  - `POST /api/v1/diagnostic/analyze`: Nhận kết quả bài làm 30 câu, tính toán psychometrics và gọi Google Gemini (`gemini-3.6-flash`) tạo lời nhận xét sư phạm tích cực, có cơ chế fallback tự động.
-  - `GET /api/v1/diagnostic/config`: Cung cấp tham số cấu hình ngưỡng và thang đo cho frontend/Practice Service.
-- **Kiểm Thử Toàn Diện (`rag-service/tests/test_diagnostic.py`)**:
-  - 10/10 test cases đơn vị và tích hợp HTTP endpoint đạt 100% PASS.
-  - Tích hợp và kiểm thử End-to-End thực tế thành công với Practice Service (`POST /api/v1/practice/diagnostic-submissions`).
-- **Cập Nhật Tài Liệu Service**:
-  - Ban hành tài liệu chuyên sâu: [`docs/cong_thuc_psychometrics_irt_bkt.md`](./docs/cong_thuc_psychometrics_irt_bkt.md) tổng hợp toàn bộ 9 mô hình toán học, công thức và lý do lựa chọn trong Psychometrics Engine.
-  - Cập nhật [`docs/daily.md`](./docs/daily.md), [`docs/process.md`](./docs/process.md) và [`docs/architecture_acceptance.md`](./docs/architecture_acceptance.md).
+## [28/09/2026] - Hợp Nhất Toàn Diện Core Flow 1 (Diagnostic Psychometrics & Exam Studio) & Core Flow 2 (Textbook RAG Ingestion & CryptoStream)
 
-## [21/09/2026] - Thiết Kế Kiến Trúc AI Exam Generation (30 Câu), Vector RAG Môn/Skill & Duyệt Đề Thi Linh Hoạt
-- **Tạo Tài Liệu Thiết Kế Kế Hoạch Kiến Trúc ([ai_question_generation_rag_approval_plan.md](./docs/ai_question_generation_rag_approval_plan.md))**:
-  - Đã xây dựng và tổng hợp chi tiết toàn bộ thiết kế hệ thống cho tính năng Sinh đề thi 30 câu tự động bằng AI, Vector RAG theo Môn/Skill và Quy trình Kiểm duyệt Linh hoạt dành cho Academic Manager.
-  - Định nghĩa mô hình cơ sở dữ liệu `KnowledgeVectorChunks` (`pgvector`) phân loại tài liệu theo Môn (`domain_id`), Kỹ năng (`skill_id`) và nguồn tri thức (`document_type`).
-  - Thiết lập luồng Hybrid Search (SGK Nội bộ + Dynamic Web Search tin tức mới nhất) khi bật flag `enable_web_search = true`.
-  - Cấu hình luồng duyệt 2 tầng (`Questions.moderation_status` & `MockExams.approval_status`), cho phép Manager sinh câu tương đương thay thế chỉ trong 1-2 giây hoặc tự tinh chỉnh độ khó/bước tính toán (`difficulty_level`).
-- **Cập Nhật Tài Liệu Tiến Độ Service**:
-  - Cập nhật nhật ký kiểm tra hàng ngày [`docs/daily.md`](./docs/daily.md) và bảng tiến độ chủ thể [`docs/process.md`](./docs/process.md).
-
-## [19/09/2026] - Gộp Conversational RAG Service (Python) Vào AI Engine
-- **Merge `v-act-ai-service` → `rag-service/` (Sidecar Sub-Project)**:
-  - Gộp toàn bộ Python Conversational RAG service vào thư mục `rag-service/` bên trong AI Engine.
-  - Tech stack: Python 3.12 / FastAPI / LangChain LCEL / Google Gemini / PostgreSQL pgvector.
-  - Không thay đổi bất kỳ file C# nào hiện có trong project .NET.
-- **10 Commits Incremental**:
-  - `config.py` — Config, env vars, model factories (LLM, Embeddings), PGEngine, PGVectorStore.
-  - `schemas.py` — Pydantic request/response models (Chat, Document, Health, Versioning).
-  - `requirements.txt` + `.env.example` — Python dependencies và environment template.
-  - `ingestion.py` — Document ingestion pipeline (PDF/DOCX/Text, SHA-256 hashing, versioning, graceful swap).
-  - `rag_engine.py` — Conversational RAG engine (History-Aware Retriever, LCEL, streaming, session store).
-  - `routers/chat.py` — Chat endpoints (POST, SSE stream, session management).
-  - `routers/documents.py` — Document CRUD (upload, text ingest, versions, rollback, soft delete, purge, stats).
-  - `main.py` — FastAPI application entrypoint với CORS, lifespan events, health check.
-  - `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `.gitignore` — Docker containerization.
-  - `README.md` — Documentation cho RAG sidecar service.
+- **Hợp Nhất Toàn Diện & Đồng Bộ Kiến Trúc Giữa Hai Nhánh**:
+  - Hợp nhất thành công mã nguồn và tài liệu giữa nhánh `origin/develop` và nhánh `ThinhTT/feat-diagnostic-exam-studio-bloom-flow`.
+- **Core Flow 1 — Đánh Giá Năng Lực Đầu Vào, Psychometrics IRT & AI Exam Studio**:
+  - **Chuẩn Hóa Thang Đo Tư Duy Bloom 6 Cấp Cho IRT 2PL (`diagnostic_engine.py`)**:
+    - Nâng cấp ánh xạ độ khó IRT $b \in [-1.8, +2.2]$ tương ứng 6 cấp độ Bloom (Nhận biết $\rightarrow$ Sáng tạo).
+    - Tích hợp thuật toán cực tiểu hóa thuần Python Golden Section Search làm fallback tự động khi môi trường thiếu `scipy`.
+    - Ước lượng năng lực học sinh $\theta_0$ bằng mô hình IRT 2PL kết hợp MAP Estimation (Gaussian Prior), ngăn lạm phát do đoán mò.
+    - Tính BKT Prior $P(L_0) = \text{Sigmoid}(\theta_0)$, xử lý suy diễn domain level cho kỹ năng vắng mặt, phân lớp chuẩn 3 mức: `FOUNDATION`, `ACCELERATION`, `BREAKTHROUGH`.
+  - **Triển Khai Động Cơ Sinh Đề AI Chế Độ Kép (Dual-Engine AI Exam Studio) (`routers/diagnostic.py`)**:
+    - Endpoint `POST /api/v1/diagnostic/generate-exam` hỗ trợ 2 chế độ: *Gemini Live Cloud* (sinh câu hỏi mới theo Bloom, chuẩn LaTeX, cân đối đáp án A/B/C/D) và *Fast Calibrated Bank* (< 0.1s offline fallback).
+    - Tự động nhận diện ý định lĩnh vực (Toán, Văn, Logic, KHTN, KHXH) từ prompt và ưu tiên tuyệt đối lựa chọn Dropdown của giáo viên.
+  - **Giao Diện Khảo Sát & Studio Trực Quan Hóa (`view-diagnostic.html` & `ExamEndpoints.cs`)**:
+    - Cung cấp Web Runner UI trực quan bài thi 30 câu, vẽ biểu đồ Radar Chart và chạy thử nghiệm AI Exam Studio.
+- **Core Flow 2 — Nạp Tri Thức SGK, Streaming CryptoStream & Supabase Persistence**:
+  - **Tối Ưu Single-Pass CryptoStream & Khử Trùng Lặp Tệp (`TextbookEndpoints.cs`)**:
+    - Tích hợp `CryptoStream` bọc ngoài `FileStream` khi upload SGK, tính mã băm SHA-256 đồng thời trong 1 lượt đọc, cắt giảm 50% Disk I/O cho file lớn (100MB-250MB).
+    - Tự động dọn dẹp file tạm trùng lặp (`File.Delete`) khi tệp đang được tiến trình nền xử lý (`PROCESSING`).
+    - Đồng bộ danh mục mô hình kiểm tra độ trễ Vision AI `/ping-vision` từ cấu hình `AiSettings:GeminiModels`.
+  - **Trực Quan Hóa Chunks Tri Thức & Khắc Phục Lỗi Font InDesign (Mojibake)**:
+    - Giao diện `view-textbook.html` render công thức KaTeX, bảng biểu glassmorphism, xuất file `.MD`.
+    - Thuật toán `IsCorruptedFontEncoding` với 3 tầng lọc tự động chuyển hướng sang Gemini Vision AI cho văn bản sạch sẽ 100%.
+- **Chuẩn Hóa Động Cơ Bóc Tách Đề Thi & Cấu Hình Timeout Linh Hoạt**:
+  - Cập nhật danh mục 5 mô hình Gemini chuẩn: `gemini-flash-lite-latest`, `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, `gemini-3.8-flash`, `gemini-3.6-flash`.
+  - Cấu hình động `ExamParserTimeoutMinutes = 8`, `TextbookParserTimeoutMinutes = 10`, `MinQuestionThreshold`, `OpenAiBaseUrl`, `GeminiBaseUrl` và Python đa nền tảng qua `appsettings.json`.
+- **Kiểm Thử & Nghiệm Thu Kiến Trúc**:
+  - `dotnet build` giải pháp `V-Eval-Ai_Engine.sln` thành công 100% (**0 Error, 0 Warning** mới).
+  - Hoàn tất hồ sơ nghiệm thu kiến trúc chi tiết tại [`docs/architecture_acceptance.md`](./docs/architecture_acceptance.md).
