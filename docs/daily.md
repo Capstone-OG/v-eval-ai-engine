@@ -1,5 +1,22 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [08/10/2026] - Triển Khai Giai Đoạn 1 Core Flow 4: Khởi Tạo CSDL Knowledge Graph & pgvector Archetype Seeder
+- **Thiết Kế & Triển Khai Schema Knowledge Graph (`rag-service/database/graph_schema.sql`)**:
+  - Tạo mới 5 bảng nghiệp vụ trong schema `v_eval_ai` trên Supabase PostgreSQL:
+    1. `archetype_patterns`: Quản lý Dạng bài chuẩn (Taxonomy Level 4), định lý cốt lõi, chiến thuật giải nhanh và vector nhúng 3072 chiều.
+    2. `pattern_exemplars`: Câu hỏi mẫu kèm lời giải vàng chuẩn ĐGNL do Academic thẩm định.
+    3. `pattern_traps`: Danh mục bẫy thường gặp gắn liền trực tiếp với các phương án sai (A/B/C/D).
+    4. `novel_pattern_proposals`: Lưu trữ tạm thời các câu hỏi có dạng mới lạ chờ Ban Chuyên Môn duyệt.
+    5. `ai_tutor_interaction_logs`: Lưu vết lịch sử hỏi bài của học sinh và kiểm định phục vụ Human-in-the-Loop.
+- **Tự Động Hóa Migration & Seeding Tri Thức (`database/apply_graph_schema.py` & `seed_archetypes.py`)**:
+  - Viết script áp dụng DDL `apply_graph_schema.py` kết nối trực tiếp Supabase pooler.
+  - Viết script `seed_archetypes.py` nạp dạng bài mẫu toán học `MATH_ASYMPTOTE_PARAM_01`, 2 bẫy tư duy, và tính toán vector nhúng 3072 chiều từ Google Gemini Embedding API.
+  - Xác thực 100% dữ liệu đã lưu trữ thành công trên Supabase.
+- **Kiểm Thử Biên Dịch**:
+  - `dotnet build V-Eval-Ai_Engine.sln` đạt 100% thành công (0 error).
+
+---
+
 ## [07/10/2026] - Chuẩn Hóa Khung Cấu Hình .NET Ingestion, Python RAG & Khử Lộ Bí Mật Mẫu
 - **Chuẩn Hóa File Cấu Hình Mẫu .NET API (`appsettings.example.json`)**:
   - Bổ sung `ConnectionStrings:DefaultConnection` đồng bộ với `appsettings.json`.

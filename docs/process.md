@@ -45,3 +45,5 @@
 | 19 | **Rich Chunks Preview (Markdown + KaTeX + Tables)** | `view-textbook.html` | 🟢 Hoàn thành | 100% | Render bảng Markdown glassmorphic striped, công thức KaTeX STEM inline/block, lọc real-time, chuyển đổi Trực Quan / Raw và xuất file .MD |
 | 20 | **AI Exam Studio & Custom Prompting** | `view-diagnostic.html` & `ExamEndpoints.cs` | 🟢 Hoàn thành | 100% | Web studio tạo và duyệt đề, nhận diện môn prompt, chọn Bloom 6 cấp, lưu CSDL chờ duyệt |
 | 21 | **Tối Ưu Luồng Bloom 6 Cấp IRT 2PL** | `rag-service/diagnostic_engine.py`, `schemas.py` | 🟢 Hoàn thành | 100% | Ánh xạ difficulty level 1-6 sang tham số IRT 2PL [-1.8 .. +2.2] |
+| 22 | **GraphRAG Phase 1: CSDL & Archetype Seeder** | `rag-service/database/graph_schema.sql`, `seed_archetypes.py` | 🟢 Hoàn thành | 100% | Thiết kế 5 bảng Knowledge Graph trên schema `v_eval_ai` (Supabase pgvector), seed dạng bài mẫu và vector 3072d |
+

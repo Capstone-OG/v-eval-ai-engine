@@ -263,8 +263,33 @@
   - Phân định thứ tự ưu tiên domain (chọn dropdown môn được ưu tiên tuyệt đối so với prompt).
   - Khắc phục triệt để lỗi phân tích cú pháp tĩnh `import os`, 12/12 unit tests đạt 100%.
 
+---
 
+### [08/10/2026] - Architecture Acceptance: Core Flow 4 GraphRAG Phase 1 (Database DDL Schema & Archetype Seeding)
+- **Architecture Acceptor**: `ThinhTran2412` (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED** (Standardized pgvector schema & seeded Knowledge Graph).
+- **Target Files**:
+  - [`rag-service/database/graph_schema.sql`](./../rag-service/database/graph_schema.sql)
+  - [`rag-service/database/apply_graph_schema.py`](./../rag-service/database/apply_graph_schema.py)
+  - [`rag-service/database/seed_archetypes.py`](./../rag-service/database/seed_archetypes.py)
 
+#### 1. Database DDL Schema Design (`v_eval_ai` Schema on Supabase)
+- **Archetype Patterns Table (`archetype_patterns`)**:
+  - Represents Level 4 in the V-Eval Taxonomy: `Domain -> Subject -> Skill -> Archetype Pattern`.
+  - Stored fields: `pattern_code` (Unique), `pattern_name`, `skill_id` (FK to `practice.skills`), `core_theory_latex`, `fast_solution_strategy`, `difficulty_tier`, `embedding vector(3072)`.
+  - **Index Design Rationale**: pgvector HNSW indexes have an upper limit of 2,000 dimensions (`ProgramLimitExceeded` error on 3072d vectors). Because `archetype_patterns` acts as a curated archetype bank with ~50 to 200 patterns per subject, sequential cosine scans (`ORDER BY embedding <=> query_vector LIMIT 1`) execute in under 1ms without approximate recall loss or maintenance overhead.
+- **Pattern Exemplars Table (`pattern_exemplars`)**:
+  - Stores golden exam problems curated by the Academic team.
+  - Fields include `question_text_latex`, `options_json` (A, B, C, D), `correct_option`, `solution_steps_json` (step-by-step LaTeX derivations).
+- **Pattern Traps Table (`pattern_traps`)**:
+  - Maps common cognitive misconceptions directly to distractor options.
+  - Fields: `trap_option` (e.g. 'B', 'D'), `misconception_name`, `trap_explanation`, `socratic_hint` (guiding questions used by the Socratic tutor without giving away the direct answer).
+- **Novel Pattern Proposals Table (`novel_pattern_proposals`)**:
+  - Staging ground for questions with low archetype similarity (< 0.75), isolating unverified patterns until Academic review and approval.
+- **AI Tutor Interaction Logs Table (`ai_tutor_interaction_logs`)**:
+  - Stores multi-turn Socratic transcripts, retrieved subgraph context, student evaluation flags, and human-in-the-loop audit data.
 
-
-
+#### 2. Cross-Platform Execution & Data Seeding
+- Synchronous `psycopg` connection used for script reliability on Windows without event loop conflicts.
+- Real 3072-dimensional vector embedding generated via Google Gemini Embedding API (`models/gemini-embedding-001`) with task type `RETRIEVAL_DOCUMENT`.
+- Seeded pattern `MATH_ASYMPTOTE_PARAM_01` (Tiệm cận đồ thị hàm số chứa tham số m) linked to Skill `1d9b72ec-1f60-4406-981e-03ee8a4058bc`, complete with 1 golden exemplar and 2 cognitive traps.
