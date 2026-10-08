@@ -98,6 +98,23 @@ def build_question_text(content: str, options: Optional[dict[str, str]] = None) 
     return _WS_RE.sub(" ", "\n".join(parts)).strip()
 
 
+def flatten_parsed_exam(parsed_exam: dict[str, Any]) -> list[dict[str, Any]]:
+    """Flatten a .NET ``ParsedExamDto`` into a list of question dicts.
+
+    Passage (reading-cluster) questions are tagged with ``passage_range`` so the
+    Academic reviewer can trace them back to their shared context.
+    """
+    questions: list[dict[str, Any]] = [dict(q) for q in parsed_exam.get("single_questions") or []]
+    for passage in parsed_exam.get("passages") or []:
+        rng = f"{passage.get('start_question')}-{passage.get('end_question')}"
+        for q in passage.get("questions") or []:
+            item = dict(q)
+            item.setdefault("passage_range", rng)
+            questions.append(item)
+    questions.sort(key=lambda q: q.get("question_number") or 0)
+    return [q for q in questions if (q.get("content") or "").strip()]
+
+
 def _default_embed(texts: Sequence[str]) -> list[list[float]]:
     """Embed texts with Gemini using the same task type as the seeded archetypes."""
     client = get_graph_embeddings()
@@ -201,9 +218,9 @@ class NoveltyDetector:
     ) -> list[NoveltyResult]:
         """Evaluate a batch of parsed questions.
 
-        Each question dict accepts the ``ExamParseResultDto`` fields:
-        ``content`` (required), ``options`` (dict A-D), ``imageUrls``, ``suggestedSkillName``,
-        ``correctOption``, ``questionNumber``.
+        Each question dict follows the .NET ``ParsedQuestionDto`` JSON contract (snake_case):
+        ``content`` (required), ``options`` (dict A-D), ``image_url``, ``suggested_skill_name``,
+        ``correct_option``, ``question_number``, ``page_number``, ``difficulty_level``.
         """
         if not questions:
             return []
@@ -230,16 +247,20 @@ class NoveltyDetector:
                     if result.is_novel and persist:
                         metadata = {
                             k: q.get(k)
-                            for k in ("questionNumber", "suggestedSkillName", "correctOption", "options")
+                            for k in (
+                                "question_number", "page_number", "suggested_skill_name",
+                                "correct_option", "difficulty_level", "options", "passage_range",
+                            )
                             if q.get(k) is not None
                         }
+                        image_url = q.get("image_url")
                         result.proposal_id, result.duplicate_proposal = self.stage_proposal(
                             cur,
                             source_exam=source_exam,
                             question_latex=text,
                             similarity=max_sim,
                             nearest_id=nearest.id if nearest else None,
-                            image_urls=q.get("imageUrls"),
+                            image_urls=[image_url] if image_url else None,
                             metadata=metadata,
                         )
                         logger.warning(
