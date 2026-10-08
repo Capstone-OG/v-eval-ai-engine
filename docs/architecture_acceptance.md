@@ -291,5 +291,39 @@
 
 #### 2. Cross-Platform Execution & Data Seeding
 - Synchronous `psycopg` connection used for script reliability on Windows without event loop conflicts.
-- Real 3072-dimensional vector embedding generated via Google Gemini Embedding API (`models/gemini-embedding-001`) with task type `RETRIEVAL_DOCUMENT`.
+- Real 3072-dimensional vector embedding generated via Google Gemini Embedding API (`models/gemini-embedding-001`) using `embed_query` (same task type later used by the Novelty Detector, keeping archetype and question vectors in one embedding space).
 - Seeded pattern `MATH_ASYMPTOTE_PARAM_01` (Tiệm cận đồ thị hàm số chứa tham số m) linked to Skill `1d9b72ec-1f60-4406-981e-03ee8a4058bc`, complete with 1 golden exemplar and 2 cognitive traps.
+
+---
+
+### [08/10/2026] - Architecture Acceptance: Core Flow 4 GraphRAG Phase 2 (Novelty Detector & Academic Graph API)
+- **Architecture Acceptor**: `ThinhTran2412` (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - [`rag-service/graph/graph_db.py`](./../rag-service/graph/graph_db.py)
+  - [`rag-service/graph/novelty_detector.py`](./../rag-service/graph/novelty_detector.py)
+  - [`rag-service/routers/academic_graph.py`](./../rag-service/routers/academic_graph.py)
+  - [`rag-service/tests/test_novelty_detector.py`](./../rag-service/tests/test_novelty_detector.py)
+
+#### 1. Integration Contract with the .NET Vision Pipeline
+- The existing `GeminiExamParserService.cs` is reused unchanged. Its `ParsedExamDto` JSON (snake_case: `single_questions`, `passages[].questions`, `options`, `image_url`...) is accepted as-is by `POST /api/v1/academic-graph/novelty/check` via the `parsed_exam` field.
+- Passage-cluster questions are flattened and tagged with `passage_range` for reviewer traceability.
+
+#### 2. Decision Algorithm
+- Embedding input = normalized question stem + sorted options (distractors often define the archetype).
+- `similarity = 1 - (q <=> archetype_embedding)`, exact sequential scan (3072d exceeds the HNSW 2000d limit; archetype bank is small).
+- `similarity >= 0.75` -> `MATCHED_EXISTING`; `< 0.75` -> `NOVEL_PATTERN_CANDIDATE`. Threshold configurable per request or via `NOVELTY_SIMILARITY_THRESHOLD`.
+- Staging is idempotent: a question already `PENDING_REVIEW` is reused (`duplicate_proposal = true`) instead of re-inserted, so re-uploading the same exam does not flood the Academic queue.
+
+#### 3. Academic Review Workflow
+- `GET /api/v1/academic-graph/proposals` lists proposals ordered by lowest similarity first (most novel on top) with nearest archetype info.
+- `PATCH /api/v1/academic-graph/proposals/{id}/review` records `APPROVED | MERGED | REJECTED`; `MERGED` requires a valid `merged_into_archetype_id`; only `PENDING_REVIEW` rows can transition (404 otherwise).
+
+#### 4. Infrastructure Decisions
+- Dedicated `GRAPH_DATABASE_URL` (fallback `DATABASE_URL`) because the local `DATABASE_URL` targets the legacy `rag_db` container while the Knowledge Graph lives on Supabase.
+- `prepare_threshold=None` for Supabase pgbouncer compatibility; `connect_timeout=15` to fail fast.
+- Sync endpoints (`def`) so FastAPI offloads blocking psycopg/Gemini calls to its threadpool.
+
+#### 5. Verification
+- Live Supabase: similar asymptote question `0.78-0.79` (MATCHED); physics / literature questions `0.53-0.55` (NOVEL). Review transitions verified (200 / 400 / 404). Smoke data cleaned.
+- Offline unit tests: 7/7 passed. `dotnet build`: 0 errors.

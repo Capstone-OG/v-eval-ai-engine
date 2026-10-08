@@ -1,5 +1,21 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [08/10/2026] - Triển Khai Giai Đoạn 2 Core Flow 4: Novelty Detector & Academic Graph API
+- **Tầng truy cập Knowledge Graph (`rag-service/graph/graph_db.py`)**:
+  - Helper kết nối psycopg đồng bộ (`prepare_threshold=None` tương thích Supabase pooler, `connect_timeout=15`), serialize pgvector, cache Gemini Embedding 3072d.
+  - Bổ sung biến môi trường riêng `GRAPH_DATABASE_URL` (fallback `DATABASE_URL`) vì `DATABASE_URL` local trỏ về DB `rag_db` cũ.
+- **Module phát hiện dạng bài mới (`rag-service/graph/novelty_detector.py`)**:
+  - Nhúng câu hỏi (stem + phương án) và quét cosine tuần tự trên `v_eval_ai.archetype_patterns`.
+  - Quy tắc: `similarity >= 0.75` -> `MATCHED_EXISTING`; `< 0.75` -> `NOVEL_PATTERN_CANDIDATE` và ghi vào `novel_pattern_proposals` (idempotent, không tạo trùng bản ghi `PENDING_REVIEW`).
+  - Tương thích trực tiếp JSON snake_case của `ParsedExamDto`/`ParsedQuestionDto` (.NET), tự làm phẳng câu hỏi thuộc chùm passage.
+- **Academic Graph API (`rag-service/routers/academic_graph.py`)**:
+  - `POST /api/v1/academic-graph/novelty/check`, `GET /api/v1/academic-graph/proposals`, `PATCH /api/v1/academic-graph/proposals/{id}/review`.
+- **Kiểm thử**:
+  - Live Supabase: câu tiệm cận tương tự đạt `0.78-0.79` (MATCHED), câu Vật lý/Ngữ văn đạt `0.53-0.55` (NOVEL); kiểm tra luồng duyệt 400/404 đúng; dữ liệu smoke test đã dọn sạch.
+  - `tests/test_novelty_detector.py`: 7/7 passed. `dotnet build` 0 error.
+
+---
+
 ## [08/10/2026] - Triển Khai Giai Đoạn 1 Core Flow 4: Khởi Tạo CSDL Knowledge Graph & pgvector Archetype Seeder
 - **Thiết Kế & Triển Khai Schema Knowledge Graph (`rag-service/database/graph_schema.sql`)**:
   - Tạo mới 5 bảng nghiệp vụ trong schema `v_eval_ai` trên Supabase PostgreSQL:
