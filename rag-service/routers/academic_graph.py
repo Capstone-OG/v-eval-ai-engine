@@ -16,11 +16,13 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Literal, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from graph.graph_db import GRAPH_SCHEMA, graph_connection
+from graph.hybrid_retriever import DEFAULT_MIN_SIMILARITY, HybridGraphRetriever
 from graph.novelty_detector import (
     DEFAULT_SIMILARITY_THRESHOLD,
     NoveltyDetector,
@@ -69,6 +71,15 @@ class ProposalReviewRequest(BaseModel):
 
 
 MAX_QUESTIONS_PER_CALL = 200
+
+
+class SubgraphPreviewRequest(BaseModel):
+    question_latex: str = Field(..., min_length=1)
+    options: dict[str, str] = Field(default_factory=dict)
+    student_selected_option: Optional[str] = Field(default=None, max_length=10)
+    correct_option: Optional[str] = Field(default=None, max_length=10)
+    skill_id: Optional[UUID] = Field(default=None, description="Taxonomy skill UUID (optional scope)")
+    min_similarity: float = Field(default=DEFAULT_MIN_SIMILARITY, gt=0.0, lt=1.0)
 
 
 # ---------------------------------------------------------------------------
@@ -167,3 +178,24 @@ def review_proposal(proposal_id: str, req: ProposalReviewRequest) -> dict[str, A
             raise HTTPException(status_code=404, detail="Proposal not found or already reviewed.")
         conn.commit()
     return row
+
+
+@router.post(
+    "/subgraph/preview",
+    summary="Preview the Socratic subgraph the AI Tutor would be grounded on (internal)",
+)
+def preview_subgraph(req: SubgraphPreviewRequest) -> dict[str, Any]:
+    """Internal Academic/Mentor tool. Exposes golden solutions — never route to students."""
+    try:
+        retriever = HybridGraphRetriever(min_similarity=req.min_similarity)
+        subgraph = retriever.retrieve(
+            question_latex=req.question_latex,
+            options=req.options,
+            student_selected_option=req.student_selected_option,
+            correct_option=req.correct_option,
+            skill_id=str(req.skill_id) if req.skill_id else None,
+        )
+    except Exception as exc:
+        logger.exception("Subgraph retrieval failed")
+        raise HTTPException(status_code=502, detail=f"Subgraph retrieval failed: {exc}") from exc
+    return subgraph.to_dict()
