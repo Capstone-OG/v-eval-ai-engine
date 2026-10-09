@@ -25,10 +25,29 @@ DEFAULT_SUPABASE_URI = (
 )
 
 def get_connection_uri() -> str:
-    env_uri = os.environ.get("SUPABASE_DATABASE_URL") or os.environ.get("DATABASE_URL")
+    env_uri = (
+        os.environ.get("GRAPH_DATABASE_URL")
+        or os.environ.get("SUPABASE_DATABASE_URL")
+        or os.environ.get("DATABASE_URL")
+    )
     if env_uri and "supabase" in env_uri:
-        return env_uri
+        return env_uri.replace("postgresql+psycopg://", "postgresql://")
     return DEFAULT_SUPABASE_URI
+
+
+def resolve_skill_id(cur, skill_name: str) -> str:
+    """Resolve a taxonomy skill by exact (case-insensitive) name.
+
+    Fails loudly instead of silently linking the archetype to an unrelated skill.
+    """
+    cur.execute(
+        'SELECT skill_id FROM v_eval_content."Skills" WHERE lower(name) = lower(%s) LIMIT 1;',
+        (skill_name,),
+    )
+    row = cur.fetchone()
+    if not row:
+        raise LookupError(f"Skill '{skill_name}' not found in v_eval_content.Skills")
+    return row[0]
 
 def seed_data():
     conn_uri = get_connection_uri()
@@ -70,14 +89,10 @@ def seed_data():
     vector_str = "[" + ",".join(map(str, vector)) + "]"
     print(f"[OK] Embedding computed ({len(vector)} dimensions).")
 
-    # 3. Retrieve valid skill_id from v_eval_content."Skills"
+    # 3. Resolve the correct taxonomy skill (Level 3) by name
     with psycopg.connect(conn_uri) as conn:
         with conn.cursor() as cur:
-            cur.execute("""
-                SELECT skill_id FROM v_eval_content."Skills" LIMIT 1;
-            """)
-            row = cur.fetchone()
-            skill_id = row[0] if row else "1d9b72ec-1f60-4406-981e-03ee8a4058bc"
+            skill_id = resolve_skill_id(cur, "Khảo sát hàm số")
             print(f"Linking Archetype to Skill ID: {skill_id}")
 
             # 4. Insert or Update Archetype Pattern
@@ -86,6 +101,7 @@ def seed_data():
                 (skill_id, pattern_code, pattern_name, description, core_theorems, fast_solving_heuristics, embedding, is_verified)
                 VALUES (%s, %s, %s, %s, %s, %s, %s::vector, TRUE)
                 ON CONFLICT (pattern_code) DO UPDATE SET
+                    skill_id = EXCLUDED.skill_id,
                     pattern_name = EXCLUDED.pattern_name,
                     description = EXCLUDED.description,
                     core_theorems = EXCLUDED.core_theorems,
