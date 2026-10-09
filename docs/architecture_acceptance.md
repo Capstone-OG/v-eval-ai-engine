@@ -327,3 +327,35 @@
 #### 5. Verification
 - Live Supabase: similar asymptote question `0.78-0.79` (MATCHED); physics / literature questions `0.53-0.55` (NOVEL). Review transitions verified (200 / 400 / 404). Smoke data cleaned.
 - Offline unit tests: 7/7 passed. `dotnet build`: 0 errors.
+
+---
+
+### [09/10/2026] - Architecture Acceptance: Core Flow 4 GraphRAG Phase 3 (Hybrid GraphRAG Retriever)
+- **Architecture Acceptor**: `ThinhTran2412` (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - [`rag-service/graph/hybrid_retriever.py`](./../rag-service/graph/hybrid_retriever.py)
+  - [`rag-service/database/seed_archetypes.py`](./../rag-service/database/seed_archetypes.py)
+  - [`rag-service/routers/academic_graph.py`](./../rag-service/routers/academic_graph.py)
+  - [`rag-service/tests/test_hybrid_retriever.py`](./../rag-service/tests/test_hybrid_retriever.py)
+
+#### 1. Two-Hop Subgraph Retrieval Architecture
+- **Hop 1 (Vector Anchor)**:
+  - Embeds the student question stem + options using Gemini 3072d (`embed_query`).
+  - Resolves top-k candidate archetypes scoped to the question's taxonomy `skill_id`.
+  - Implements automatic fallback to global scope (`GLOBAL`) if the skill scope yields no match or has similarity below threshold, tolerating coarse or misclassified skill IDs.
+- **Fail-Closed Grounding**:
+  - Enforces `min_similarity = 0.75`. If the closest archetype similarity is $< 0.75$, the status returns `LOW_CONFIDENCE` with empty exemplars and traps, strictly preventing the Socratic tutor from grounding on irrelevant theorems.
+- **Hop 2 (Graph Relational Expansion & Safe Trap Alignment)**:
+  - Traverses from anchor archetype to `pattern_exemplars` (sorted by text match ratio) and `pattern_traps`.
+  - **Safe Trap Strategy**: Distinguishes between exact exemplar questions vs rearranged variants. Option letters (A/B/C/D) are only mapped directly (`EXEMPLAR_OPTION_LETTER`) if the question matches an exemplar ($\ge 90\%$). For variant questions where distractors may be shuffled, all archetype traps are returned as candidates (`ARCHETYPE_CANDIDATES`) for semantic alignment in Phase 4.
+  - Strips LaTeX delimiters (`$`, `\`, `{`, `}`) during text normalization to ensure robust string similarity calculation across mathematical notations.
+
+#### 2. Verification & Testing
+- Live Supabase integration verified across 5 distinct test scenarios:
+  1. Identical exemplar problem -> `GROUNDED`, exact trap mapped via option letter.
+  2. Variant problem with shuffled distractors -> `GROUNDED`, candidate traps returned.
+  3. Mislabeled skill parameter -> automatically recovered via global fallback.
+  4. Out-of-graph question (literature) -> safely returns `LOW_CONFIDENCE`.
+  5. Correct student answer -> returns `GROUNDED` without activating error misconceptions.
+- Unit testing: 15/15 unit tests passing (100%), 0 build errors across the .NET solution.

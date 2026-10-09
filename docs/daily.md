@@ -1,5 +1,24 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [09/10/2026] - Triển Khai Giai Đoạn 3 Core Flow 4: Hybrid GraphRAG Retriever (Vector + Graph Traversal)
+- **Tái Cấu Trúc Seeder Đa Môn Học & Data-Driven (`database/seed_archetypes.py`)**:
+  - Sửa lỗi liên kết Taxonomy Level 3: tìm chính xác kỹ năng theo tên thay vì `LIMIT 1` ngẫu nhiên (`Khảo sát hàm số` -> `3efcbd1e-cb9e-4998-8aee-89381f2e83bf`).
+  - Bổ sung dạng bài chuẩn Vật lý `PHYS_SHM_MAX_SPEED_01` (Tính tốc độ cực đại dao động điều hòa) gắn liền Kỹ năng `Vật lý dao động điều hòa` (`93a98dce-abdb-4fac-ab26-e9476d1d236c`), kèm 1 câu hỏi mẫu và 3 bẫy tư duy thường gặp.
+- **Xây Dựng Bộ Truy Vết Đồ Thị Hai Bước (`graph/hybrid_retriever.py`)**:
+  - **Hop 1 (Vector Anchor)**: Nhúng câu hỏi theo chuẩn Gemini 3072d, ưu tiên tìm kiếm trong phạm vi kỹ năng (`skill_id`), tự động fallback sang tìm kiếm toàn cục (`GLOBAL`) nếu kỹ năng bị phân loại sai hoặc chưa có.
+  - **Fail-Closed Grounding**: Nếu độ tương đồng cosine $< 0.75$ (`min_similarity`), trả về trạng thái `LOW_CONFIDENCE` và không trả về định lý sai, bảo vệ AI Tutor khỏi ảo giác tri thức.
+  - **Hop 2 (Graph Expansion & Safe Trap Alignment)**:
+    - Mở rộng đồ thị sang các câu hỏi mẫu (`pattern_exemplars`) và danh mục bẫy tư duy (`pattern_traps`).
+    - Phân biệt câu hỏi mẫu gốc vs câu hỏi biến thể: chỉ ánh xạ trực tiếp phương án A/B/C/D (`EXEMPLAR_OPTION_LETTER`) khi văn bản câu hỏi trùng khớp câu mẫu ($\ge 90\%$). Với câu hỏi biến thể bị xáo trộn phương án, trả về toàn bộ danh sách bẫy ứng viên (`ARCHETYPE_CANDIDATES`) để LLM đối sánh ngữ nghĩa ở Giai đoạn 4.
+    - Xử lý chuẩn hóa LaTeX: loại bỏ dấu bao bọc `$`, `\`, `{`, `}` giúp nhận diện trùng khớp câu hỏi chính xác $100\%$.
+- **Bổ Sung Endpoint Xem Trước Subgraph (`routers/academic_graph.py`)**:
+  - `POST /api/v1/academic-graph/subgraph/preview`: Cung cấp giao diện nội bộ cho Ban Chuyên Môn / Mentor xem trước toàn bộ ngữ cảnh đồ thị trích xuất được.
+- **Kiểm Thử & Nghiệm Thu**:
+  - Chạy thực tế 5 kịch bản kiểm thử trên Supabase: câu mẫu chuẩn khớp bẫy 100%, câu biến thể xáo trộn phương án trả candidate traps, câu truyền nhầm skill tự fallback toàn cục thành công, câu ngoài phạm vi trả `LOW_CONFIDENCE`, học sinh trả lời đúng không kích hoạt bẫy.
+  - Bổ sung 8 test case trong `tests/test_hybrid_retriever.py`, tổng 15/15 unit tests passed. `dotnet build` 0 error.
+
+---
+
 ## [08/10/2026] - Triển Khai Giai Đoạn 2 Core Flow 4: Novelty Detector & Academic Graph API
 - **Tầng truy cập Knowledge Graph (`rag-service/graph/graph_db.py`)**:
   - Helper kết nối psycopg đồng bộ (`prepare_threshold=None` tương thích Supabase pooler, `connect_timeout=15`), serialize pgvector, cache Gemini Embedding 3072d.
