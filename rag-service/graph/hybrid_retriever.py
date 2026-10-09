@@ -123,12 +123,13 @@ class SocraticSubgraph:
 # Pure helpers (unit-testable without DB / network)
 # ---------------------------------------------------------------------------
 
-_NORM_RE = re.compile(r"[\s$\\{}]+")
+_LATEX_DELIM_RE = re.compile(r"[$\\{}]")
+_WS_RE = re.compile(r"\s+")
 
 
 def normalize_for_match(text: str) -> str:
-    """Loose normalization for exemplar identity checks (ignores LaTeX delimiters/spacing)."""
-    return _NORM_RE.sub(" ", (text or "").lower()).strip()
+    """Loose normalization for exemplar identity checks (drops LaTeX delimiters, collapses spaces)."""
+    return _WS_RE.sub(" ", _LATEX_DELIM_RE.sub("", (text or "").lower())).strip()
 
 
 def text_match_ratio(a: str, b: str) -> float:
