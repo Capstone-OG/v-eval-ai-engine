@@ -29,6 +29,7 @@ from routers.academic_graph import router as academic_graph_router
 from routers.chat import router as chat_router
 from routers.diagnostic import router as diagnostic_router
 from routers.documents import router as documents_router
+from routers.socratic_tutor import router as socratic_tutor_router
 from schemas import HealthResponse
 
 # Configure logging
@@ -95,6 +96,7 @@ app.include_router(chat_router)
 app.include_router(documents_router)
 app.include_router(diagnostic_router)
 app.include_router(academic_graph_router)
+app.include_router(socratic_tutor_router)
 
 
 # ---------------------------------------------------------------------------
