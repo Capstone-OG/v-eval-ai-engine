@@ -359,3 +359,42 @@
   4. Out-of-graph question (literature) -> safely returns `LOW_CONFIDENCE`.
   5. Correct student answer -> returns `GROUNDED` without activating error misconceptions.
 - Unit testing: 15/15 unit tests passing (100%), 0 build errors across the .NET solution.
+
+---
+
+### [10/10/2026] - Architecture Acceptance: Core Flow 4 GraphRAG Phase 4 (Socratic Tutor & LLM-as-a-Judge)
+- **Architecture Acceptor**: `ThinhTran2412` (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - [`rag-service/socratic/validator_judge.py`](./../rag-service/socratic/validator_judge.py)
+  - [`rag-service/socratic/socratic_engine.py`](./../rag-service/socratic/socratic_engine.py)
+  - [`rag-service/routers/socratic_tutor.py`](./../rag-service/routers/socratic_tutor.py)
+  - [`rag-service/tests/test_socratic_engine.py`](./../rag-service/tests/test_socratic_engine.py)
+
+#### 1. Two-Layer Socratic Gating & LLM-as-a-Judge
+- **Fast Heuristic Pre-Check (`_fast_heuristic_guard`)**:
+  - Employs regex guards against blatant solution leaks (e.g. `chọn phương án A`, `đáp án đúng là B`) before invoking LLM inference, ensuring zero-latency rejection on obvious violations.
+- **LLM-as-a-Judge Structural Validator (`validator_judge.py`)**:
+  - Inspects AI draft responses under `temperature = 0.0` with structured JSON schema output (`JudgeValidationResult`).
+  - Enforces 3 non-negotiable criteria:
+    1. `revealed_direct_answer == False`: Absolutely forbids full mathematical resolution or dictating the correct option to the student.
+    2. `consistent_with_ground_truth == True`: Guides the student's reasoning strictly towards the verified ground-truth option.
+    3. `grounded_in_theorems == True`: Confines explanations to the retrieved curriculum theorems.
+  - Fail-safe fallback: If all judge models encounter rate limits or outages, rejects by default and triggers the verified Ground-Truth fallback.
+- **Socratic Guidance Generation & Safe Fallback (`socratic_engine.py`)**:
+  - Formats multi-turn Socratic system prompts: pinpoints the student's cognitive misconception, reminds of core anchor formulas, and poses a single guiding question for student-led problem solving.
+  - If the draft is rejected by the Judge, the engine seamlessly outputs a structured fallback synthesized from the Knowledge Graph (`💡 Gợi ý phương pháp giải chuẩn...`) without breaking student session continuity.
+
+#### 2. Real-Time Streaming & Interaction Audit
+- **REST & SSE Streaming Endpoints (`socratic_tutor.py`)**:
+  - `POST /api/v1/socratic/ask`: Synchronous JSON response for non-streaming clients and verification tools.
+  - `POST /api/v1/socratic/ask-stream`: Native `text/event-stream` emitting `metadata`, pacing `token` events, and `done` events with the persisted interaction ID.
+  - Automatic audit logging into Supabase PostgreSQL table `v_eval_ai.ai_tutor_interaction_logs` recording student option, correct option, matched trap, complete transcript, and validation status.
+
+#### 3. Verification & Testing
+- Live end-to-end API execution on Supabase verified:
+  - Synchronous `/ask` endpoint returned status 200, successfully logged interaction `a3a315fd-...`.
+  - SSE streaming `/ask-stream` emitted 236 lines of smooth token events, successfully logged interaction `ad817693-...`.
+- Full offline test suite: 22/22 unit tests passing (100%).
+- .NET solution verification: `dotnet build V-Eval-Ai_Engine.sln` succeeded with 0 errors.
+

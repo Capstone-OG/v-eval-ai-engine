@@ -1,5 +1,26 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [10/10/2026] - Triển Khai Giai Đoạn 4 Core Flow 4: Socratic Tutor & LLM-as-a-Judge Validator
+- **Hội Đồng Thẩm Định Sư Phạm Tự Động LLM-as-a-Judge (`socratic/validator_judge.py`)**:
+  - Triển khai mô hình kiểm định bản thảo AI Tutor độc lập với 3 tiêu chí cốt lõi:
+    1. `revealed_direct_answer = False`: Chống giải thay và lộ đáp án số học cuối cùng hoặc bảo học sinh chọn phương án nào.
+    2. `consistent_with_ground_truth = True`: Nhất quán hướng dẫn học sinh quy về đúng phương án đúng trong CSDL.
+    3. `grounded_in_theorems = True`: Bám sát tuyệt đối định lý, công thức trong Knowledge Graph.
+  - Tích hợp bộ lọc nhanh Heuristic (`_fast_heuristic_guard`) phát hiện tức thì các câu lệnh lộ đáp án (`chọn phương án A`, `đáp án đúng là A`).
+  - Phân tích cú pháp cấu trúc Pydantic (`JudgeValidationResult`) với `temperature = 0.0`.
+- **Động Cơ Gia Sư Socrates Hai Lớp (`socratic/socratic_engine.py`)**:
+  - Tích hợp Prompt Socratic: nhận diện lỗi tư duy từ bẫy nhận thức (`matched_trap` hoặc `candidate_traps`), nhắc nhở công thức mỏ neo, và đặt 1 câu hỏi gợi mở duy nhất.
+  - Cơ chế kiểm định 2 lớp (Two-Layer Gating): Bản thảo được thẩm định bởi LLM-as-a-Judge trước khi chuyển sang luồng phát. Nếu bị từ chối (`is_passed == False`), hệ thống tự động Fallback về tri thức chuẩn từ CSDL đồ thị mà không làm đứt gãy luồng học.
+- **REST & Server-Sent Events (SSE) Streaming API (`routers/socratic_tutor.py`)**:
+  - `POST /api/v1/socratic/ask`: Endpoint phản hồi JSON đồng bộ phục vụ kiểm thử và ứng dụng không hỗ trợ stream.
+  - `POST /api/v1/socratic/ask-stream`: Endpoint stream SSE thời gian thực (`text/event-stream`), phát các sự kiện `metadata` (mã dạng bài, mã bẫy, trạng thái đồ thị), `token` (từng từ mượt mà), và `done`.
+  - Tự động ghi nhật ký tương tác học tập vào CSDL Supabase `v_eval_ai.ai_tutor_interaction_logs`.
+- **Kiểm Thử & Vận Hành**:
+  - Chạy thực tế thành công cả 2 endpoint `/ask` và `/ask-stream` (236 dòng SSE events), ghi nhận interaction ID thành công.
+  - Bổ sung bộ kiểm thử đơn vị `tests/test_socratic_engine.py`, 22/22 unit tests passed 100%. `dotnet build` đạt 0 error.
+
+---
+
 ## [09/10/2026] - Triển Khai Giai Đoạn 3 Core Flow 4: Hybrid GraphRAG Retriever (Vector + Graph Traversal)
 - **Tái Cấu Trúc Seeder Đa Môn Học & Data-Driven (`database/seed_archetypes.py`)**:
   - Sửa lỗi liên kết Taxonomy Level 3: tìm chính xác kỹ năng theo tên thay vì `LIMIT 1` ngẫu nhiên (`Khảo sát hàm số` -> `3efcbd1e-cb9e-4998-8aee-89381f2e83bf`).

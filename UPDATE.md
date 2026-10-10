@@ -1,20 +1,23 @@
 # Nhật Ký Cập Nhật (Update Log) - AI Engine
 
-## [09/10/2026] - Triển Khai Giai Đoạn 3 Core Flow 4 GraphRAG: Hybrid GraphRAG Retriever (Vector + Graph Traversal)
+## [10/10/2026] - Triển Khai Giai Đoạn 4 Core Flow 4 GraphRAG: Socratic Tutor & LLM-as-a-Judge Validator
 
-- **Tái Cấu Trúc Seeder Tri Thức Đa Dạng & Data-Driven (`database/seed_archetypes.py`)**:
-  - Chuẩn hóa liên kết kỹ năng Taxonomy Level 3 theo tên chính xác (`Khảo sát hàm số` -> ID `3efcbd1e-cb9e-4998-8aee-89381f2e83bf`).
-  - Bổ sung dạng bài chuẩn Vật lý `PHYS_SHM_MAX_SPEED_01` (Tính tốc độ cực đại dao động điều hòa) gắn liền Kỹ năng `Vật lý dao động điều hòa` (`93a98dce-abdb-4fac-ab26-e9476d1d236c`), kèm 1 câu hỏi mẫu chuẩn và 3 bẫy tư duy thường gặp.
-- **Xây Dựng Module Truy Vết Đồ Thị Hai Bước (`graph/hybrid_retriever.py`)**:
-  - **Hop 1 (Vector Anchor)**: Nhúng câu hỏi theo chuẩn Gemini 3072d (`embed_query`), ưu tiên quét trong phạm vi kỹ năng (`skill_id`), tự động fallback sang tìm kiếm toàn cục (`GLOBAL`) nếu kỹ năng bị phân loại sai hoặc chưa có.
-  - **Cơ Chế Fail-Closed Grounding**: Nếu độ tương đồng cosine cao nhất $< 0.75$, trả về trạng thái `LOW_CONFIDENCE` và không trả về định lý sai, bảo vệ AI Tutor khỏi ảo giác tri thức.
-  - **Hop 2 (Graph Expansion & Safe Trap Alignment)**:
-    - Mở rộng đồ thị sang câu hỏi mẫu (`pattern_exemplars`) và danh mục bẫy tư duy (`pattern_traps`).
-    - Phân biệt câu mẫu gốc vs câu biến thể: chỉ ánh xạ trực tiếp phương án A/B/C/D (`EXEMPLAR_OPTION_LETTER`) khi văn bản câu hỏi trùng khớp câu mẫu ($\ge 90\%$). Với câu hỏi biến thể bị xáo trộn phương án, trả về toàn bộ danh sách bẫy ứng viên (`ARCHETYPE_CANDIDATES`) để LLM đối sánh ngữ nghĩa ở Giai đoạn 4.
-    - Chuẩn hóa loại bỏ ký hiệu LaTeX (`$`, `\`, `{`, `}`) giúp nhận diện trùng khớp câu hỏi chính xác $100\%$.
-- **Endpoint Quản Trị & Kiểm Tra Subgraph (`routers/academic_graph.py`)**:
-  - Bổ sung endpoint `POST /api/v1/academic-graph/subgraph/preview` cho phép xem trước toàn bộ Subgraph Context mà AI Tutor sẽ sử dụng.
-- **Kiểm Thử & Vận Hành**:
-  - Xác thực thực tế 5 kịch bản trên Supabase Cloud (câu mẫu, câu biến thể xáo trộn, câu sai skill, câu ngoài kho tri thức, câu trả lời đúng).
-  - 15/15 unit tests passed (`test_hybrid_retriever.py` & `test_novelty_detector.py`).
+- **Hội Đồng Thẩm Định Sư Phạm Tự Động LLM-as-a-Judge (`socratic/validator_judge.py`)**:
+  - Triển khai mô hình kiểm định bản thảo gia sư độc lập (`temperature = 0.0`) với 3 tiêu chí bất khả xâm phạm:
+    1. `revealed_direct_answer = False`: Nghiêm cấm giải thay, cấm cung cấp đáp án số học cuối cùng hoặc chỉ định phương án đúng.
+    2. `consistent_with_ground_truth = True`: Dẫn dắt tư duy của học sinh quy về đúng phương án trong CSDL.
+    3. `grounded_in_theorems = True`: Bám sát tuyệt đối định lý, công thức trong Knowledge Graph.
+  - Tích hợp bộ lọc nhanh Heuristic (`_fast_heuristic_guard`) chặn đứng tức thì các câu lệnh lộ đáp án (`chọn phương án A`, `đáp án đúng là A`).
+  - Cấu trúc Pydantic `JudgeValidationResult` bọc an toàn và cơ chế fallback từ chối mặc định khi quota LLM cạn kiệt.
+- **Động Cơ Gia Sư Socrates Hai Lớp (`socratic/socratic_engine.py`)**:
+  - Tích hợp Socratic Prompt: nhận diện lỗi tư duy từ bẫy nhận thức (`pattern_traps`), nhắc nhở công thức mỏ neo, và đặt 1 câu hỏi gợi mở duy nhất để học sinh tự tư duy.
+  - Cơ chế kiểm định 2 lớp (Two-Layer Gating): Bản thảo bắt buộc qua thẩm định Judge trước khi phát. Nếu Judge từ chối (`is_passed == False`), tự động kích hoạt Fallback tổng hợp từ định lý chuẩn trong CSDL đồ thị.
+  - Hỗ trợ cơ chế sinh phản hồi đồng bộ và streaming thời gian thực theo từng token.
+- **REST & Server-Sent Events (SSE) Streaming API (`routers/socratic_tutor.py`)**:
+  - `POST /api/v1/socratic/ask`: Phản hồi JSON đồng bộ phục vụ kiểm thử và ứng dụng không stream.
+  - `POST /api/v1/socratic/ask-stream`: Stream SSE thời gian thực (`text/event-stream`), phát các sự kiện `metadata` (mã dạng bài, mã bẫy, trạng thái đồ thị), `token` (từng từ mượt mà), và `done`.
+  - Tự động ghi nhật ký tương tác học tập vào CSDL Supabase `v_eval_ai.ai_tutor_interaction_logs`.
+- **Kiểm Thử & Nghiệm Thu**:
+  - Xác thực thực tế cả 2 endpoint `/ask` và `/ask-stream` (236 dòng SSE events live) trên Supabase.
+  - 22/22 unit tests passed (`test_socratic_engine.py`, `test_hybrid_retriever.py`, `test_novelty_detector.py`).
   - Biên dịch .NET 9 (`dotnet build V-Eval-Ai_Engine.sln`) đạt 100% thành công (0 error).
