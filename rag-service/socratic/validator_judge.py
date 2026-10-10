@@ -100,7 +100,7 @@ def _fast_heuristic_guard(ai_draft_response: str, correct_option: str) -> Option
     
     # Check for direct phrase leaks like "chọn phương án A", "đáp án đúng là A", "chọn A"
     leak_patterns = [
-        rf"(?:chọn|đáp án|phương án|kết quả)\s+(?:là\s+)?{re.escape(corr_upper)}\b",
+        rf"(?:chọn|đáp án|phương án|kết quả)(?:\s+đúng|\s+chính xác)?\s+(?:là\s+)?{re.escape(corr_upper)}\b",
         rf"(?:chọn|đáp án)\s+phương án\s+{re.escape(corr_upper)}\b",
         rf"\bchọn\s+đáp án\s+{re.escape(corr_upper)}\b",
     ]
