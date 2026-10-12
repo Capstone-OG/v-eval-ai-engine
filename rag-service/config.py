@@ -137,6 +137,9 @@ def init_catalog_tables() -> None:
     import psycopg
 
     conn_str = get_connection_string()
+    if "connect_timeout" not in conn_str:
+        sep = "&" if "?" in conn_str else "?"
+        conn_str = f"{conn_str}{sep}connect_timeout=2"
     try:
         with psycopg.connect(conn_str) as conn:
             with conn.cursor() as cur:
@@ -163,15 +166,15 @@ def init_catalog_tables() -> None:
                 conn.commit()
                 logger.info("Catalog table '%s' is ready.", CATALOG_TABLE_NAME)
     except Exception as exc:
-        logger.error("Failed to initialize catalog table '%s': %s", CATALOG_TABLE_NAME, exc)
+        logger.warning("Catalog table init skipped (local pgvector unreachable): %s", exc)
         raise
 
 
 def init_vector_store_table() -> None:
     """Ensure the pgvector table and catalog table exist."""
-    init_catalog_tables()
-    engine = get_pg_engine()
     try:
+        init_catalog_tables()
+        engine = get_pg_engine()
         engine.init_vectorstore_table(
             table_name=COLLECTION_NAME,
             vector_size=EMBEDDING_DIMENSIONS,
@@ -182,7 +185,7 @@ def init_vector_store_table() -> None:
         if "42P07" in str(exc) or "already exists" in str(exc).lower():
             logger.debug("Vector store table '%s' already exists.", COLLECTION_NAME)
         else:
-            raise
+            logger.warning("Vector store init skipped or deferred: %s", exc)
 
 
 def get_vector_store() -> PGVectorStore:

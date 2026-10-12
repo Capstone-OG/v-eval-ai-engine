@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
@@ -384,7 +385,7 @@ def list_interactions(
                         to_char(l.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_at,
                         p.pattern_code,
                         p.pattern_name,
-                        p.core_theory_latex,
+                        p.core_theorems AS core_theory_latex,
                         t.trap_code,
                         t.trap_name,
                         t.misconception_explanation
