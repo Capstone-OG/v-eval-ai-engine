@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V-Eval - Socratic AI Tutor Mentor Dashboard (Core Flow 4)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0a0e17;
+            --surface: #111827;
+            --surface-elevated: #1e293b;
+            --surface-border: #334155;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-faint: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Navigation Header */
+        header {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--surface-border);
+            padding: 0.875rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-badge {
+            background: linear-gradient(135deg, #6366f1, #06b6d4);
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1.15rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+        }
+
+        .brand-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #f8fafc, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tag-flow {
+            font-size: 0.75rem;
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            padding: 0.2rem 0.55rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            font-weight: 600;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            margin-right: 0.35rem;
+        }
+
+        .btn {
+            background: var(--surface-elevated);
+            color: var(--text-main);
+            border: 1px solid var(--surface-border);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn:hover {
+            background: #283548;
+            border-color: #475569;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            border: none;
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #4f46e5, #4338ca);
+        }
+
+        /* Layout Grid */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            flex: 1;
+            height: calc(100vh - 65px);
+            overflow: hidden;
+        }
+
+        /* Left Sidebar: Interaction List */
+        .sidebar {
+            background: rgba(17, 24, 39, 0.7);
+            border-right: 1px solid var(--surface-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--surface-border);
+            background: rgba(15, 23, 42, 0.6);
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .filter-tab {
+            flex: 1;
+            padding: 0.45rem 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 6px;
+            background: var(--surface-elevated);
+            border: 1px solid var(--surface-border);
+            color: var(--text-muted);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-tab.active {
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            border-color: var(--primary);
+        }
+
+        .filter-tab .badge {
+            background: var(--danger);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 9999px;
+            margin-left: 0.3rem;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            color: var(--text-main);
+            padding: 0.5rem 0.75rem 0.5rem 2rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.65rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-faint);
+            font-size: 0.85rem;
+        }
+
+        .interaction-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .interaction-card {
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            padding: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .interaction-card:hover {
+            border-color: #475569;
+            transform: translateY(-1px);
+            background: rgba(30, 41, 59, 0.5);
+        }
+
+        .interaction-card.active {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.08);
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+
+        .interaction-card.reported {
+            border-left: 4px solid var(--danger);
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-time {
+            font-size: 0.75rem;
+            color: var(--text-faint);
+            font-family: 'Fira Code', monospace;
+        }
+
+        .pill {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .pill-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+        }
+
+        .pill-success {
+            background: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .pill-warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .pill-purple {
+            background: rgba(168, 85, 247, 0.15);
+            color: #d8b4fe;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .card-pattern {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 0.35rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .card-meta span b {
+            color: var(--text-main);
+        }
+
+        /* Right Inspector View */
+        .inspector {
+            background: radial-gradient(circle at 90% 10%, rgba(99, 102, 241, 0.05), transparent 40%),
+                        radial-gradient(circle at 10% 90%, rgba(6, 182, 212, 0.04), transparent 40%),
+                        var(--bg-dark);
+            overflow-y: auto;
+            padding: 1.75rem 2.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .empty-inspector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-faint);
+            text-align: center;
+            gap: 1rem;
+        }
+
+        .empty-inspector svg {
+            width: 64px;
+            height: 64px;
+            opacity: 0.35;
+        }
+
+        /* Detail Cards in Inspector */
+        .inspector-banner {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.875rem;
+        }
+
+        .banner-icon {
+            color: var(--danger);
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+
+        .banner-text h4 {
+            color: #fca5a5;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .banner-text p {
+            color: #e2e8f0;
+            font-size: 0.85rem;
+        }
+
+        .detail-card {
+            background: rgba(17, 24, 39, 0.7);
+            border: 1px solid var(--surface-border);
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+            backdrop-filter: blur(8px);
+        }
+
+        .detail-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .detail-card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #f1f5f9;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .info-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-faint);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: block;
+            margin-bottom: 0.35rem;
+        }
+
+        .info-group .info-value {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            background: rgba(15, 23, 42, 0.5);
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            border: 1px solid rgba(51, 65, 85, 0.4);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .latex-box {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            color: #38bdf8;
+        }
+
+        /* Transcript Chat Stream */
+        .transcript-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .chat-bubble {
+            padding: 0.875rem 1.15rem;
+            border-radius: 8px;
+            max-width: 90%;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .chat-student {
+            align-self: flex-start;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--surface-border);
+            color: #e2e8f0;
+        }
+
+        .chat-tutor {
+            align-self: flex-end;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.15));
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #f8fafc;
+        }
+
+        .chat-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-faint);
+            margin-bottom: 0.3rem;
+            display: block;
+        }
+
+        /* Mentor Action Tabs */
+        .actions-card {
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            background: rgba(15, 23, 42, 0.85);
+        }
+
+        .action-tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--surface-border);
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .action-tab-btn {
+            background: transparent;
+            border: 1px solid var(--surface-border);
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+        }
+
+        .form-control {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--surface-border);
+            color: var(--text-main);
+            padding: 0.65rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border 0.2s;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        textarea.form-control {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .form-hint {
+            font-size: 0.75rem;
+            color: var(--text-faint);
+            margin-top: 0.3rem;
+        }
+
+        /* Toast Feedback */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #1e293b;
+            border: 1px solid var(--surface-border);
+            color: #fff;
+            padding: 0.85rem 1.25rem;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 100;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            border-color: var(--success);
+            background: #064e3b;
+        }
+
+        .toast-error {
+            border-color: var(--danger);
+            background: #7f1d1d;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation Header -->
+    <header>
+        <div class="brand-container">
+            <div class="logo-badge">V-EVAL</div>
+            <div class="brand-title">Socratic AI Tutor Mentor Dashboard</div>
+            <span class="tag-flow">Core Flow 4: GraphRAG</span>
+        </div>
+        <div class="nav-actions">
+            <div>
+                <span class="status-dot"></span>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">Knowledge Graph Live</span>
+            </div>
+            <button class="btn" id="btnRefresh" onclick="loadInteractions()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                Làm mới
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="dashboard-container">
+        <!-- Left Sidebar: Interaction Logs List -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="filter-tabs">
+                    <button class="filter-tab active" id="tabAll" onclick="setFilter('all')">
+                        Tất cả (<span id="countAll">0</span>)
+                    </button>
+                    <button class="filter-tab" id="tabReported" onclick="setFilter('reported')">
+                        Báo cáo sai <span class="badge" id="countReported">0</span>
+                    </button>
+                </div>
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Tìm kiếm theo mã câu, dạng bài..." oninput="filterList()">
+                </div>
+            </div>
+            <div class="interaction-list" id="interactionList">
+                <div style="padding: 2rem; text-align: center; color: var(--text-faint);">
+                    Đang tải dữ liệu tương tác...
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Inspector View: Subgraph & Mentor Feedback -->
+        <main class="inspector" id="inspectorView">
+            <div class="empty-inspector">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <h3>Chọn một phiên tương tác để thẩm định</h3>
+                <p>Xem toàn bộ Subgraph Context, transcript phản hồi của AI Tutor và thực thi Human-in-the-Loop.</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <span id="toastMsg">Thành công!</span>
+    </div>
+
+    <script>
+        let allInteractions = [];
+        let currentFilter = 'all'; // 'all' or 'reported'
+        let selectedInteractionId = null;
+
+        // Auto render math helper
+        function renderMath(element) {
+            if (window.renderMathInElement) {
+                renderMathInElement(element || document.body, {
+                    delimiters: [
+                        { left: "$$", right: "$$", display: true },
+                        { left: "$", right: "$", display: false },
+                        { left: "\\(", right: "\\)", display: false },
+                        { left: "\\[", right: "\\]", display: true }
+                    ],
+                    throwOnError: false
+                });
+            }
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.innerText = msg;
+            toast.className = 'toast ' + (isError ? 'toast-error show' : 'toast-success show');
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3500);
+        }
+
+        async function loadInteractions() {
+            try {
+                // Try FastAPI direct port 8000 first, fallback to current origin
+                let url = '/api/v1/socratic/interactions?limit=100';
+                if (window.location.port === '5104' || window.location.port === '5002') {
+                    // Running through .NET API, try direct FastAPI or proxy
+                    url = 'http://localhost:8000/api/v1/socratic/interactions?limit=100';
+                }
+
+                let response;
+                try {
+                    response = await fetch(url);
+                } catch {
+                    // Fallback to Practice Service proxy if direct FastAPI blocked
+                    response = await fetch('/api/practice/ai-tutor/interactions');
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+
+                allInteractions = await response.json();
+                updateCounts();
+                renderInteractionList();
+
+                if (selectedInteractionId) {
+                    const current = allInteractions.find(i => i.id === selectedInteractionId);
+                    if (current) renderInspector(current);
+                }
+            } catch (err) {
+                console.error("Lỗi khi nạp tương tác:", err);
+                document.getElementById('interactionList').innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: var(--danger);">
+                        Không thể kết nối CSDL AI Tutor.<br>
+                        <span style="font-size: 0.8rem; color: var(--text-faint);">${err.message}</span>
+                    </div>
+                `;
+            }
+        }
+
+        function updateCounts() {
+            const total = allInteractions.length;
+            const reported = allInteractions.filter(i => i.student_reported).length;
+            document.getElementById('countAll').innerText = total;
+            document.getElementById('countReported').innerText = reported;
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.getElementById('tabAll').className = 'filter-tab ' + (filter === 'all' ? 'active' : '');
+            document.getElementById('tabReported').className = 'filter-tab ' + (filter === 'reported' ? 'active' : '');
+            renderInteractionList();
+        }
+
+        function filterList() {
+            renderInteractionList();
+        }
+
+        function renderInteractionList() {
+            const container = document.getElementById('interactionList');
+            const search = document.getElementById('searchInput').value.trim().toLowerCase();
+
+            let filtered = allInteractions.filter(i => {
+                if (currentFilter === 'reported' && !i.student_reported) return false;
+                if (search) {
+                    const matchPattern = (i.pattern_name || '').toLowerCase().includes(search);
+                    const matchCode = (i.pattern_code || '').toLowerCase().includes(search);
+                    const matchQId = (i.question_id || '').toLowerCase().includes(search);
+                    return matchPattern || matchCode || matchQId;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: var(--text-faint);">
+                        Không có tương tác nào phù hợp.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => {
+                const isActive = item.id === selectedInteractionId ? 'active' : '';
+                const isReported = item.student_reported ? 'reported' : '';
+                const statusPill = item.student_reported 
+                    ? `<span class="pill pill-danger">⚠️ Báo cáo sai</span>`
+                    : (item.validation_status === 'PASSED'
+                        ? `<span class="pill pill-success">Đạt chuẩn</span>`
+                        : `<span class="pill pill-warning">${item.validation_status}</span>`);
+
+                const formattedTime = item.created_at ? item.created_at.replace('T', ' ').substring(0, 19) : '';
+
+                return `
+                    <div class="interaction-card ${isActive} ${isReported}" onclick="selectInteraction('${item.id}')">
+                        <div class="card-top">
+                            <span class="card-time">${formattedTime}</span>
+                            ${statusPill}
+                        </div>
+                        <div class="card-pattern" title="${item.pattern_name || item.pattern_code || 'Không có dạng bài'}">
+                            ${item.pattern_name || item.pattern_code || 'Dạng bài chưa xác định'}
+                        </div>
+                        <div class="card-meta">
+                            <span>Học sinh: <b>${item.student_selected_option}</b></span>
+                            <span>Đúng: <b style="color: var(--success);">${item.correct_option}</b></span>
+                            <span style="margin-left: auto; font-size: 0.7rem; color: var(--text-faint);">${item.id.substring(0, 8)}...</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectInteraction(id) {
+            selectedInteractionId = id;
+            renderInteractionList();
+            const item = allInteractions.find(i => i.id === id);
+            if (item) renderInspector(item);
+        }
+
+        function renderInspector(item) {
+            const container = document.getElementById('inspectorView');
+
+            const bannerHtml = item.student_reported ? `
+                <div class="inspector-banner">
+                    <div class="banner-icon">⚠️</div>
+                    <div class="banner-text">
+                        <h4>Học sinh đã báo cáo câu trả lời sai</h4>
+                        <p>${item.mentor_resolution || 'Học sinh phản hồi lời giải của AI Tutor không đúng hoặc có nhầm lẫn trong bước gợi ý.'}</p>
+                    </div>
+                </div>
+            ` : '';
+
+            // Transcript chat
+            const transcriptBubbles = (item.ai_guidance_transcript || []).map(chat => {
+                const isTutor = chat.role === 'tutor';
+                return `
+                    <div class="chat-bubble ${isTutor ? 'chat-tutor' : 'chat-student'}">
+                        <span class="chat-label">${isTutor ? '🤖 Gia sư AI (Socratic Tutor)' : '👨‍🎓 Học sinh'}</span>
+                        <div>${escapeHtml(chat.text || `Em đã chọn phương án ${chat.option}`)}</div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                ${bannerHtml}
+
+                <!-- Subgraph Context Card -->
+                <div class="detail-card">
+                    <div class="detail-card-header">
+                        <div class="detail-card-title">
+                            🌐 Ngữ Cảnh Tri Thức Subgraph (Knowledge Graph Context)
+                        </div>
+                        <span class="pill pill-purple">${item.pattern_code || 'UNANCHORED'}</span>
+                    </div>
+                    <div class="grid-2">
+                        <div class="info-group">
+                            <label>Dạng Bài Chuẩn (Archetype Pattern)</label>
+                            <div class="info-value"><b>${item.pattern_name || 'Chưa định danh'}</b></div>
+                        </div>
+                        <div class="info-group">
+                            <label>Bẫy Nhận Thức Nhận Diện (Matched Trap)</label>
+                            <div class="info-value">
+                                <span style="color: var(--warning); font-weight: 600;">${item.trap_name || 'Không xác định bẫy'}</span>
+                                ${item.trap_code ? `<span style="font-size: 0.75rem; color: var(--text-faint);">(${item.trap_code})</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-group" style="margin-top: 1rem;">
+                        <label>Định Lý Mỏ Neo & Công Thức Cốt Lõi (Core Theorems)</label>
+                        <div class="latex-box" id="latexTheorems">
+                            ${escapeHtml(item.core_theory_latex || 'Chưa có định lý gán cho dạng bài này.')}
+                        </div>
+                    </div>
+                    ${item.misconception_explanation ? `
+                        <div class="info-group" style="margin-top: 0.75rem;">
+                            <label>Phân Tích Ngộ Nhận Của Học Sinh</label>
+                            <div style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.4;">${escapeHtml(item.misconception_explanation)}</div>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- Transcript Card -->
+                <div class="detail-card">
+                    <div class="detail-card-header">
+                        <div class="detail-card-title">
+                            💬 Transcript Tương Tác Socratic & Kiểm Định
+                        </div>
+                        <span class="pill ${item.validation_status === 'PASSED' ? 'pill-success' : 'pill-warning'}">
+                            Judge: ${item.validation_status}
+                        </span>
+                    </div>
+                    <div class="transcript-container" id="transcriptContainer">
+                        ${transcriptBubbles || '<div style="color: var(--text-faint); font-size: 0.85rem;">Không có transcript ghi nhận.</div>'}
+                    </div>
+                </div>
+
+                <!-- Mentor Human-in-the-Loop Actions -->
+                <div class="detail-card actions-card">
+                    <div class="detail-card-header">
+                        <div class="detail-card-title" style="color: #a5b4fc;">
+                            ⚡ Thẩm Định Của Mentor (Human-in-the-Loop Action)
+                        </div>
+                    </div>
+                    <div class="action-tabs">
+                        <button class="action-tab-btn active" id="btnTabExemplar" onclick="switchActionTab('exemplar')">
+                            1. Chỉnh Sửa Lời Giải Chuẩn (Override Exemplar)
+                        </button>
+                        <button class="action-tab-btn" id="btnTabTrap" onclick="switchActionTab('trap')">
+                            2. Bổ Sung Bẫy Tư Duy Mới (Add Novel Trap)
+                        </button>
+                    </div>
+
+                    <!-- Action 1: Override Exemplar Form -->
+                    <div id="formExemplar">
+                        <div class="form-group">
+                            <label>Lời Giải Mẫu Chuẩn (Golden Solution LaTeX)</label>
+                            <textarea class="form-control" id="inputGoldenSolution" rows="3" placeholder="Nhập lời giải chuẩn xác theo chuẩn LaTeX để lưu vào Knowledge Graph..."></textarea>
+                            <div class="form-hint">Lời giải này sẽ được lưu thành PatternExemplar mới trong CSDL để huấn luyện retriever chính xác hơn.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Các Bước Giải Chi Tiết (Mỗi bước 1 dòng)</label>
+                            <textarea class="form-control" id="inputSteps" rows="2" placeholder="Bước 1: Tìm điều kiện xác định&#10;Bước 2: Tìm nghiệm phương trình..."></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="submitOverrideExemplar('${item.id}')">
+                            💾 Override & Cập Nhật Knowledge Graph
+                        </button>
+                    </div>
+
+                    <!-- Action 2: Add Trap Form -->
+                    <div id="formTrap" style="display: none;">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label>Tên Bẫy Nhận Thức (Trap Name)</label>
+                                <input type="text" class="form-control" id="inputTrapName" placeholder="Ví dụ: Quên đổi dấu khi chuyển vế">
+                            </div>
+                            <div class="form-group">
+                                <label>Phương Án Sai Gắn Liền (Wrong Option)</label>
+                                <input type="text" class="form-control" id="inputWrongOption" value="${item.student_selected_option || 'B'}" maxlength="2">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Phân Tích Chi Tiết Ngộ Nhận (Misconception Analysis)</label>
+                            <textarea class="form-control" id="inputMisconception" rows="2" placeholder="Học sinh hay bị nhầm lẫn ở bước nào, tại sao lại ra phương án sai này..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Câu Hỏi Gợi Mở Socrates (Socratic Hint)</label>
+                            <input type="text" class="form-control" id="inputSocraticHint" placeholder="Câu hỏi ngắn gọn gợi ý học sinh tự phát hiện lỗi sai mà không giải thay...">
+                        </div>
+                        <button class="btn btn-primary" onclick="submitAddTrap('${item.id}')">
+                            ➕ Bổ Sung Bẫy Vào Knowledge Graph
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            renderMath(container);
+        }
+
+        function switchActionTab(tab) {
+            document.getElementById('btnTabExemplar').className = 'action-tab-btn ' + (tab === 'exemplar' ? 'active' : '');
+            document.getElementById('btnTabTrap').className = 'action-tab-btn ' + (tab === 'trap' ? 'active' : '');
+            document.getElementById('formExemplar').style.display = tab === 'exemplar' ? 'block' : 'none';
+            document.getElementById('formTrap').style.display = tab === 'trap' ? 'block' : 'none';
+        }
+
+        async function submitOverrideExemplar(interactionId) {
+            const solution = document.getElementById('inputGoldenSolution').value.trim();
+            if (!solution || solution.length < 5) {
+                alert("Vui lòng nhập lời giải mẫu chuẩn tối thiểu 5 ký tự.");
+                return;
+            }
+
+            const rawSteps = document.getElementById('inputSteps').value.trim();
+            const steps = rawSteps ? rawSteps.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+            try {
+                const response = await fetch(`http://localhost:8000/api/v1/socratic/interactions/${interactionId}/override-exemplar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        golden_solution: solution,
+                        explanation_steps: steps
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || "Lỗi lưu exemplar");
+                }
+
+                const resData = await response.json();
+                showToast("Đã lưu Exemplar mới vào Knowledge Graph thành công!");
+                loadInteractions();
+            } catch (err) {
+                alert("Lỗi: " + err.message);
+            }
+        }
+
+        async function submitAddTrap(interactionId) {
+            const name = document.getElementById('inputTrapName').value.trim();
+            const wrongOpt = document.getElementById('inputWrongOption').value.trim().toUpperCase();
+            const mis = document.getElementById('inputMisconception').value.trim();
+            const hint = document.getElementById('inputSocraticHint').value.trim();
+
+            if (!name || !mis || !hint) {
+                alert("Vui lòng điền đầy đủ Tên bẫy, Phân tích ngộ nhận và Câu hỏi gợi mở Socrates.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:8000/api/v1/socratic/interactions/${interactionId}/add-trap`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        trap_name: name,
+                        wrong_option: wrongOpt,
+                        misconception_explanation: mis,
+                        socratic_hint: hint
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || "Lỗi tạo bẫy");
+                }
+
+                const resData = await response.json();
+                showToast(`Đã thêm bẫy tư duy mới (${resData.trap_code}) vào Knowledge Graph!`);
+                loadInteractions();
+            } catch (err) {
+                alert("Lỗi: " + err.message);
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadInteractions();
+        });
+    </script>
+</body>
+</html>

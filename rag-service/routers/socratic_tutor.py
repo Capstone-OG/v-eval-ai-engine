@@ -604,3 +604,21 @@ def add_new_trap(
         logger.exception("Failed to add new trap for %s", interaction_id)
         raise HTTPException(status_code=500, detail=f"Database error adding trap: {exc}") from exc
 
+
+@router.get("/view-mentor", response_class=HTMLResponse, summary="Serve Socratic Mentor Dashboard HTML")
+def view_mentor_dashboard() -> HTMLResponse:
+    """Serve the human-in-the-loop mentor dashboard web page."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    rag_root = os.path.dirname(current_dir)
+    engine_root = os.path.dirname(rag_root)
+    possible_paths = [
+        os.path.join(engine_root, "V-Eval-Ai_Engine.API", "wwwroot", "view-tutor-mentor.html"),
+        os.path.join(rag_root, "static", "view-tutor-mentor.html"),
+    ]
+    for p in possible_paths:
+        if os.path.exists(p):
+            with open(p, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+    return HTMLResponse(content="<h3>view-tutor-mentor.html not found</h3>", status_code=404)
+
+
