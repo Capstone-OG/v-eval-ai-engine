@@ -398,3 +398,36 @@
 - Full offline test suite: 22/22 unit tests passing (100%).
 - .NET solution verification: `dotnet build V-Eval-Ai_Engine.sln` succeeded with 0 errors.
 
+---
+
+### [12/10/2026] - Architecture Acceptance: Core Flow 4 GraphRAG Phase 6 (Human-in-the-Loop Feedback & Mentor Studio)
+- **Architecture Acceptor**: `ThinhTran2412` (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - [`rag-service/routers/socratic_tutor.py`](./../rag-service/routers/socratic_tutor.py)
+  - [`V-Eval-Ai_Engine.API/wwwroot/view-tutor-mentor.html`](./../V-Eval-Ai_Engine.API/wwwroot/view-tutor-mentor.html)
+  - [`V-Eval-Ai_Engine.API/Endpoints/ExamEndpoints.cs`](./../V-Eval-Ai_Engine.API/Endpoints/ExamEndpoints.cs)
+  - [`rag-service/tests/test_socratic_mentor.py`](./../rag-service/tests/test_socratic_mentor.py)
+
+#### 1. Human-in-the-Loop Socratic Feedback Loop
+- **Student Flagging Pipeline (`/interactions/{id}/report`)**:
+  - Sets `student_reported = TRUE` and persists optional feedback notes in `v_eval_ai.ai_tutor_interaction_logs`.
+  - Seamlessly flags flawed or confusing AI explanations for immediate academic staff inspection.
+- **Mentor Action 1: Override Solution as Golden PatternExemplar (`/override-exemplar`)**:
+  - Empowers subject mentors to review student interaction transcripts alongside Knowledge Graph context.
+  - Generates a new `pattern_exemplars` row linked to `archetype_pattern_id` with LaTeX math derivations, retraining the retriever on human-refined exemplars.
+  - Atomically marks the interaction record with `mentor_resolution = 'OVERRIDDEN_EXEMPLAR_SAVED'`.
+- **Mentor Action 2: Dynamic Cognitive Trap Expansion (`/add-trap`)**:
+  - Allows mentors to catalog newly uncovered misconceptions directly into `pattern_traps`.
+  - Captures `trap_name`, `wrong_option`, `misconception_explanation`, and `socratic_hint`.
+  - Atomically marks the interaction record with `mentor_resolution = 'NEW_TRAP_ADDED'`.
+
+#### 2. Mentor Studio Web Dashboard
+- Standalone responsive workspace served at `/api/ai-engine/view-tutor-mentor` (ASP.NET Core) and `/api/v1/socratic/view-mentor` (FastAPI).
+- Inter-operates with KaTeX for mathematical notation formatting and glassmorphic UI inspection cards.
+
+#### 3. Verification & Testing
+- Automated testing: 5 new unit tests added in `tests/test_socratic_mentor.py`, reaching 27/27 total passing tests across all GraphRAG phases.
+- Build verification: `dotnet build V-Eval-Ai_Engine.sln` succeeded with 0 errors.
+
+

@@ -49,4 +49,6 @@
 | 23 | **GraphRAG Phase 2: Novelty Detector & Academic API** | `rag-service/graph/graph_db.py`, `graph/novelty_detector.py`, `routers/academic_graph.py` | 🟢 Hoàn thành | 100% | Cosine threshold 0.75, staging idempotent vào `novel_pattern_proposals`, nhận trực tiếp `ParsedExamDto`, API duyệt APPROVED/MERGED/REJECTED, 7/7 unit tests |
 | 24 | **GraphRAG Phase 3: Hybrid GraphRAG Retriever** | `rag-service/graph/hybrid_retriever.py`, `routers/academic_graph.py` | 🟢 Hoàn thành | 100% | Truy vết 2-hop (pgvector Cosine -> Graph Traversal), fail-closed grounding (< 0.75 -> LOW_CONFIDENCE), safe trap alignment (câu mẫu vs câu biến thể), endpoint preview, 15/15 unit tests |
 | 25 | **GraphRAG Phase 4: Socratic Engine & LLM-as-a-Judge** | `rag-service/socratic/validator_judge.py`, `socratic_engine.py`, `routers/socratic_tutor.py` | 🟢 Hoàn thành | 100% | Kiểm định 2 lớp (LLM-as-a-Judge chống lộ đáp án + Heuristic guard), fallback an toàn CSDL, stream SSE `text/event-stream`, audit log `ai_tutor_interaction_logs`, 22/22 unit tests |
+| 26 | **GraphRAG Phase 6: Human-in-the-Loop & Mentor Studio** | `rag-service/routers/socratic_tutor.py`, `wwwroot/view-tutor-mentor.html`, `ExamEndpoints.cs` | 🟢 Hoàn thành | 100% | API báo cáo học sinh (`student_reported`), override exemplar, add novel trap vào Supabase, Web Mentor Studio KaTeX Glassmorphic, 27/27 unit tests |
+
 
