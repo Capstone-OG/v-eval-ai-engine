@@ -1,5 +1,95 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [12/10/2026] - Triển Khai Giai Đoạn 6 Core Flow 4 GraphRAG: Human-in-the-Loop Feedback & Mentor Dashboard
+- **Mở Rộng API Thẩm Định Sư Phạm Dành Cho Mentor (`rag-service/routers/socratic_tutor.py`)**:
+  - `POST /api/v1/socratic/interactions/{id}/report`: Tiếp nhận phản hồi từ học sinh khi phát hiện gợi ý không chính xác (`student_reported = TRUE`, ghi nhận lý do báo cáo).
+  - `GET /api/v1/socratic/interactions`: Truy vấn lịch sử tương tác đa chiều (kết hợp lọc `reported_only`, phân trang), ánh xạ đầy đủ thông tin Dạng bài chuẩn (`pattern_name`, `core_theory_latex`) và Bẫy nhận thức (`trap_name`, `misconception_explanation`).
+  - `POST /api/v1/socratic/interactions/{id}/override-exemplar`: Hành động 1 của Mentor — Lưu lời giải mẫu chuẩn do Mentor chỉnh sửa vào bảng `v_eval_ai.pattern_exemplars` và cập nhật trạng thái `OVERRIDDEN_EXEMPLAR_SAVED`.
+  - `POST /api/v1/socratic/interactions/{id}/add-trap`: Hành động 2 của Mentor — Bổ sung bẫy tư duy mới phát hiện vào bảng `v_eval_ai.pattern_traps` và cập nhật `NEW_TRAP_ADDED`.
+  - `GET /api/v1/socratic/view-mentor`: Cung cấp giao diện trực quan phục vụ Mentor kiểm duyệt.
+- **Xây Dựng Giao Diện Quản Trị Thẩm Định Mentor Studio (`V-Eval-Ai_Engine.API/wwwroot/view-tutor-mentor.html`)**:
+  - Thiết kế Glassmorphic dark theme hiện đại, tích hợp KaTeX kết xuất sắc nét công thức toán học STEM.
+  - Phân tách 2 vùng làm việc: Danh sách tương tác với bộ lọc tương tác bị báo cáo và Vùng thanh tra Subgraph Context.
+  - Cung cấp form thao tác nhanh cho Mentor: Lưu Lời giải mẫu chuẩn (Exemplar) và Bổ sung Bẫy tư duy (Trap) tức thì vào Supabase Knowledge Graph.
+  - Ánh xạ endpoint `/api/ai-engine/view-tutor-mentor` trong .NET `ExamEndpoints.cs`.
+- **Kiểm Thử & Nghiệm Thu**:
+  - Viết bộ test `tests/test_socratic_mentor.py`, đạt 5/5 unit tests passed. Toàn bộ 27/27 unit tests của hệ thống đạt 100%.
+  - Biên dịch .NET 9 `V-Eval-Ai_Engine.sln` đạt 100% thành công (0 error).
+
+---
+
+- **Hội Đồng Thẩm Định Sư Phạm Tự Động LLM-as-a-Judge (`socratic/validator_judge.py`)**:
+  - Triển khai mô hình kiểm định bản thảo AI Tutor độc lập với 3 tiêu chí cốt lõi:
+    1. `revealed_direct_answer = False`: Chống giải thay và lộ đáp án số học cuối cùng hoặc bảo học sinh chọn phương án nào.
+    2. `consistent_with_ground_truth = True`: Nhất quán hướng dẫn học sinh quy về đúng phương án đúng trong CSDL.
+    3. `grounded_in_theorems = True`: Bám sát tuyệt đối định lý, công thức trong Knowledge Graph.
+  - Tích hợp bộ lọc nhanh Heuristic (`_fast_heuristic_guard`) phát hiện tức thì các câu lệnh lộ đáp án (`chọn phương án A`, `đáp án đúng là A`).
+  - Phân tích cú pháp cấu trúc Pydantic (`JudgeValidationResult`) với `temperature = 0.0`.
+- **Động Cơ Gia Sư Socrates Hai Lớp (`socratic/socratic_engine.py`)**:
+  - Tích hợp Prompt Socratic: nhận diện lỗi tư duy từ bẫy nhận thức (`matched_trap` hoặc `candidate_traps`), nhắc nhở công thức mỏ neo, và đặt 1 câu hỏi gợi mở duy nhất.
+  - Cơ chế kiểm định 2 lớp (Two-Layer Gating): Bản thảo được thẩm định bởi LLM-as-a-Judge trước khi chuyển sang luồng phát. Nếu bị từ chối (`is_passed == False`), hệ thống tự động Fallback về tri thức chuẩn từ CSDL đồ thị mà không làm đứt gãy luồng học.
+- **REST & Server-Sent Events (SSE) Streaming API (`routers/socratic_tutor.py`)**:
+  - `POST /api/v1/socratic/ask`: Endpoint phản hồi JSON đồng bộ phục vụ kiểm thử và ứng dụng không hỗ trợ stream.
+  - `POST /api/v1/socratic/ask-stream`: Endpoint stream SSE thời gian thực (`text/event-stream`), phát các sự kiện `metadata` (mã dạng bài, mã bẫy, trạng thái đồ thị), `token` (từng từ mượt mà), và `done`.
+  - Tự động ghi nhật ký tương tác học tập vào CSDL Supabase `v_eval_ai.ai_tutor_interaction_logs`.
+- **Kiểm Thử & Vận Hành**:
+  - Chạy thực tế thành công cả 2 endpoint `/ask` và `/ask-stream` (236 dòng SSE events), ghi nhận interaction ID thành công.
+  - Bổ sung bộ kiểm thử đơn vị `tests/test_socratic_engine.py`, 22/22 unit tests passed 100%. `dotnet build` đạt 0 error.
+
+---
+
+## [09/10/2026] - Triển Khai Giai Đoạn 3 Core Flow 4: Hybrid GraphRAG Retriever (Vector + Graph Traversal)
+- **Tái Cấu Trúc Seeder Đa Môn Học & Data-Driven (`database/seed_archetypes.py`)**:
+  - Sửa lỗi liên kết Taxonomy Level 3: tìm chính xác kỹ năng theo tên thay vì `LIMIT 1` ngẫu nhiên (`Khảo sát hàm số` -> `3efcbd1e-cb9e-4998-8aee-89381f2e83bf`).
+  - Bổ sung dạng bài chuẩn Vật lý `PHYS_SHM_MAX_SPEED_01` (Tính tốc độ cực đại dao động điều hòa) gắn liền Kỹ năng `Vật lý dao động điều hòa` (`93a98dce-abdb-4fac-ab26-e9476d1d236c`), kèm 1 câu hỏi mẫu và 3 bẫy tư duy thường gặp.
+- **Xây Dựng Bộ Truy Vết Đồ Thị Hai Bước (`graph/hybrid_retriever.py`)**:
+  - **Hop 1 (Vector Anchor)**: Nhúng câu hỏi theo chuẩn Gemini 3072d, ưu tiên tìm kiếm trong phạm vi kỹ năng (`skill_id`), tự động fallback sang tìm kiếm toàn cục (`GLOBAL`) nếu kỹ năng bị phân loại sai hoặc chưa có.
+  - **Fail-Closed Grounding**: Nếu độ tương đồng cosine $< 0.75$ (`min_similarity`), trả về trạng thái `LOW_CONFIDENCE` và không trả về định lý sai, bảo vệ AI Tutor khỏi ảo giác tri thức.
+  - **Hop 2 (Graph Expansion & Safe Trap Alignment)**:
+    - Mở rộng đồ thị sang các câu hỏi mẫu (`pattern_exemplars`) và danh mục bẫy tư duy (`pattern_traps`).
+    - Phân biệt câu hỏi mẫu gốc vs câu hỏi biến thể: chỉ ánh xạ trực tiếp phương án A/B/C/D (`EXEMPLAR_OPTION_LETTER`) khi văn bản câu hỏi trùng khớp câu mẫu ($\ge 90\%$). Với câu hỏi biến thể bị xáo trộn phương án, trả về toàn bộ danh sách bẫy ứng viên (`ARCHETYPE_CANDIDATES`) để LLM đối sánh ngữ nghĩa ở Giai đoạn 4.
+    - Xử lý chuẩn hóa LaTeX: loại bỏ dấu bao bọc `$`, `\`, `{`, `}` giúp nhận diện trùng khớp câu hỏi chính xác $100\%$.
+- **Bổ Sung Endpoint Xem Trước Subgraph (`routers/academic_graph.py`)**:
+  - `POST /api/v1/academic-graph/subgraph/preview`: Cung cấp giao diện nội bộ cho Ban Chuyên Môn / Mentor xem trước toàn bộ ngữ cảnh đồ thị trích xuất được.
+- **Kiểm Thử & Nghiệm Thu**:
+  - Chạy thực tế 5 kịch bản kiểm thử trên Supabase: câu mẫu chuẩn khớp bẫy 100%, câu biến thể xáo trộn phương án trả candidate traps, câu truyền nhầm skill tự fallback toàn cục thành công, câu ngoài phạm vi trả `LOW_CONFIDENCE`, học sinh trả lời đúng không kích hoạt bẫy.
+  - Bổ sung 8 test case trong `tests/test_hybrid_retriever.py`, tổng 15/15 unit tests passed. `dotnet build` 0 error.
+
+---
+
+## [08/10/2026] - Triển Khai Giai Đoạn 2 Core Flow 4: Novelty Detector & Academic Graph API
+- **Tầng truy cập Knowledge Graph (`rag-service/graph/graph_db.py`)**:
+  - Helper kết nối psycopg đồng bộ (`prepare_threshold=None` tương thích Supabase pooler, `connect_timeout=15`), serialize pgvector, cache Gemini Embedding 3072d.
+  - Bổ sung biến môi trường riêng `GRAPH_DATABASE_URL` (fallback `DATABASE_URL`) vì `DATABASE_URL` local trỏ về DB `rag_db` cũ.
+- **Module phát hiện dạng bài mới (`rag-service/graph/novelty_detector.py`)**:
+  - Nhúng câu hỏi (stem + phương án) và quét cosine tuần tự trên `v_eval_ai.archetype_patterns`.
+  - Quy tắc: `similarity >= 0.75` -> `MATCHED_EXISTING`; `< 0.75` -> `NOVEL_PATTERN_CANDIDATE` và ghi vào `novel_pattern_proposals` (idempotent, không tạo trùng bản ghi `PENDING_REVIEW`).
+  - Tương thích trực tiếp JSON snake_case của `ParsedExamDto`/`ParsedQuestionDto` (.NET), tự làm phẳng câu hỏi thuộc chùm passage.
+- **Academic Graph API (`rag-service/routers/academic_graph.py`)**:
+  - `POST /api/v1/academic-graph/novelty/check`, `GET /api/v1/academic-graph/proposals`, `PATCH /api/v1/academic-graph/proposals/{id}/review`.
+- **Kiểm thử**:
+  - Live Supabase: câu tiệm cận tương tự đạt `0.78-0.79` (MATCHED), câu Vật lý/Ngữ văn đạt `0.53-0.55` (NOVEL); kiểm tra luồng duyệt 400/404 đúng; dữ liệu smoke test đã dọn sạch.
+  - `tests/test_novelty_detector.py`: 7/7 passed. `dotnet build` 0 error.
+
+---
+
+## [08/10/2026] - Triển Khai Giai Đoạn 1 Core Flow 4: Khởi Tạo CSDL Knowledge Graph & pgvector Archetype Seeder
+- **Thiết Kế & Triển Khai Schema Knowledge Graph (`rag-service/database/graph_schema.sql`)**:
+  - Tạo mới 5 bảng nghiệp vụ trong schema `v_eval_ai` trên Supabase PostgreSQL:
+    1. `archetype_patterns`: Quản lý Dạng bài chuẩn (Taxonomy Level 4), định lý cốt lõi, chiến thuật giải nhanh và vector nhúng 3072 chiều.
+    2. `pattern_exemplars`: Câu hỏi mẫu kèm lời giải vàng chuẩn ĐGNL do Academic thẩm định.
+    3. `pattern_traps`: Danh mục bẫy thường gặp gắn liền trực tiếp với các phương án sai (A/B/C/D).
+    4. `novel_pattern_proposals`: Lưu trữ tạm thời các câu hỏi có dạng mới lạ chờ Ban Chuyên Môn duyệt.
+    5. `ai_tutor_interaction_logs`: Lưu vết lịch sử hỏi bài của học sinh và kiểm định phục vụ Human-in-the-Loop.
+- **Tự Động Hóa Migration & Seeding Tri Thức (`database/apply_graph_schema.py` & `seed_archetypes.py`)**:
+  - Viết script áp dụng DDL `apply_graph_schema.py` kết nối trực tiếp Supabase pooler.
+  - Viết script `seed_archetypes.py` nạp dạng bài mẫu toán học `MATH_ASYMPTOTE_PARAM_01`, 2 bẫy tư duy, và tính toán vector nhúng 3072 chiều từ Google Gemini Embedding API.
+  - Xác thực 100% dữ liệu đã lưu trữ thành công trên Supabase.
+- **Kiểm Thử Biên Dịch**:
+  - `dotnet build V-Eval-Ai_Engine.sln` đạt 100% thành công (0 error).
+
+---
+
 ## [07/10/2026] - Chuẩn Hóa Khung Cấu Hình .NET Ingestion, Python RAG & Khử Lộ Bí Mật Mẫu
 - **Chuẩn Hóa File Cấu Hình Mẫu .NET API (`appsettings.example.json`)**:
   - Bổ sung `ConnectionStrings:DefaultConnection` đồng bộ với `appsettings.json`.
