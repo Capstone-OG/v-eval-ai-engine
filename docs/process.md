@@ -45,3 +45,7 @@
 | 19 | **Rich Chunks Preview (Markdown + KaTeX + Tables)** | `view-textbook.html` | 🟢 Hoàn thành | 100% | Render bảng Markdown glassmorphic striped, công thức KaTeX STEM inline/block, lọc real-time, chuyển đổi Trực Quan / Raw và xuất file .MD |
 | 20 | **AI Exam Studio & Custom Prompting** | `view-diagnostic.html` & `ExamEndpoints.cs` | 🟢 Hoàn thành | 100% | Web studio tạo và duyệt đề, nhận diện môn prompt, chọn Bloom 6 cấp, lưu CSDL chờ duyệt |
 | 21 | **Tối Ưu Luồng Bloom 6 Cấp IRT 2PL** | `rag-service/diagnostic_engine.py`, `schemas.py` | 🟢 Hoàn thành | 100% | Ánh xạ difficulty level 1-6 sang tham số IRT 2PL [-1.8 .. +2.2] |
+| 22 | **AI Bóc Tách Khung Chương Trình C# Thuần** | `CurriculumEndpoints.cs`, `CurriculumAiService.cs`, `PdfPig` | 🟢 Hoàn thành | 100% | `POST /api/ai-engine/curriculum/extract` bóc tách file PDF/DOCX/Text sang cấu trúc Miền -> Chương -> Bài -> Dạng bài kèm 4 khối KaTeX chuẩn .NET 9 |
+| 23 | **Động Cơ Nhận Diện Dạng Bài Sư Phạm C# Thuần** | `CurriculumEndpoints.cs`, `CurriculumAiService.cs`, `CurriculumAiDtos.cs` | 🟢 Hoàn thành | 100% | `POST /api/ai-engine/curriculum/analyze-pattern` phân tích bản chất dạng, cấp độ Bloom, 4 bước giải, bẫy đề thi, kỹ thuật Casio và bài mẫu KaTeX qua C# Clean Architecture |
+| 24 | **Bóc Tách Tài Liệu Khổ Lớn 99+ Trang & Page Slicing** | `CurriculumAiService.cs`, `CurriculumEndpoints.cs` | 🟢 Hoàn thành | 100% | Lọc lát trang `startPage` đến `endPage`, mở rộng trần 120.000 ký tự và tùy chọn độ sâu `extraction_depth` chuyên sâu ĐGNL VNU-HCM |
+

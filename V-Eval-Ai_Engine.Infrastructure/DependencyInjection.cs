@@ -41,6 +41,12 @@ public static class DependencyInjection
         // Đăng ký Repository lưu tri thức SGK vào Supabase PostgreSQL (Schema v_eval_ai)
         services.AddScoped<ITextbookRepository, V_Eval_Ai_Engine.Infrastructure.Repositories.TextbookRepository>();
 
+        // Đăng ký dịch vụ Curriculum & Pattern AI Engine C# thuần
+        services.AddHttpClient<ICurriculumAiService, CurriculumAiService>(client =>
+        {
+            client.Timeout = TimeSpan.FromMinutes(3);
+        });
+
         return services;
     }
 }

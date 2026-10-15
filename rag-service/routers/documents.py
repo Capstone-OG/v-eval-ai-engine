@@ -290,7 +290,21 @@ def get_document_versions_endpoint(document_group_id: str) -> list[DocumentVersi
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"No document found for group ID '{document_group_id}'.",
                 )
-            return [DocumentVersionItem(**row) for row in rows]
+            return [
+                DocumentVersionItem(
+                    id=str(row["id"]),
+                    document_group_id=str(row["document_group_id"]),
+                    file_name=row["file_name"],
+                    version=row["version"],
+                    file_hash=row["file_hash"],
+                    status=row["status"],
+                    is_current=bool(row["is_current"]),
+                    total_chunks=row["total_chunks"],
+                    created_at=str(row["created_at"]),
+                    error_message=row["error_message"],
+                )
+                for row in rows
+            ]
 
 
 @router.post(

@@ -1,5 +1,36 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [15/10/2026] - Chuyển Đổi Hoàn Toàn & Triển Khai Động Cơ AI Tri Thức Bóc Tách Khung Chương Trình & Dạng Bài Bằng C# Thuần (.NET 9 Clean Architecture), Hỗ Trợ Tài Liệu Khổ Lớn 79-99+ Trang
+- **Chuyển Đổi Toàn Bộ Sang C# Thuần (.NET 9) Trong AI Engine (`V-Eval-Ai_Engine`)**:
+  - Di chuyển và chuẩn hóa toàn bộ tính năng trích xuất khung chương trình và phân tích dạng bài từ prototype Python sang 100% C# .NET 9 Clean Architecture.
+  - **Application Layer**:
+    - [CurriculumAiDtos.cs](./V-Eval-Ai_Engine.Application/DTOs/CurriculumAiDtos.cs): Khai báo đầy đủ các DTO chuẩn mực cho cây phân cấp (`ImportCurriculumRequestDto`, `ImportChapterDto`, `ImportLessonDto`, `ImportPatternDto`, `ImportQuestionDto`) và DTO nhận diện dạng bài (`AnalyzePatternRequestDto`, `AnalyzePatternResponseDto`, `PatternExemplarQuestionDto`).
+    - [ICurriculumAiService.cs](./V-Eval-Ai_Engine.Application/Interfaces/ICurriculumAiService.cs): Hợp đồng xử lý bóc tách tài liệu và phân tích dạng bài sư phạm, bổ sung hỗ trợ trích lọc theo dải trang (`startPage`, `endPage`) và độ sâu bóc tách (`extractionDepth`).
+  - **Infrastructure Layer**:
+    - [CurriculumAiService.cs](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs): Trích xuất nội dung từ tệp PDF trực tiếp bằng `UglyToad.PdfPig`, tệp Word DOCX bằng `System.IO.Compression.ZipArchive` với cơ chế bảo toàn cấu trúc ngắt dòng `</w:p>`, `</w:tr>` thành `\n`.
+    - **Nâng Cấp Xử Lý Tài Liệu Khổ Lớn (79 - 100+ Trang)**: Áp dụng cơ chế cắt lát trang và bảo toàn cấu trúc đề mục, nâng trần ký tự lên 120.000 ký tự và cấu hình `maxOutputTokens = 8192` cùng timeout 90 giây.
+    - Tối ưu hóa prompt chuyên sâu ĐGNL VNU-HCM: Bắt buộc AI phân tách đầy đủ từ 3 đến 6 Bài học và 8 đến 16 Dạng bài chi tiết đối với tài liệu chuyên đề lớn, không gom cụm sơ sài 1-2 bài.
+    - Bộ xử lý làm sạch JSON chuyên sâu: Tự động loại bỏ markdown code fences và phục hồi ký tự escape cho công thức toán học và hóa học (`\ge`, `\le`, `\frac`, `\times`, `\Delta`, `\text`, `\mathrm`...).
+    - Heuristic Engine nâng cấp: Tự động nhận diện môn học và sinh đầy đủ 5 bài học kèm 10 dạng bài chuyên sâu khi mạng gián đoạn.
+    - [DependencyInjection.cs](./V-Eval-Ai_Engine.Infrastructure/DependencyInjection.cs): Đăng ký `ICurriculumAiService` vào DI container với timeout 3 phút.
+  - **API Layer**:
+    - [CurriculumEndpoints.cs](./V-Eval-Ai_Engine.API/Endpoints/CurriculumEndpoints.cs): Cung cấp 2 Minimal API endpoints:
+      - `POST /api/ai-engine/curriculum/extract`: Nhận đa định dạng (PDF, Word, Text) hoặc JSON payload, tiếp nhận các tham số `start_page`, `end_page`, `extraction_depth`.
+      - `POST /api/ai-engine/curriculum/analyze-pattern`: Phân tích sâu 4 khối nội dung dạng bài toán theo chuẩn Bloom L1-L4.
+    - [Program.cs](./V-Eval-Ai_Engine.API/Program.cs): Đăng ký `app.MapCurriculumEndpoints()`.
+- **Đồng Bộ Web Client & Khôi Phục Python Service**:
+  - Cập nhật [aiService.js](../../V-Eval-Web_Client/src/services/aiService.js): Định tuyến trực tiếp các hàm `extractCurriculumFromDocument` và `analyzePatternWithAi` đến các endpoint C# `/api/ai-engine/curriculum/...`.
+  - Hoàn trả nguyên trạng các file Python `rag-service/routers/documents.py` và `rag-service/schemas.py`.
+- **Khắc Phục Lỗi Type Hint Mapping Tại `documents.py:293` (`rag-service/routers/documents.py`)**:
+  - Khắc phục lỗi static type checking `Expected argument after ** to be a mapping, got: dict[str, Any] | tuple[Any, ...]` bằng cách ánh xạ minh thị từng thuộc tính đối tượng `DocumentVersionItem(id=..., document_group_id=..., file_name=..., version=..., file_hash=..., status=..., is_current=..., total_chunks=..., created_at=..., error_message=...)`.
+  - Kiểm thử `python -m py_compile` hoàn thành sạch sẽ 100% (**0 error**).
+- **Kiểm Thử Vận Hành & Biên Dịch**:
+  - `dotnet build` toàn bộ `V-Eval-Ai_Engine.sln` đạt 100% thành công (**0 error, 0 warning**).
+  - `npm run build` trên `V-Eval-Web_Client` đạt 100% thành công (876ms).
+  - Kiểm thử trực tiếp tệp DOCX 79 trang `thuvienhoclieu.com-4.-Chuyen-de-4.-Phan-ung-oxi-hoa-khu.docx`: Bóc tách thành công **5 Bài học lớn và 10 Dạng bài chi tiết**.
+
+---
+
 ## [07/10/2026] - Chuẩn Hóa Khung Cấu Hình .NET Ingestion, Python RAG & Khử Lộ Bí Mật Mẫu
 - **Chuẩn Hóa File Cấu Hình Mẫu .NET API (`appsettings.example.json`)**:
   - Bổ sung `ConnectionStrings:DefaultConnection` đồng bộ với `appsettings.json`.

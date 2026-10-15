@@ -73,5 +73,6 @@ app.UseStaticFiles();
 app.MapGrpcService<AiGrpcService>();
 app.MapExamEndpoints();
 app.MapTextbookEndpoints();
+app.MapCurriculumEndpoints();
 
 app.Run();
