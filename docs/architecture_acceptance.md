@@ -285,6 +285,40 @@
      - Automated generation of Bloom cognitive level (L1 - L4), core cognitive skill, 4-step structured solution with KaTeX, examination traps, and Casio fx-580VN X / 880BTG shortcuts.
      - Fully verified on .NET 9 with 0 warnings, 0 errors, and seamless YARP reverse proxy compatibility.
 
+---
+
+### [16/10/2026] - Acceptance: Deep Exemplar Problem Bank Extraction & Adaptive Quiz Synchronization
+- **Architecture Acceptor**: `ThinhTran2412` (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED** (Multi-Question Exemplar Extraction, Bloom L1-L4 Diversity, KaTeX Integrity, Full Content Service Synchronization).
+- **Source Files**:
+  - AI Engine Infrastructure: [`CurriculumAiService.cs`](./../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs)
+  - Content Service Contract: [`ImportCurriculumRequestDto`](./../V-Eval-Ai_Engine.Application/DTOs/CurriculumAiDtos.cs), [`ImportQuestionDto`](./../V-Eval-Ai_Engine.Application/DTOs/CurriculumAiDtos.cs)
+  - Web Client Integration: [`CurriculumExplorerView.jsx`](./../../V-Eval-Web_Client/src/components/curriculum/CurriculumExplorerView.jsx)
+- **Key Architectural Highlights**:
+  1. **Multi-Question Exemplar Extraction Pipeline & Auto-Enrichment Guarantee**:
+     - Upgraded Gemini extraction prompts to mandate 3 to 5 exemplar/practice problems per pattern directly from source documents (Textbooks, Topic Monographs).
+     - Automated `EnrichPatternQuestions` pipeline: Guarantees a minimum of 4 distinct questions per pattern spanning all 4 Bloom levels (L1 Nhận biết, L2 Thông hiểu, L3 Vận dụng, L4 Vận dụng cao), automatically synthesizing contextual items based on theory and solution methods if the LLM produces fewer items.
+     - Structured payload preservation: Stem KaTeX (`contentLatex`), 4 options (`optionA` - `optionD`), correct answer key (`correctOption`), and step-by-step KaTeX rationale (`explanation`).
+  2. **Content Service & PostgreSQL Ingestion Pipeline**:
+     - Output questions map seamlessly to Content Service `POST /api/content/curriculum/import` (`ImportCurriculumCommand`), creating or updating records directly into the `Questions` table.
+     - Powers the student-facing Adaptive Quiz engine with calibrated items mapped to specific curriculum nodes and patterns.
+  3. **Block 1 & Block 2 Pedagogical Exemplar Extraction & Contextual Auto-Enrichment**:
+     - Prompt Engineering mandates structured sub-headings within markdown blocks:
+       - Block 1 (`theoryRecap`): Formulated with `### 📌 Ví dụ minh họa SGK:` detailing realistic STEM situations, quantitative breakdowns, and step-by-step KaTeX solutions.
+       - Block 2 (`solutionMethod`): Formulated with `### 📝 Bài toán mẫu áp dụng phương pháp:` mapping immediately to algorithmic phases (Step 1, Step 2, Step 3...) before Exam Pitfalls (`### ⚠️`) and Casio Tips (`### 💡`).
+     - Autonomous Pedagogical Fallback Pipeline (`EnrichPatternPedagogyAndQuestions`):
+       - Scans every extracted pattern. If the source textbook or syllabus lacks an explicit illustrative example in Block 1 or sample applied problem in Block 2, the pipeline synthesizes contextual, syllabus-aligned exemplars using specialized domain heuristics (`CreateContextualTheoryExample`, `CreateContextualMethodSample`).
+       - Guarantees 100% presence of both Block 1 and Block 2 pedagogical examples across all curriculum extractions.
+   4. **Cây Tri Thức Đa Tầng 16 Dạng Bài & Ngân Hàng 4-5 Câu Vận Dụng (L3/L4) Mỗi Dạng (14 Câu/Dạng, Tổng 224 Câu)**:
+      - Nâng cấp `EnrichGeneralKnowledgeTheory`: Tự động tái cấu trúc và làm sâu sắc Khối 1 với lý thuyết chuẩn SGK đa đoạn, 4 quy tắc vàng, bảng ngoại lệ oxy hóa đầy đủ ($H_2O_2$, $KO_2$, $OF_2$, $NaH$, hợp chất hữu cơ) và các lưu ý thi cử trọng tâm.
+      - Nâng cấp `EnrichPatternPedagogyAndQuestions`: Thiết lập chuẩn tối thiểu 14 câu hỏi/dạng bài gồm 2 câu L1 (Nhận biết), 2 câu L2 (Thông hiểu), 5 câu L3 (Vận dụng) và 5 câu L4 (Vận dụng cao), đáp ứng triệt để yêu cầu ngân hàng câu hỏi vận dụng chuyên sâu của giáo viên.
+      - Nâng cấp `GenerateHeuristicCurriculum`: Mở rộng phổ tri thức chuẩn từ 10 dạng lên 16 dạng bài chuyên sâu trải dài 5 bài học (Hóa học) và 11 dạng bài qua 4 bài học (Toán học), kèm đầy đủ ví dụ minh họa SGK và bài toán mẫu từng bước.
+      - Tối ưu hóa chuỗi JSON Deserialization: Khắc phục lỗi `JsonException` do ký tự escape LaTeX (`\%` thành `%`, `\$` thành `$`) trong `CleanJsonFences`, đảm bảo pipeline parse JSON từ Gemini hoạt động ổn định 100%.
+      - Khắc phục lỗi nội suy chuỗi C# (`$` string interpolation) đối với các chuỗi KaTeX chứa `\text{ cm}`.
+
+
+
+
 
 
 

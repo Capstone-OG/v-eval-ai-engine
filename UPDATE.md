@@ -1,20 +1,17 @@
-# Nhật Ký Cập Nhật (Update Log) - AI Engine
+# NHẬT KÝ CẬP NHẬT (UPDATE LOG) - AI ENGINE
 
-## [15/10/2026] - Nâng Cấp Bóc Tách Tài Liệu Chuyên Đề Khổ Lớn (79+ Trang) Đa Bài Học & Khắc Phục Lỗi Type Hint Mapping documents.py
+## [16/10/2026] - Nâng Cấp Cây Tri Thức Đa Tầng 16 Dạng Bài, Làm Sâu Sắc Lý Thuyết Nền Tảng (Khối 1), Bổ Sung Ngân Hàng 4-5 Câu Vận Dụng (L3/L4) Mỗi Dạng Bài
 
-- **Khắc Phục Lỗi Type Hint Mapping Tại `documents.py:293` (`rag-service/routers/documents.py`)**:
-  - Khắc phục lỗi static type checking `Expected argument after ** to be a mapping, got: dict[str, Any] | tuple[Any, ...]` bằng cách ánh xạ minh thị từng thuộc tính đối tượng `DocumentVersionItem(id=..., document_group_id=..., file_name=..., version=..., file_hash=..., status=..., is_current=..., total_chunks=..., created_at=..., error_message=...)`.
-  - Kiểm thử `python -m py_compile` hoàn thành sạch sẽ 100% (**0 error**).
-- **Nâng Cấp Bóc Tách DOCX & Văn Bản Khổ Lớn 70-100 Trang**:
-  - *Bảo Toàn Cấu Trúc Ngắt Dòng Word*: Chuyển đổi các thẻ `</w:p>` và `</w:tr>` trong `word/document.xml` thành ngắt dòng thực `\n` thay vì xóa thành dấu cách, giúp AI nhận diện rõ ràng toàn bộ các Phần (Phần I, Phần II, Phần III, Phần IV...), các đề mục bài học và phân dạng bài tập.
-  - *Tối Ưu Hóa Prompt Chuyên Đề Đa Bài Học*: Hướng dẫn AI quét sâu toàn bộ 79 trang chuyên đề để bóc tách thành đủ 3-6 Bài học/Chủ đề lớn (thay vì gom cụm sơ sài 1-2 bài), mỗi bài học nhận diện từ 2-4 Dạng bài chi tiết (tổng cộng 8-16 dạng bài phủ kín tài liệu).
-  - *Mở Rộng Hạn Mức Token*: Cấu hình `maxOutputTokens = 8192` và tăng timeout lên 90 giây trong `CurriculumAiService.cs`, cho phép AI sinh trọn vẹn toàn bộ các khối nội dung mà không bị nghẽn hay cắt cụt.
-  - *Cơ Chế Heuristic Thông Minh Đa Môn*: Nâng cấp bộ sinh dự phòng tự động nhận diện môn học (Hóa học / Toán học) và phân tách đủ 5 bài học kèm 10 dạng bài chuyên sâu khi gặp sự cố mạng hoặc 503 từ Google Cloud.
-- **Khắc Phục Lỗi Nuốt Ký Tự LaTeX & Làm Sạch JSON**:
-  - Tối ưu hóa hàm `CleanJsonFences` bảo toàn nguyên vẹn các lệnh `\text`, `\times`, `\mathrm`, `\Delta` và công thức hóa học (số oxi hóa, ion `` `N^{+5}` ``, `` `SO_4^{2-}` ``).
-- **Kiểm Thử Vận Hành Thực Tế Với Tệp 79 Trang**:
-  - Kiểm thử trực tiếp tệp `thuvienhoclieu.com-4.-Chuyen-de-4.-Phan-ung-oxi-hoa-khu.docx` (3.5 MB, 79 trang) qua endpoint `POST /api/ai-engine/curriculum/extract`:
-    + Trích xuất thành công 5 Bài học chuyên đề lớn (Số oxi hóa, Cân bằng phản ứng nâng cao, Bảo toàn electron, Phương pháp quy đổi, Bài toán thực tiễn & pin điện).
-    + Tổng số Dạng bài đạt chuẩn: **10 Dạng bài chi tiết** (thay vì 4 dạng sơ sài trước đó).
-- **Biên Dịch Sạch Sẽ**:
-  - `V-Eval-Ai_Engine.sln`: `dotnet build` đạt 100% (**0 Error, 0 Warning**).
+- **Làm Sâu Sắc Kiến Thức Nền Tảng Khối 1 (`EnrichGeneralKnowledgeTheory`)**:
+  - Tự động bổ sung bản chất khoa học chuẩn SGK GDPT 2018 đa đoạn văn, 4 quy tắc vàng xác định số oxi hóa, bảng các trường hợp ngoại lệ đặc biệt ($H_2O_2$, $KO_2$, $OF_2$, $NaH$, hợp chất hữu cơ), các lưu ý thi cử ĐGNL trọng tâm và ví dụ SGK minh họa đầy đủ.
+- **Mở Rộng Cây Tri Thức Đa Tầng 16 Dạng Bài & 5 Bài Học (`GenerateHeuristicCurriculum`)**:
+  - Mở rộng cấu trúc chương học lên 16 dạng bài chuyên sâu trải dài 5 bài học (Hóa học) và 11 dạng bài qua 4 bài học (Toán học), bao phủ toàn diện từ xác định số oxi hóa, cân bằng ion-electron, bảo toàn electron nâng cao đến bài toán thực tế điện hóa và ăn mòn kim loại.
+- **Ngân Hàng Câu Hỏi Sư Phạm Chuyên Sâu 14 Câu/Dạng Bài (Tổng 224 Câu) (`EnrichPatternPedagogyAndQuestions`)**:
+  - Thiết lập chuẩn tối thiểu 14 câu hỏi trắc nghiệm/dạng bài: 2 câu L1 (Nhận biết), 2 câu L2 (Thông hiểu), 5 câu L3 (Vận dụng) và 5 câu L4 (Vận dụng cao).
+  - Tự động sinh đầy đủ đề bài KaTeX, 4 phương án lựa chọn A-B-C-D, đáp án đúng và lời giải chi tiết KaTeX từng bước cho toàn bộ 16 dạng bài (tổng 224 câu hỏi).
+- **Tối Ưu Hóa & Khắc Phục Lỗi Deserialization / Chuỗi C#**:
+  - Làm sạch chuỗi JSON trong `CleanJsonFences`, xử lý triệt để ký tự escape LaTeX (`\%` $\to$ `%`, `\$` $\to$ `$`) ngăn ngừa lỗi `JsonException`.
+  - Khắc phục lỗi nội suy chuỗi C# (`$` string interpolation) đối với các chuỗi KaTeX chứa `\text{ cm}`.
+- **Biên Dịch & Kiểm Thử Vận Hành Thực Tế**:
+  - Biên dịch .NET 9 SDK: **0 Error, 2 Warning**.
+  - Kiểm thử trích xuất thực tế `python test_ai_extract.py`: Trích xuất thành công 16 dạng bài với **224 câu hỏi mẫu**, mỗi dạng bài chứa đúng 2 L1, 2 L2, 5 L3 và 5 L4 câu hỏi. Dịch vụ AI Engine đang chạy ổn định trên cổng `http://localhost:5104`.

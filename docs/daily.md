@@ -1,5 +1,33 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [16/10/2026] - Nâng Cấp Toàn Diện Độ Chi Tiết Cây Tri Thức (16 Dạng Bài/5 Bài Học), 4-5 Câu Vận Dụng/Vận Dụng Cao Mỗi Dạng (Tổng 224 Bài Tập Mẫu), Làm Giàu Kiến Thức Nền Tảng SGK Đa Tầng & Khử Lỗi Thoát Ký Tự JSON
+
+- **Mở Rộng Chi Tiết Cây Tri Thức Chuyên Sâu (16 Dạng Bài / 5 Bài Học Chi Tiết)**:
+  - *Giải Quyết Triệt Để Tình Trạng Trống Trải Cây Phân Cấp*: Nâng cấp cấu trúc phân chương chuyên đề từ 10 dạng bài lên **16 dạng bài học thuật chi tiết** bao phủ 100% các chủ đề trọng điểm:
+    - *Bài 1 (3 dạng)*: Xác định số oxi hóa hợp chất vô cơ/ion, Hợp chất hữu cơ & trường hợp dị thường (peroxide, superoxide, hydride), Nhận diện chất oxi hóa/khử & phân loại phản ứng.
+    - *Bài 2 (4 dạng)*: Cân bằng thăng bằng electron phức tạp, Phương pháp ion - electron trong 3 môi trường, Phản ứng tự oxi hóa - khử/nội phân tử/chỉ số ẩn ($Fe_xO_y$), Oxi hóa khử hữu cơ ($KMnO_4$).
+    - *Bài 3 (3 dạng)*: Kim loại tác dụng acid oxi hóa, Hỗn hợp sản phẩm khử ($NO, N_2O, N_2, NH_4NO_3$) & sơ đồ đường chéo, Kim loại với dung dịch muối & điện phân Faraday.
+    - *Bài 4 (3 dạng)*: Quy đổi đa oxide về nguyên tố tự do ($Fe, Cu, O$), Quy đổi quặng sulfide ($Fe, Cu, S$), Quy đổi cụm phân tử giả định tối ưu số ẩn.
+    - *Bài 5 (3 dạng)*: Kiểm tra nồng độ cồn Breathalyzer, Chuẩn độ lượng vết (Vitamin C, Oxy hòa tan DO - Winkler), Pin điện hóa Galvanic ($E^0$, chiều phản ứng, $E^0_{\text{pin}}$).
+- **Mở Rộng Ngân Hàng Câu Hỏi: 4-5 Câu Cho Cả Hai Cấp Vận Dụng L3 & L4 (14 Câu/Dạng, Tổng 224 Câu)**:
+  - *Đáp Ứng Nghiêm Ngặt Yêu Cầu Sư Phạm*: Mỗi dạng bài được trang bị ngân hàng bài tập đa tầng gồm:
+    - **L1 (Nhận biết)**: $\ge 2$ câu hỏi lý thuyết cốt lõi.
+    - **L2 (Thông hiểu)**: $\ge 2$ câu hỏi hiểu bản chất và cân bằng bán phản ứng.
+    - **L3 (Vận dụng)**: **5 câu hỏi tính toán định lượng chuyên sâu**.
+    - **L4 (Vận dụng cao)**: **5 câu hỏi mô hình hóa thực tế và bài toán điểm 9-10 ĐGNL VNU-HCM**.
+    - $\Rightarrow$ **Tổng cộng: 14 câu hỏi/dạng $\times$ 16 dạng bài = 224 câu hỏi mẫu chuyên sâu** có đầy đủ đề bài KaTeX, 4 phương án lựa chọn và lời giải chi tiết từng bước.
+- **Làm Giàu Kiến Thức Nền Tảng SGK (Khối 1) Đa Tầng & Trực Quan**:
+  - Tự động bổ sung định nghĩa khoa học chuẩn SGK GDPT 2018, hệ thống đầy đủ 4 quy tắc gán số oxi hóa, bảng các trường hợp ngoại lệ đặc thù ($H_2O_2, KO_2, OF_2, NaH$) và lưu ý khảo thí ĐGNL.
+  - Tự động bổ sung khối *Ví dụ minh họa SGK* (`### 📌`) và *Bài toán mẫu áp dụng phương pháp* (`### 📝`).
+- **Khử Lỗi Thoát Ký Tự JSON Trong Gemini Response (`CleanJsonFences`)**:
+  - Bổ sung bộ tiền xử lý Regex `Regex.Replace(result, @"\\([%$&_#^{}])", "$1")` loại bỏ các ký tự escape LaTeX bất hợp lệ (`\%`, `\$`) sinh ra bởi Gemini, ngăn ngừa triệt để lỗi `JsonException` khi parse.
+- **Kiểm Thử Biên Dịch & Vận Hành**:
+  - `dotnet build` đạt 100% (**0 Error, 0 Warning**).
+  - API AI Engine chạy ổn định trên HTTP port 5104.
+  - `python test_ai_extract.py`: Trích xuất thành công 16 dạng bài với đúng 224 câu hỏi trắc nghiệm (đạt tỷ lệ 5 câu L3 và 5 câu L4 cho từng dạng bài).
+
+---
+
 ## [15/10/2026] - Chuyển Đổi Hoàn Toàn & Triển Khai Động Cơ AI Tri Thức Bóc Tách Khung Chương Trình & Dạng Bài Bằng C# Thuần (.NET 9 Clean Architecture), Hỗ Trợ Tài Liệu Khổ Lớn 79-99+ Trang
 - **Chuyển Đổi Toàn Bộ Sang C# Thuần (.NET 9) Trong AI Engine (`V-Eval-Ai_Engine`)**:
   - Di chuyển và chuẩn hóa toàn bộ tính năng trích xuất khung chương trình và phân tích dạng bài từ prototype Python sang 100% C# .NET 9 Clean Architecture.
