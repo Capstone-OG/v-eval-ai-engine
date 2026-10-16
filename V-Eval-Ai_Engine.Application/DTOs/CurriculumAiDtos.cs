@@ -12,6 +12,21 @@ public class ImportCurriculumRequestDto
 
     [JsonPropertyName("chapters")]
     public List<ImportChapterDto> Chapters { get; set; } = new();
+
+    [JsonPropertyName("processingTimeSeconds")]
+    public double ProcessingTimeSeconds { get; set; }
+
+    [JsonPropertyName("isRealExtraction")]
+    public bool IsRealExtraction { get; set; } = true;
+
+    [JsonPropertyName("sourceFileName")]
+    public string? SourceFileName { get; set; }
+
+    [JsonPropertyName("totalPagesProcessed")]
+    public int TotalPagesProcessed { get; set; }
+
+    [JsonPropertyName("totalCharactersExtracted")]
+    public int TotalCharactersExtracted { get; set; }
 }
 
 public class ImportChapterDto
@@ -171,4 +186,7 @@ public class AnalyzePatternResponseDto
 
     [JsonPropertyName("sample_question")]
     public PatternExemplarQuestionDto? SampleQuestion { get; set; }
+
+    [JsonPropertyName("processing_time_seconds")]
+    public double ProcessingTimeSeconds { get; set; }
 }

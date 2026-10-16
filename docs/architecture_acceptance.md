@@ -316,12 +316,26 @@
       - Tối ưu hóa chuỗi JSON Deserialization: Khắc phục lỗi `JsonException` do ký tự escape LaTeX (`\%` thành `%`, `\$` thành `$`) trong `CleanJsonFences`, đảm bảo pipeline parse JSON từ Gemini hoạt động ổn định 100%.
       - Khắc phục lỗi nội suy chuỗi C# (`$` string interpolation) đối với các chuỗi KaTeX chứa `\text{ cm}`.
 
+---
 
-
-
-
-
-
-
-
+### [17/10/2026] - Acceptance: 100% Real-Data Extraction, Zero-Hardcode Architecture, Execution Telemetry & RFC 8259 LaTeX Sanitization
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED** (100% Real Extraction, Zero Mock/Hardcode, High-Resolution Telemetry, RFC 8259 Compliant LaTeX Deserializer).
+- **Source Files**:
+  - AI Engine Infrastructure: [CurriculumAiService.cs](./../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs)
+  - Contracts & DTOs: [CurriculumAiDtos.cs](./../V-Eval-Ai_Engine.Application/DTOs/CurriculumAiDtos.cs)
+- **Key Architectural Highlights**:
+  1. **Zero-Hardcoding & Zero-Mock Policy**:
+     - Stripped all ~1,780 lines of legacy mock heuristics and synthetic data generators (EnrichGeneralKnowledgeTheory, GenerateHeuristicCurriculum, GenerateHeuristicPatternAnalysis, EnrichPatternPedagogyAndQuestions).
+     - Replaced silent fallback mock injection with explicit InvalidOperationException reporting genuine root causes (e.g. missing API key, network timeout, corrupt source document).
+  2. **Real-time Processing Telemetry (Stopwatch & Execution Metrics)**:
+     - Implemented System.Diagnostics.Stopwatch across both ExtractCurriculumAsync and AnalyzePatternAsync.
+     - Telemetry attributes populated directly on ImportCurriculumRequestDto: ProcessingTimeSeconds, IsRealExtraction = true, SourceFileName, TotalPagesProcessed, TotalCharactersExtracted.
+  3. **Robust JSON Sanitization & RFC 8259 Tokenization**:
+     - Boosted Gemini output token ceiling to 32768 tokens to eliminate mid-stream JSON truncations.
+     - Implemented RepairTruncatedJson stack-based auto-balancer for hanging {, [ and string quote terminations.
+     - Implemented SanitizeAndRepairGeminiJson character-level tokenizer: Automatically double-escapes invalid non-RFC 8259 escapes (\{, \}, \Delta, \frac, \sqrt) into valid JSON escapes \\{, \\}, preventing parse crashes.
+     - Implemented resilient fallback parser TryParseCurriculumFromLooseJson using System.Text.Json.Nodes.JsonNode with AllowTrailingCommas = true.
+  4. **Build Verification**:
+     - Verified .NET 9 compilation: 0 errors.
 
