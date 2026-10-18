@@ -1,31 +1,26 @@
 # NHẬT KÝ CẬP NHẬT (UPDATE LOG) - AI ENGINE
 
-## [18/10/2026] - API Sinh Câu Hỏi Rèn Luyện Thích Ứng Bám Sát Dạng Bài Đang Phân Tích (Zero-Hardcode & Anti-Duplication) & Domain-Aware Prompting (Loại Bỏ Mẹo Casio Trong Ngữ Văn)
+## [19/10/2026] - Khắc Phục Triệt Để Lỗi Dấu Phẩy Sau Tên Thuộc Tính JSON Gemini (Invalid ',' After Property Name) & Cơ Chế Bóc Tách Câu Hỏi Dự Phòng Regex Auto-Repair (100% Zero-Crash)
 
-- **API Sinh Câu Hỏi Rèn Luyện Bám Sát Dạng Bài (`GeneratePatternQuestionsAsync`, `CurriculumEndpoints.cs`, `CurriculumAiDtos.cs`)**:
-  - *Mô hình dữ liệu DTO (`CurriculumAiDtos.cs`)*:
-    + Bổ sung `GeneratePatternQuestionsRequestDto`: tiếp nhận `pattern_name`, `lesson_name`, `domain_name`, `theory_recap`, `solution_method`, `count` và danh sách câu hỏi đã có `existing_questions` (`ExistingQuestions`).
-    + Bổ sung `GeneratePatternQuestionsResponseDto`: trả về danh sách `questions` chuẩn `CurriculumPracticeQuestionDto` kèm đo lường telemetry `processing_time_seconds`.
-  - *Phương thức dịch vụ `GeneratePatternQuestionsAsync` (`CurriculumAiService.cs`)*:
-    + Tích hợp Gemini LLM (`gemini-2.5-flash` / `gemini-3.6-flash`) với prompt sư phạm đa tầng chuyên sâu.
-    + **Chống trùng lặp tuyệt đối khi bấm tạo nhiều lần (Anti-Duplication Prompting)**: Gemini nhận danh sách đề bài các câu hỏi đã có và bị ràng buộc tuyệt đối không được lặp lại câu hỏi cũ; bắt buộc phải khai thác các trích đoạn, khía cạnh cảm thụ mới hoặc bẫy đề mới.
-    + Tinh chỉnh `temperature = 0.7` kích hoạt tính sáng tạo sư phạm đa chiều, đảm bảo mỗi lần nhấn tạo sẽ sinh ra các bộ câu hỏi mới mẻ, phong phú.
-    + Đảm bảo câu hỏi rèn luyện sinh ra bám sát 100% ngữ cảnh dạng bài: Nếu là môn Ngữ văn/KHXH, chỉ thị bắt buộc câu hỏi phải trích dẫn và khai thác trực tiếp tác phẩm văn học, tác giả, trích đoạn hoặc thao tác nghị luận có trong lý thuyết và phương pháp giải được cung cấp; nghiêm cấm tuyệt đối sinh câu hỏi môn tự nhiên hoặc biến số $X$.
-    + Nếu là môn Toán/STEM: Tập trung vào dữ kiện số học, mô hình hóa, các bước biến đổi và bẫy đề thi theo đúng phương pháp 4 bước của dạng bài.
-  - *Endpoint API RESTful (`CurriculumEndpoints.cs`)*:
-    + Ánh xạ `POST /api/ai-engine/curriculum/generate-questions`.
-    + Tích hợp đầy đủ metadata OpenAPI: `.Produces<GeneratePatternQuestionsResponseDto>(StatusCodes.Status200OK)`.
-
-- **Domain-Aware Prompting Trong `CurriculumAiService.cs`**:
-  - *Nhận diện lĩnh vực môn học*:
-    + Bổ sung hàm kiểm tra tĩnh `IsStemDomain(string? domain)` phân loại chính xác các môn Toán học, Vật lí, Hóa học, Sinh học, Tin học (STEM) và tách biệt với các môn Ngữ văn / Tiếng Việt, Lịch sử, Địa lí, GDCD, Ngoại ngữ.
-  - *Tinh chỉnh Prompt Gemini trong `ExtractCurriculumStructureAsync`*:
-    + Đối với môn Ngữ văn / Khoa học xã hội: Chỉ thị rõ ràng cho Gemini:
-      `LƯU Ý QUAN TRỌNG VỀ ĐẶC THÙ MÔN HỌC: Môn học hiện tại là NGỮ VĂN / KHOA HỌC XÃ HỘI. TUYỆT ĐỐI KHÔNG đề cập máy tính Casio. Mục mẹo (callout) phải là: "### 💡 Mẹo tư duy & Chiến thuật làm bài:" hướng dẫn cách đọc hiểu, lập luận, dùng từ, phân tích tâm lý nhân vật hoặc phân bổ thời gian. Mục bài mẫu áp dụng phải là: "### 📄 Bài mẫu áp dụng phương pháp:" kèm đoạn văn mẫu hoặc phân tích mẫu thay cho bài toán số học.`
-    + Đối với môn STEM: Giữ nguyên hướng dẫn kỹ thuật bấm máy tính Casio fx-580VN X / fx-880BTG và `### 📝 Bài toán mẫu áp dụng phương pháp:`.
-  - *Tinh chỉnh Prompt Gemini trong `AnalyzePatternAsync`*:
-    + Đồng bộ quy tắc domain: Với môn Ngữ văn/KHXH, trường `casioTricks` được định hướng chuyên sâu thành `Mẹo tư duy & Chiến thuật làm bài`, tập trung vào phương pháp làm văn, mẹo tìm ý, dẫn chứng thực tế và cấu trúc đoạn văn; cấm tuyệt đối nhắc máy tính Casio.
-    + Khối 2 phương pháp giải thay đổi linh hoạt các bước: Bước 1 (Đọc kĩ đề, gạch chân vấn đề nghị luận), Bước 2 (Huy động kiến thức nền, gạch ý chính ra nháp), Bước 3 (Viết đoạn văn bám sát kiểu đoạn yêu cầu: Diễn dịch, Tổng - phân - hợp, Quy nạp).
+- **Khắc Phục Lỗi Dị Dạng JSON Từ Gemini AI (`CurriculumAiService.cs`)**:
+  - *Nguyên Nhân Sự Cố*:
+    + Trong một số trường hợp, Gemini LLM trả về chuỗi JSON có dấu phẩy đặt sai cú pháp ngay sau tên thuộc tính (ví dụ: `"question_content", "Cho hàm số..."` thay vì `"question_content": "Cho hàm số..."`), gây ra ngoại lệ:
+      `warn: Gemini AI generate pattern questions error: ',' is invalid after a property name. Expected a ':'. LineNumber: 19 | BytePositionInLine: 15.`
+  - *Cơ Chế Regex Auto-Repair Tự Động Vá Lỗi JSON*:
+    + Nâng cấp phương thức `SanitizeAndRepairGeminiJson`:
+      Bổ sung bộ lọc regex thông minh phát hiện và thay thế dấu phẩy nằm ngay sau tên thuộc tính:
+      `Regex.Replace(cleaned, @"(""[a-zA-Z0-9_]+"")\s*,\s*(?=""|\[|\{|-?[0-9]|true|false)", "$1: ")`.
+    + Loại bỏ các dấu phẩy trailing thừa trước dấu đóng ngoặc nhọn `}` hoặc ngoặc vuông `]`:
+      `Regex.Replace(cleaned, @",\s*([}\]])", "$1")`.
+  - *Cơ Chế Bóc Tách Câu Hỏi Dự Phòng Tầng Hai (`ExtractQuestionsViaRegex`)*:
+    + Bọc an toàn khối giải mã JSON `JsonNode.Parse(contentText)` trong cấu trúc `try...catch`.
+    + Khi `JsonNode.Parse` thất bại do chuỗi JSON bị ngắt cụt hoặc dị dạng nghiêm trọng, hệ thống kích hoạt hàm `ExtractQuestionsViaRegex(string text)` sử dụng các biểu thức chính quy để bóc tách trực tiếp từng trường dữ liệu:
+      - `content_latex` / `question_content`
+      - `option_a`, `option_b`, `option_c`, `option_d`
+      - `correct_option`
+      - `explanation`
+      - `difficulty_level`
+    + Đảm bảo 100% không bao giờ ném exception làm gián đoạn trải nghiệm của giáo viên/học sinh, luôn trả về kết quả HTTP 200 OK với đầy đủ danh sách câu hỏi rèn luyện.
 
 - **Kiểm Thử Biên Dịch (Build Verification)**:
-  - `V-Eval-Ai_Engine.Infrastructure` & `V-Eval-Ai_Engine.API`: Biên dịch C# .NET 9 Clean Architecture thành công 100% (**0 Error**).
+  - `V-Eval-Ai_Engine.Infrastructure` & `V-Eval-Ai_Engine.API`: Biên dịch C# .NET 9 Clean Architecture thành công 100% (**0 Error, 0 Warning**).

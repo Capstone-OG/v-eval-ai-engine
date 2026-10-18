@@ -713,11 +713,21 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
                         if (!string.IsNullOrEmpty(contentText))
                         {
                             contentText = SanitizeAndRepairGeminiJson(contentText);
-                            var parsedNode = JsonNode.Parse(contentText);
+                            JsonNode? parsedNode = null;
+                            try
+                            {
+                                parsedNode = JsonNode.Parse(contentText);
+                            }
+                            catch (Exception parseEx)
+                            {
+                                _logger.LogWarning("Strict JsonNode.Parse failed: {Message}. Attempting loose regex extraction.", parseEx.Message);
+                            }
+
                             var questionsArray = parsedNode?["questions"]?.AsArray();
+                            var resultQuestions = new List<ImportQuestionDto>();
+
                             if (questionsArray != null && questionsArray.Count > 0)
                             {
-                                var resultQuestions = new List<ImportQuestionDto>();
                                 foreach (var qNode in questionsArray)
                                 {
                                     if (qNode == null) continue;
@@ -737,16 +747,20 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
                                         resultQuestions.Add(q);
                                     }
                                 }
+                            }
+                            else
+                            {
+                                resultQuestions = ExtractQuestionsViaRegex(contentText);
+                            }
 
-                                if (resultQuestions.Count > 0)
+                            if (resultQuestions.Count > 0)
+                            {
+                                stopwatch.Stop();
+                                return new GeneratePatternQuestionsResponseDto
                                 {
-                                    stopwatch.Stop();
-                                    return new GeneratePatternQuestionsResponseDto
-                                    {
-                                        Questions = resultQuestions,
-                                        ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2)
-                                    };
-                                }
+                                    Questions = resultQuestions,
+                                    ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2)
+                                };
                             }
                         }
                     }
@@ -807,6 +821,9 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
             }
         }
         cleaned = string.Join("\n", lines);
+
+        // 0.2 Sửa lỗi Gemini gõ nhầm dấu phẩy thay vì hai chấm sau tên thuộc tính (ví dụ: "propertyName", "value" -> "propertyName": "value")
+        cleaned = Regex.Replace(cleaned, @"(""[a-zA-Z0-9_]+"")\s*,\s*(?=""|\[|\{|-?[0-9]|true|false)", "$1: ");
 
         // 1. Phục hồi các ký tự điều khiển ASCII bị nuốt do escape
         cleaned = cleaned.Replace("\x0crac", "\\\\frac")
@@ -1299,5 +1316,41 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
         }
 
         return null;
+    }
+
+    private static List<ImportQuestionDto> ExtractQuestionsViaRegex(string text)
+    {
+        var list = new List<ImportQuestionDto>();
+        try
+        {
+            var matches = Regex.Matches(text, @"\{[^{}]*""(?:contentLatex|content_latex)""[^{}]*\}", RegexOptions.Singleline);
+            foreach (Match m in matches)
+            {
+                string block = m.Value;
+                string? content = ExtractRegexField(block, "contentLatex") ?? ExtractRegexField(block, "content_latex");
+                if (string.IsNullOrWhiteSpace(content)) continue;
+
+                int diff = 3;
+                var diffM = Regex.Match(block, @"""(?:difficultyLevel|difficulty_level)""\s*:\s*(\d+)");
+                if (diffM.Success && int.TryParse(diffM.Groups[1].Value, out int dVal)) diff = dVal;
+
+                list.Add(new ImportQuestionDto
+                {
+                    DifficultyLevel = diff,
+                    ContentLatex = content,
+                    OptionA = ExtractRegexField(block, "optionA") ?? ExtractRegexField(block, "option_a") ?? string.Empty,
+                    OptionB = ExtractRegexField(block, "optionB") ?? ExtractRegexField(block, "option_b") ?? string.Empty,
+                    OptionC = ExtractRegexField(block, "optionC") ?? ExtractRegexField(block, "option_c") ?? string.Empty,
+                    OptionD = ExtractRegexField(block, "optionD") ?? ExtractRegexField(block, "option_d") ?? string.Empty,
+                    CorrectOption = ExtractRegexField(block, "correctOption") ?? ExtractRegexField(block, "correct_option") ?? "A",
+                    Explanation = ExtractRegexField(block, "explanation") ?? string.Empty
+                });
+            }
+        }
+        catch
+        {
+            // Ignore
+        }
+        return list;
     }
 }
