@@ -356,9 +356,10 @@
   3. **Pattern Analysis Alignment (`AnalyzePatternAsync`)**:
      - Synchronized pattern-level pedagogy: Literature requests route `casioTricks` field to practical writing strategies, time management, and textual breakdown rather than Casio fx-580 / fx-880 button shortcuts.
   4. **Adaptive Pattern-Contextual Question Generation API (`GeneratePatternQuestionsAsync`)**:
-     - Introduced `GeneratePatternQuestionsRequestDto` and `GeneratePatternQuestionsResponseDto`.
+     - Introduced `GeneratePatternQuestionsRequestDto` and `GeneratePatternQuestionsResponseDto` supporting `existing_questions`.
      - Mapped REST endpoint `POST /api/ai-engine/curriculum/generate-questions`.
      - Gemini prompt enforces strict fidelity to the supplied pattern context: for Literature, all questions MUST explicitly test the literary works, authorial perspectives, text excerpts, and analysis procedures provided in `theoryRecap` and `solutionMethod`.
+     - Configured dynamic anti-duplication: Gemini receives list of existing questions and is strictly instructed to explore fresh angles and new excerpts; adjusted temperature to `0.7` for generative variety across repeated invocations.
   5. **Build Verification**:
      - C# .NET 9 Infrastructure and API projects compiled with **0 Error**.
 

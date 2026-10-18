@@ -210,6 +210,9 @@ public class GeneratePatternQuestionsRequestDto
 
     [JsonPropertyName("count")]
     public int Count { get; set; } = 2;
+
+    [JsonPropertyName("existing_questions")]
+    public List<string>? ExistingQuestions { get; set; }
 }
 
 public class GeneratePatternQuestionsResponseDto

@@ -609,6 +609,18 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
         if (apiKeys.Count > 0)
         {
             bool isStem = IsStemDomain(domainName);
+            string antiDuplicationNote = string.Empty;
+            if (request.ExistingQuestions != null && request.ExistingQuestions.Count > 0)
+            {
+                var samples = string.Join("\n- ", request.ExistingQuestions.TakeLast(6).Select(q => q.Length > 150 ? q[..150] + "..." : q));
+                antiDuplicationNote = $@"
+QUY TẮC BẮT BUỘC CHỐNG TRÙNG LẶP:
+Dạng bài này hiện ĐÃ CÓ {request.ExistingQuestions.Count} câu hỏi sau:
+- {samples}
+TUYỆT ĐỐI KHÔNG ĐƯỢC lặp lại, không được copy lại đề bài hoặc ngữ liệu y hệt ở trên!
+BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn cảm thụ mới, chi tiết nghệ thuật mới, hoặc các câu hỏi đọc hiểu/vận dụng hoàn toàn mới!";
+            }
+
             string prompt = $@"BẠN LÀ CHUYÊN GIA SƯ PHẠM V-EVAL & ĐÁNH GIÁ NĂNG LỰC ĐHQG (PRACTICE QUESTION GENERATOR).
 Nhiệm vụ: Tạo ra đúng {count} câu hỏi trắc nghiệm rèn luyện (gồm 1 câu L3 Vận dụng và 1 câu L4 Vận dụng cao) BÁM SÁT 100% VÀO DẠNG BÀI ĐANG ĐƯỢC PHÂN TÍCH:
 - Tên Dạng bài: ""{patternName}""
@@ -618,6 +630,7 @@ Nhiệm vụ: Tạo ra đúng {count} câu hỏi trắc nghiệm rèn luyện (g
 {theoryRecap}
 - Khối 2 (Phương pháp giải chi tiết & Bài toán mẫu áp dụng):
 {solutionMethod}
+{antiDuplicationNote}
 
 QUY TẮC BẮT BUỘC VỀ SƯ PHẠM:
 1. ĐẶC BIỆT LƯU Ý VỚI MÔN NGỮ VĂN / KHOA HỌC XÃ HỘI:
@@ -676,7 +689,7 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
                         },
                         ["generationConfig"] = new JsonObject
                         {
-                            ["temperature"] = 0.2,
+                            ["temperature"] = 0.7,
                             ["maxOutputTokens"] = 8192,
                             ["responseMimeType"] = "application/json"
                         }
