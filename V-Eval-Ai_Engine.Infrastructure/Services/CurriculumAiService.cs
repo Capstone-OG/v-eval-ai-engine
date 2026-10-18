@@ -590,6 +590,166 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
         throw new InvalidOperationException($"Không thể phân tích dạng bài '{patternName}' từ Gemini AI: {errDetail}.");
     }
 
+    public async Task<GeneratePatternQuestionsResponseDto> GeneratePatternQuestionsAsync(
+        GeneratePatternQuestionsRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        string patternName = request.PatternName?.Trim() ?? "Dạng bài trọng tâm";
+        string lessonName = request.LessonName?.Trim() ?? string.Empty;
+        string domainName = request.DomainName?.Trim() ?? string.Empty;
+        string theoryRecap = request.TheoryRecap?.Trim() ?? string.Empty;
+        string solutionMethod = request.SolutionMethod?.Trim() ?? string.Empty;
+        int count = request.Count <= 0 ? 2 : request.Count;
+
+        var apiKeys = ResolveApiKeys();
+        string modelName = ResolveModelName();
+        string geminiBaseUrl = _configuration["AiSettings:GeminiBaseUrl"] ?? "https://generativelanguage.googleapis.com/v1beta";
+
+        if (apiKeys.Count > 0)
+        {
+            bool isStem = IsStemDomain(domainName);
+            string prompt = $@"BẠN LÀ CHUYÊN GIA SƯ PHẠM V-EVAL & ĐÁNH GIÁ NĂNG LỰC ĐHQG (PRACTICE QUESTION GENERATOR).
+Nhiệm vụ: Tạo ra đúng {count} câu hỏi trắc nghiệm rèn luyện (gồm 1 câu L3 Vận dụng và 1 câu L4 Vận dụng cao) BÁM SÁT 100% VÀO DẠNG BÀI ĐANG ĐƯỢC PHÂN TÍCH:
+- Tên Dạng bài: ""{patternName}""
+- Bài học: ""{lessonName}""
+- Môn học / Miền: ""{domainName}""
+- Khối 1 (Lý thuyết nền tảng SGK & Ví dụ minh họa):
+{theoryRecap}
+- Khối 2 (Phương pháp giải chi tiết & Bài toán mẫu áp dụng):
+{solutionMethod}
+
+QUY TẮC BẮT BUỘC VỀ SƯ PHẠM:
+1. ĐẶC BIỆT LƯU Ý VỚI MÔN NGỮ VĂN / KHOA HỌC XÃ HỘI:
+   - Câu hỏi BẮT BUỘC PHẢI THAM KHẢO VÀ DỰA VÀO ĐÚNG TÁC PHẨM, NGỮ LIỆU, HOẶC VÍ DỤ NÊU TRONG LÝ THUYẾT VÀ PHƯƠNG PHÁP GIẢI CỦA DẠNG NÀY (ví dụ: các bài thơ, đoạn trích, tác giả, vấn đề nghị luận được đề cập ở trên).
+   - TUYỆT ĐỐI KHÔNG dùng toán học, không có đại số, không có biến số X, nồng độ, thể tích hay phương trình!
+   - Câu hỏi L3: Đo lường kỹ năng đọc hiểu, xác định vấn đề nghị luận, phạm vi dẫn chứng, kiểu đoạn văn (Tổng - phân - hợp, diễn dịch...), hoặc phân tích chi tiết tiêu biểu.
+   - Câu hỏi L4: Đo lường tư duy đánh giá, liên hệ nâng cao bối cảnh thời đại, chiều sâu tư tưởng nhân văn hoặc phong cách tác giả.
+2. ĐỐI VỚI CÁC MÔN STEM (Toán, Lý, Hóa, Sinh, Tin):
+   - Câu hỏi phải bám sát đúng mô hình toán/khoa học, thuật toán và công thức của dạng này.
+
+LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
+- Mọi ký tự gạch chéo ngược LaTeX BẮT BUỘC dùng 2 gạch chéo ngược: \\frac, \\sqrt, \\Delta, \\{{, \\}}, \\%, \\$, \\alpha...
+- Chỉ trả về duy nhất 1 JSON object hợp lệ theo schema sau:
+
+{{
+  ""questions"": [
+    {{
+      ""difficultyLevel"": 3,
+      ""contentLatex"": ""[Bài tập rèn luyện 1] Đề bài..."",
+      ""optionA"": ""Phương án A..."",
+      ""optionB"": ""Phương án B..."",
+      ""optionC"": ""Phương án C..."",
+      ""optionD"": ""Phương án D..."",
+      ""correctOption"": ""A"",
+      ""explanation"": ""Lời giải chi tiết từng bước...""
+    }},
+    {{
+      ""difficultyLevel"": 4,
+      ""contentLatex"": ""[Bài tập rèn luyện 2 - Vận dụng cao] Đề bài..."",
+      ""optionA"": ""Phương án A..."",
+      ""optionB"": ""Phương án B..."",
+      ""optionC"": ""Phương án C..."",
+      ""optionD"": ""Phương án D..."",
+      ""correctOption"": ""A"",
+      ""explanation"": ""Lời giải chi tiết từng bước...""
+    }}
+  ]
+}}";
+
+            foreach (var key in apiKeys)
+            {
+                try
+                {
+                    string url = $"{geminiBaseUrl.TrimEnd('/')}/models/{modelName}:generateContent?key={key}";
+                    var payload = new JsonObject
+                    {
+                        ["contents"] = new JsonArray
+                        {
+                            new JsonObject
+                            {
+                                ["parts"] = new JsonArray
+                                {
+                                    new JsonObject { ["text"] = prompt }
+                                }
+                            }
+                        },
+                        ["generationConfig"] = new JsonObject
+                        {
+                            ["temperature"] = 0.2,
+                            ["maxOutputTokens"] = 8192,
+                            ["responseMimeType"] = "application/json"
+                        }
+                    };
+
+                    using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url)
+                    {
+                        Content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json")
+                    };
+
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                    using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
+
+                    var response = await _httpClient.SendAsync(requestMessage, linkedCts.Token);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string respJson = await response.Content.ReadAsStringAsync(cancellationToken);
+                        var docNode = JsonNode.Parse(respJson);
+                        string? contentText = docNode?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
+
+                        if (!string.IsNullOrEmpty(contentText))
+                        {
+                            contentText = SanitizeAndRepairGeminiJson(contentText);
+                            var parsedNode = JsonNode.Parse(contentText);
+                            var questionsArray = parsedNode?["questions"]?.AsArray();
+                            if (questionsArray != null && questionsArray.Count > 0)
+                            {
+                                var resultQuestions = new List<ImportQuestionDto>();
+                                foreach (var qNode in questionsArray)
+                                {
+                                    if (qNode == null) continue;
+                                    var q = new ImportQuestionDto
+                                    {
+                                        DifficultyLevel = qNode["difficultyLevel"]?.GetValue<int>() ?? qNode["difficulty_level"]?.GetValue<int>() ?? 3,
+                                        ContentLatex = qNode["contentLatex"]?.GetValue<string>() ?? qNode["content_latex"]?.GetValue<string>() ?? string.Empty,
+                                        OptionA = qNode["optionA"]?.GetValue<string>() ?? qNode["option_a"]?.GetValue<string>() ?? string.Empty,
+                                        OptionB = qNode["optionB"]?.GetValue<string>() ?? qNode["option_b"]?.GetValue<string>() ?? string.Empty,
+                                        OptionC = qNode["optionC"]?.GetValue<string>() ?? qNode["option_c"]?.GetValue<string>() ?? string.Empty,
+                                        OptionD = qNode["optionD"]?.GetValue<string>() ?? qNode["option_d"]?.GetValue<string>() ?? string.Empty,
+                                        CorrectOption = qNode["correctOption"]?.GetValue<string>() ?? qNode["correct_option"]?.GetValue<string>() ?? "A",
+                                        Explanation = qNode["explanation"]?.GetValue<string>() ?? string.Empty
+                                    };
+                                    if (!string.IsNullOrWhiteSpace(q.ContentLatex))
+                                    {
+                                        resultQuestions.Add(q);
+                                    }
+                                }
+
+                                if (resultQuestions.Count > 0)
+                                {
+                                    stopwatch.Stop();
+                                    return new GeneratePatternQuestionsResponseDto
+                                    {
+                                        Questions = resultQuestions,
+                                        ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2)
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Gemini AI generate pattern questions error: {Message}", ex.Message);
+                }
+            }
+        }
+
+        stopwatch.Stop();
+        throw new InvalidOperationException($"Không thể tạo thêm câu hỏi cho dạng bài '{patternName}' từ Gemini AI.");
+    }
+
+
     private static string CleanJsonFences(string json)
     {
         return SanitizeAndRepairGeminiJson(json);

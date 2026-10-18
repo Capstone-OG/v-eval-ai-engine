@@ -190,3 +190,34 @@ public class AnalyzePatternResponseDto
     [JsonPropertyName("processing_time_seconds")]
     public double ProcessingTimeSeconds { get; set; }
 }
+
+public class GeneratePatternQuestionsRequestDto
+{
+    [JsonPropertyName("pattern_name")]
+    public string PatternName { get; set; } = string.Empty;
+
+    [JsonPropertyName("lesson_name")]
+    public string? LessonName { get; set; }
+
+    [JsonPropertyName("domain_name")]
+    public string? DomainName { get; set; }
+
+    [JsonPropertyName("theory_recap")]
+    public string? TheoryRecap { get; set; }
+
+    [JsonPropertyName("solution_method")]
+    public string? SolutionMethod { get; set; }
+
+    [JsonPropertyName("count")]
+    public int Count { get; set; } = 2;
+}
+
+public class GeneratePatternQuestionsResponseDto
+{
+    [JsonPropertyName("questions")]
+    public List<ImportQuestionDto> Questions { get; set; } = new();
+
+    [JsonPropertyName("processing_time_seconds")]
+    public double ProcessingTimeSeconds { get; set; }
+}
+

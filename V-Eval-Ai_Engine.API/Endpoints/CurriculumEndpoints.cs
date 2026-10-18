@@ -141,6 +141,37 @@ public static class CurriculumEndpoints
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status500InternalServerError);
 
+        // 3. Endpoint tạo thêm câu hỏi rèn luyện bám sát 100% vào Dạng bài đang phân tích
+        group.MapPost("/generate-questions", async (
+            [FromBody] GeneratePatternQuestionsRequestDto request,
+            [FromServices] ICurriculumAiService curriculumAiService,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(request?.PatternName))
+            {
+                return Results.BadRequest(new
+                {
+                    success = false,
+                    message = "Tên dạng bài (PatternName) là bắt buộc để AI tạo câu hỏi rèn luyện bám sát dạng."
+                });
+            }
+
+            try
+            {
+                var result = await curriculumAiService.GeneratePatternQuestionsAsync(request, cancellationToken);
+                return Results.Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    detail: $"Lỗi khi tạo câu hỏi rèn luyện cho dạng bài: {ex.Message}",
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
+        })
+        .Produces<GeneratePatternQuestionsResponseDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status500InternalServerError);
+
         return app;
     }
 }

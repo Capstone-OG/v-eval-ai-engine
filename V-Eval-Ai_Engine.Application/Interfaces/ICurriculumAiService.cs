@@ -18,4 +18,9 @@ public interface ICurriculumAiService
     Task<AnalyzePatternResponseDto> AnalyzePatternAsync(
         AnalyzePatternRequestDto request,
         CancellationToken cancellationToken = default);
+
+    Task<GeneratePatternQuestionsResponseDto> GeneratePatternQuestionsAsync(
+        GeneratePatternQuestionsRequestDto request,
+        CancellationToken cancellationToken = default);
 }
+
