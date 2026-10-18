@@ -193,7 +193,7 @@ public class CurriculumAiService : ICurriculumAiService
         {
             bool isStem = IsStemDomain(domainName);
             string domainScope = isStem ? "TỪNG DẠNG BÀI TOÁN CỤ THỂ (PATTERNS)" : "TỪNG DẠNG BÀI ĐỌC HIỂU / LÀM VĂN / BÀI HỌC CỤ THỂ (PATTERNS)";
-            string sampleHeading = isStem ? "### 📝 Bài toán mẫu áp dụng phương pháp:" : "### 📝 Bài mẫu áp dụng phương pháp:";
+            string sampleHeading = isStem ? "### 📄 Bài toán mẫu áp dụng phương pháp:" : "### 📄 Bài mẫu áp dụng phương pháp:";
             string tipHeading = isStem ? "### 💡 Kỹ thuật Casio & Mẹo tư duy nhanh:" : "### 💡 Mẹo tư duy & Chiến thuật làm bài:";
             string tipGuideline = isStem 
                 ? "Mẹo nhẩm hoặc kỹ thuật bấm máy Casio (fx-580VN X, fx-880BTG)" 

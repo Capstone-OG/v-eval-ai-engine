@@ -22,6 +22,9 @@
       - `difficulty_level`
     + Đảm bảo 100% không bao giờ ném exception làm gián đoạn trải nghiệm của giáo viên/học sinh, luôn trả về kết quả HTTP 200 OK với đầy đủ danh sách câu hỏi rèn luyện.
 
+- **Chuẩn Hóa Tiền Tố Bài Mẫu Tránh Lỗi Font Emoji (`CurriculumAiService.cs`)**:
+  - Chuẩn hóa tiền tố bài toán mẫu trong prompt sinh bài giảng từ `### 📝` sang `### 📄` loại bỏ hoàn toàn nguy cơ hiển thị lỗi glyph/tofu trên hệ điều hành Windows.
+
 - **Kiểm Thử Biên Dịch (Build Verification)**:
   - `V-Eval-Ai_Engine.Infrastructure` & `V-Eval-Ai_Engine.API`: Biên dịch C# .NET 9 Clean Architecture thành công 100% (**0 Error, 0 Warning**).
 
