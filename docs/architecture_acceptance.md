@@ -365,21 +365,19 @@
 
 ---
 
-### [19/10/2026] - Acceptance: Malformed JSON Auto-Repair (Comma after Property Name) & Resilient Fallback Question Extraction (Zero-Crash Guarantee)
+### [19/10/2026] - Acceptance: Resilient AI Question Generation (Lookbehind Key Repair & Question Block Slicing Fallback) & LaTeX Character Preservation
 - **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
-- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED** (Regex Auto-Repair for Malformed Comma Token, Resilient Fallback Parser, 100% Zero-Crash Service Guarantee).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED** (Lookbehind Key Sanitization, Question Block Slicing Fallback, LaTeX Command Unescaping Protection, Zero-Crash Service Guarantee).
 - **Source Files**:
   - AI Engine Infrastructure: [CurriculumAiService.cs](./../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs)
 - **Key Architectural Highlights**:
-  1. **Root Cause Analysis of Gemini Malformed Property Comma**:
-     - Under high load or complex prompt outputs, LLM occasionally generated misplaced commas directly following JSON property names (e.g. `"question_content", "Cho hàm số..."` instead of `"question_content": "Cho hàm số..."`), provoking System.Text.Json parser error: `',' is invalid after a property name. Expected a ':'. LineNumber: 19 | BytePositionInLine: 15`.
-  2. **Regex Auto-Repair Pre-Processor**:
-     - Augmented `SanitizeAndRepairGeminiJson` with targeted regex normalization:
-       `Regex.Replace(cleaned, @"(""[a-zA-Z0-9_]+"")\s*,\s*(?=""|\[|\{|-?[0-9]|true|false)", "$1: ")`.
-     - Automatically cleans trailing commas before closing braces/brackets (`,\s*([}\]])` -> `$1`).
-  3. **Dual-Tier Resilient Fallback Parser (`ExtractQuestionsViaRegex`)**:
-     - Wrapped JSON deserializer in defensive `try...catch` block.
-     - When JSON syntax is irreparably damaged or truncated mid-sentence, `ExtractQuestionsViaRegex(string text)` extracts questions directly from raw string tokens using regex groups (`content_latex`, `option_a`, `option_b`, `option_c`, `option_d`, `correct_option`, `explanation`).
-     - Guarantees zero unhandled exceptions and consistent HTTP 200 OK responses with full practice question payloads.
+  1. **Root Cause Analysis 1 — Invalid Colon After Value (`':' is invalid after a value`)**:
+     - The previous property-repair regex lacked lookbehind, accidentally matching string values like `"correct_option": "B",` and turning them into `"correct_option": "B": "explanation": ...`, breaking standard JSON parsing.
+     - Resolved via positive lookbehind `(?<=[\{\,]\s*)` guaranteeing that only keys preceded by `{` or `,` are matched, strictly shielding all property values.
+  2. **Root Cause Analysis 2 — Fallback Parser Failure on LaTeX Curly Braces**:
+     - `ExtractQuestionsViaRegex` previously relied on negative character class `[^{}]*` which immediately terminated upon encountering `{...}` in LaTeX expressions (e.g. `SO_4^{2-}`, `\frac{a}{b}`).
+     - Re-engineered with **Question Block Slicing**: locating `"contentLatex"` / `"content_latex"` anchor positions and segmenting blocks without sensitivity to nested LaTeX braces.
+  3. **LaTeX Escape Sequence Protection in `ExtractRegexField`**:
+     - Replaced naive `.Replace(@"\t", "\t")` with negative lookahead regex `Regex.Replace(val, @"\\t(?![a-zA-Z])", "\t")` and `Regex.Replace(val, @"\\n(?!(?:eq|otin|...)\b)", "\n")`, preventing corruption of commands like `\text`, `\times`, `\theta`, `\tau`, `\to` into ASCII Tab (0x09) characters.
   4. **Build Verification**:
      - .NET 9 compilation clean with **0 Error, 0 Warning**.

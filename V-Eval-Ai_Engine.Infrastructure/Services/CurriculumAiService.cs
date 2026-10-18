@@ -823,7 +823,8 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
         cleaned = string.Join("\n", lines);
 
         // 0.2 Sửa lỗi Gemini gõ nhầm dấu phẩy thay vì hai chấm sau tên thuộc tính (ví dụ: "propertyName", "value" -> "propertyName": "value")
-        cleaned = Regex.Replace(cleaned, @"(""[a-zA-Z0-9_]+"")\s*,\s*(?=""|\[|\{|-?[0-9]|true|false)", "$1: ");
+        // Bắt buộc dùng lookbehind (?<=[\{\,]\s*) để chỉ sửa khi là tên trường, tuyệt đối không sửa giá trị như "correctOption": "B",
+        cleaned = Regex.Replace(cleaned, @"(?<=[\{\,]\s*)(""[a-zA-Z0-9_]{2,40}"")\s*,\s*(?=""|\[|\{|-?[0-9]|true|false)", "$1: ");
 
         // 1. Phục hồi các ký tự điều khiển ASCII bị nuốt do escape
         cleaned = cleaned.Replace("\x0crac", "\\\\frac")
@@ -1213,10 +1214,11 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
                             string correct = ExtractRegexField(qBlock, "correctOption") ?? "A";
                             if (correct.Length > 1) correct = correct.Substring(0, 1);
 
+                            string qContent = ExtractRegexField(qBlock, "contentLatex") ?? qMatch.Groups[1].Value;
                             pat.Questions.Add(new ImportQuestionDto
                             {
                                 DifficultyLevel = diff,
-                                ContentLatex = qMatch.Groups[1].Value,
+                                ContentLatex = qContent,
                                 OptionA = ExtractRegexField(qBlock, "optionA") ?? string.Empty,
                                 OptionB = ExtractRegexField(qBlock, "optionB") ?? string.Empty,
                                 OptionC = ExtractRegexField(qBlock, "optionC") ?? string.Empty,
@@ -1283,7 +1285,7 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
                 dto.SampleQuestion = new PatternExemplarQuestionDto
                 {
                     DifficultyLevel = bloom,
-                    ContentLatex = qMatch.Groups[1].Value,
+                    ContentLatex = ExtractRegexField(text, "content_latex") ?? qMatch.Groups[1].Value,
                     OptionA = ExtractRegexField(text, "option_a") ?? string.Empty,
                     OptionB = ExtractRegexField(text, "option_b") ?? string.Empty,
                     OptionC = ExtractRegexField(text, "option_c") ?? string.Empty,
@@ -1306,7 +1308,12 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
         var m = Regex.Match(block, $@"""{fieldName}""\s*:\s*""(.*?)(?<!\\)""", RegexOptions.Singleline);
         if (m.Success)
         {
-            return m.Groups[1].Value.Replace(@"\n", "\n").Replace(@"\t", "\t").Replace(@"\""", "\"").Replace(@"\\", @"\");
+            string val = m.Groups[1].Value;
+            // Bảo toàn các lệnh LaTeX bắt đầu bằng \t (\text, \times, \theta, \tau...) và \n (\neq, \notin, \nabla...)
+            val = Regex.Replace(val, @"\\t(?![a-zA-Z])", "\t");
+            val = Regex.Replace(val, @"\\n(?!(?:eq|otin|abla|u|atural|earrow|warrow|subseteq|supseteq|gtr|less|parallel)\b)", "\n");
+            val = val.Replace(@"\""", "\"").Replace(@"\\", @"\");
+            return val;
         }
 
         var numM = Regex.Match(block, $@"""{fieldName}""\s*:\s*([0-9\.]+)");
@@ -1323,10 +1330,30 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
         var list = new List<ImportQuestionDto>();
         try
         {
-            var matches = Regex.Matches(text, @"\{[^{}]*""(?:contentLatex|content_latex)""[^{}]*\}", RegexOptions.Singleline);
-            foreach (Match m in matches)
+            // Tìm tất cả các vị trí xuất hiện của trường contentLatex hoặc content_latex
+            var qKeyMatches = Regex.Matches(text, @"""(?:contentLatex|content_latex)""\s*:\s*""", RegexOptions.Singleline);
+            if (qKeyMatches.Count == 0) return list;
+
+            for (int i = 0; i < qKeyMatches.Count; i++)
             {
-                string block = m.Value;
+                int keyIndex = qKeyMatches[i].Index;
+                int blockStart = text.LastIndexOf('{', keyIndex);
+                if (blockStart < 0) blockStart = keyIndex;
+
+                int blockEnd;
+                if (i + 1 < qKeyMatches.Count)
+                {
+                    int nextKeyIndex = qKeyMatches[i + 1].Index;
+                    int nextOpenBrace = text.LastIndexOf('{', nextKeyIndex);
+                    blockEnd = nextOpenBrace > blockStart ? nextOpenBrace : nextKeyIndex;
+                }
+                else
+                {
+                    int arrayClose = text.IndexOf(']', keyIndex);
+                    blockEnd = arrayClose > keyIndex ? arrayClose : text.Length;
+                }
+
+                string block = text.Substring(blockStart, blockEnd - blockStart);
                 string? content = ExtractRegexField(block, "contentLatex") ?? ExtractRegexField(block, "content_latex");
                 if (string.IsNullOrWhiteSpace(content)) continue;
 
