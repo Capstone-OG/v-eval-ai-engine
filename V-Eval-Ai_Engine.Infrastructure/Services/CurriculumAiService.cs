@@ -191,27 +191,36 @@ public class CurriculumAiService : ICurriculumAiService
 
         if (apiKeys.Count > 0)
         {
+            bool isStem = IsStemDomain(domainName);
+            string domainScope = isStem ? "TỪNG DẠNG BÀI TOÁN CỤ THỂ (PATTERNS)" : "TỪNG DẠNG BÀI ĐỌC HIỂU / LÀM VĂN / BÀI HỌC CỤ THỂ (PATTERNS)";
+            string sampleHeading = isStem ? "### 📝 Bài toán mẫu áp dụng phương pháp:" : "### 📝 Bài mẫu áp dụng phương pháp:";
+            string tipHeading = isStem ? "### 💡 Kỹ thuật Casio & Mẹo tư duy nhanh:" : "### 💡 Mẹo tư duy & Chiến thuật làm bài:";
+            string tipGuideline = isStem 
+                ? "Mẹo nhẩm hoặc kỹ thuật bấm máy Casio (fx-580VN X, fx-880BTG)" 
+                : "Mẹo gạch chân từ khóa, phân bổ thời gian, chiến thuật hành văn ghi điểm tuyệt đối (TUYỆT ĐỐI KHÔNG sinh mẹo bấm máy Casio cho môn Ngữ văn/Khoa học xã hội)";
+            string sampleKey = isStem ? "Bài toán mẫu:" : "Bài mẫu:";
+
             string prompt = $@"BẠN LÀ HỆ THỐNG TRÍ TUỆ NHÂN TẠO HỌC THUẬT & TRÍ THỨC SƯ PHẠM ĐÁNH GIÁ NĂNG LỰC (CURRICULUM PATTERN REASONING ENGINE).
 Nhiệm vụ: Phân tích sâu tài liệu giáo khoa/chuyên đề và trích xuất cấu trúc phân cấp tri thức chuẩn SGK GDPT 2018:
-Miền ({domainName}) -> Các Chương -> Các Bài học -> TỪNG DẠNG BÀI TOÁN CỤ THỂ (PATTERNS).
+Miền ({domainName}) -> Các Chương -> Các Bài học -> {domainScope}.
 
 {depthDirective}
 
 QUY TẮC BẮT BUỘC VỀ VÍ DỤ MINH HỌA, BÀI MẪU & NGÂN HÀNG CÂU HỎI (MANDATORY EXAMPLES & SAMPLE PROBLEMS):
 1. PHÂN BIỆT RÕ CÁC DẠNG BÀI: Đặt tên dạng bài rõ ràng: 'Dạng [Số]: [Tên dạng bài chi tiết]'.
 2. BẮT BUỘC ĐỦ 4 KHỐI NỘI DUNG SƯ PHẠM KÈM VÍ DỤ VÀ BÀI TOÁN MẪU:
-   - `theoryRecap`: Lý thuyết nền tảng SGK, định lý cốt lõi, công thức KaTeX đặt trong $...$. Kèm theo '### 📌 Ví dụ minh họa SGK:' (Trích xuất ví dụ từ tài liệu có số liệu và lời giải ngắn gọn).
-   - `solutionMethod`: Thuật toán 3-4 bước giải: 'Bước 1: ...', 'Bước 2: ...', 'Bước 3: ...'. Kèm theo:
-     * '### 📝 Bài toán mẫu áp dụng phương pháp:' (Bài toán mẫu có giải từng bước).
+   - `theoryRecap`: Lý thuyết nền tảng SGK, định lý/khái niệm cốt lõi, công thức KaTeX đặt trong $...$ (nếu có). Kèm theo '### 📌 Ví dụ minh họa SGK:' (Trích xuất ví dụ/ngữ liệu từ tài liệu có phân tích và lời giải ngắn gọn).
+   - `solutionMethod`: Quy trình 3-4 bước giải / làm bài: 'Bước 1: ...', 'Bước 2: ...', 'Bước 3: ...'. Kèm theo:
+     * '{sampleHeading}' (Bài mẫu có phân tích/giải từng bước).
      * '### ⚠️ Các bẫy đề thi ĐGNL thường gặp:' (1-2 bẫy đề thi hay gặp).
-     * '### 💡 Kỹ thuật Casio & Mẹo tư duy nhanh:' (Mẹo nhẩm/bấm máy).
+     * '{tipHeading}' ({tipGuideline}).
    - `videoUrl`: null, `durationSeconds`: 600.
    - `questions`: MỖI DẠNG BÀI CÓ ĐÚNG 4 CÂU HỎI TRẮC NGHIỆM ĐA TẦNG BLOOM (L1 -> L4):
      * Câu 1: [L1 - Nhận biết] Câu hỏi lý thuyết / khái niệm / nhận diện hiện tượng.
-     * Câu 2: [L2 - Thông hiểu] Ví dụ mẫu áp dụng trực tiếp quy tắc/công thức.
-     * Câu 3: [L3 - Vận dụng] Bài toán định lượng ĐGNL, phương trình số liệu.
-     * Câu 4: [L4 - Vận dụng cao] Bài toán tổng hợp nâng cao, bài toán thực tiễn phân loại học sinh.
-     Mỗi câu gồm: difficultyLevel (1-4), contentLatex, optionA, optionB, optionC, optionD, correctOption ('A'|'B'|'C'|'D'), explanation (giải súc tích bằng KaTeX).
+     * Câu 2: [L2 - Thông hiểu] Ví dụ mẫu áp dụng trực tiếp quy tắc/công thức/đọc hiểu.
+     * Câu 3: [L3 - Vận dụng] Câu hỏi vận dụng ĐGNL, phân tích ngữ cảnh / số liệu.
+     * Câu 4: [L4 - Vận dụng cao] Bài toán/câu hỏi tổng hợp nâng cao, phân loại học sinh.
+     Mỗi câu gồm: difficultyLevel (1-4), contentLatex, optionA, optionB, optionC, optionD, correctOption ('A'|'B'|'C'|'D'), explanation (giải súc tích).
 3. ĐẦU RA JSON BẮT BUỘC:
 Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
 {{
@@ -232,7 +241,7 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
               ""classification"": ""..."",
               ""coreSkill"": ""..."",
               ""theoryRecap"": ""[Định lý & Công thức SGK]\n\n### 📌 Ví dụ minh họa SGK:\n**Ví dụ:** ...\n**Phân tích & Lời giải:** ..."",
-              ""solutionMethod"": ""Bước 1: ...\nBước 2: ...\n\n### 📝 Bài toán mẫu áp dụng phương pháp:\n**Bài toán mẫu:** ...\n**Hướng dẫn giải:** ...\n\n### ⚠️ Các bẫy đề thi:\n...\n\n### 💡 Mẹo Casio:\n..."",
+              ""solutionMethod"": ""Bước 1: ...\nBước 2: ...\n\n{sampleHeading}\n**{sampleKey}** ...\n**Hướng dẫn giải:** ...\n\n### ⚠️ Các bẫy đề thi:\n...\n\n{tipHeading}\n..."",
               ""durationSeconds"": 600,
               ""questions"": [
                 {{
@@ -453,21 +462,22 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX (CRITICAL JSO
 
         if (apiKeys.Count > 0)
         {
+            bool isStem = IsStemDomain(domainName);
             string prompt = $@"BẠN LÀ CHUYÊN GIA TRÍ THỨC SƯ PHẠM V-EVAL & ĐÁNH GIÁ NĂNG LỰC ĐHQG (CURRICULUM PATTERN REASONING ENGINE).
-Nhiệm vụ: Phân tích chuyên sâu dạng bài toán sau để nhận diện rõ ràng bản chất dạng và chuẩn hóa 4 khối nội dung sư phạm:
+Nhiệm vụ: Phân tích chuyên sâu dạng bài {(isStem ? "toán" : "đọc hiểu / làm văn / bài học")} sau để nhận diện rõ ràng bản chất dạng và chuẩn hóa 4 khối nội dung sư phạm:
 - Dạng bài: ""{patternName}""
 - Bài học trực thuộc: ""{lessonName}""
 - Miền năng lực: ""{domainName}""
 
 QUY TẮC BẮT BUỘC:
-1. `classification`: Phân loại dạng (ví dụ: 'Khảo sát hàm số & Tương giao đồ thị', 'Bài toán chứa tham số m', 'Cực trị & Tối ưu hóa thực tế', 'Hình học không gian Oxyz', 'Tích phân & Ứng dụng', 'Tổ hợp & Xác suất').
+1. `classification`: Phân loại dạng.
 2. `core_skill`: Kỹ năng tư duy cốt lõi cần đo lường.
 3. `bloom_level`: Mức độ nhận thức Bloom phù hợp (1..4).
-4. `theory_recap`: Tóm lược kiến thức nền tảng SGK GDPT 2018 (KaTeX inline $...$).
-5. `solution_method`: Quy trình giải 4 bước chi tiết chuẩn mực.
+4. `theory_recap`: Tóm lược kiến thức nền tảng SGK GDPT 2018 (KaTeX inline $...$ nếu có).
+5. `solution_method`: Quy trình giải / làm bài 4 bước chi tiết chuẩn mực.
 6. `exam_traps`: 2-3 bẫy đề thi ĐGNL học sinh hay mắc sai lầm nhất.
-7. `casio_tricks`: Kỹ thuật bấm máy Casio (fx-580VN X, fx-880BTG) hoặc mẹo tư duy nhanh.
-8. `sample_question`: 1 câu hỏi trắc nghiệm minh họa chuẩn KaTeX 4 phương án kèm lời giải chi tiết.
+7. `casio_tricks`: {(isStem ? "Kỹ thuật bấm máy Casio (fx-580VN X, fx-880BTG) hoặc mẹo tư duy nhanh." : "Mẹo tư duy nhanh, chiến thuật đọc hiểu/hành văn, kỹ thuật phân bổ thời gian và mẹo ghi điểm tối đa ĐGNL (TUYỆT ĐỐI KHÔNG đề cập máy tính Casio vì đây là môn Ngữ văn / Khoa học xã hội).")}
+8. `sample_question`: 1 câu hỏi trắc nghiệm minh họa 4 phương án kèm lời giải chi tiết.
 
 LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
 - Mọi ký tự gạch chéo ngược LaTeX BẮT BUỘC dùng 2 gạch chéo ngược: \\frac, \\sqrt, \\Delta, \\{{, \\}}, \\%, \\$, \\alpha... Tuyệt đối không dùng 1 gạch chéo ngược đơn độc.
@@ -813,6 +823,20 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
         }
 
         return sb.ToString();
+    }
+
+    private static bool IsStemDomain(string? domainName)
+    {
+        if (string.IsNullOrWhiteSpace(domainName)) return true;
+        string lower = domainName.ToLowerInvariant();
+        if (lower.Contains("văn") || lower.Contains("ngữ") || lower.Contains("tiếng việt") ||
+            lower.Contains("ngoại ngữ") || lower.Contains("anh") || lower.Contains("english") ||
+            lower.Contains("sử") || lower.Contains("địa") || lower.Contains("xã hội") ||
+            lower.Contains("định tính"))
+        {
+            return false;
+        }
+        return true;
     }
 
     private static ImportCurriculumRequestDto? TryParseCurriculumFromLooseJson(string rawJson, string domainId, string domainName)

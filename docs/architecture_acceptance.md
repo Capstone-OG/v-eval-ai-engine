@@ -339,3 +339,22 @@
   4. **Build Verification**:
      - Verified .NET 9 compilation: 0 errors.
 
+---
+
+### [18/10/2026] - Acceptance: Domain-Aware Pedagogical Prompting & Literature Specialization (Eliminating Casio for Social Sciences)
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED** (Domain-Aware Prompting, STEM vs Literature Differentiation, Elimination of Casio Mismatches).
+- **Source Files**:
+  - AI Engine Infrastructure: [CurriculumAiService.cs](./../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs)
+- **Key Architectural Highlights**:
+  1. **Domain Detection Core (`IsStemDomain`)**:
+     - Introduced static analyzer `IsStemDomain(string? domain)` mapping keywords for STEM fields (Math, Physics, Chemistry, Biology, Informatics) vs Humanities / Social Sciences (Literature, History, Geography, Civic Education).
+  2. **Domain-Calibrated LLM Prompts in `ExtractCurriculumStructureAsync`**:
+     - When analyzing non-STEM documents (e.g. Vietnamese Literature - "Ngữ văn"), Gemini is strictly instructed:
+       `LƯU Ý QUAN TRỌNG VỀ ĐẶC THÙ MÔN HỌC: Môn học hiện tại là NGỮ VĂN / KHOA HỌC XÃ HỘI. TUYỆT ĐỐI KHÔNG đề cập máy tính Casio. Mục mẹo (callout) phải là: "### 💡 Mẹo tư duy & Chiến thuật làm bài:" hướng dẫn cách đọc hiểu, lập luận, dùng từ, phân tích tâm lý nhân vật hoặc phân bổ thời gian. Mục bài mẫu áp dụng phải là: "### 📄 Bài mẫu áp dụng phương pháp:" kèm đoạn văn mẫu hoặc phân tích mẫu thay cho bài toán số học.`
+     - Replaces algorithmic formulas with literary analysis frameworks, character psychology, essay structure (Tổng - Phân - Hợp, Diễn dịch, Quy nạp), and real-life evidence selection.
+  3. **Pattern Analysis Alignment (`AnalyzePatternAsync`)**:
+     - Synchronized pattern-level pedagogy: Literature requests route `casioTricks` field to practical writing strategies, time management, and textual breakdown rather than Casio fx-580 / fx-880 button shortcuts.
+  4. **Build Verification**:
+     - C# .NET 9 Infrastructure project compiled with **0 Warning, 0 Error**.
+
