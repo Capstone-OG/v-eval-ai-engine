@@ -44,7 +44,7 @@ public static class DependencyInjection
         // Đăng ký dịch vụ Curriculum & Pattern AI Engine C# thuần
         services.AddHttpClient<ICurriculumAiService, CurriculumAiService>(client =>
         {
-            client.Timeout = TimeSpan.FromMinutes(3);
+            client.Timeout = TimeSpan.FromMinutes(6);
         });
 
         return services;

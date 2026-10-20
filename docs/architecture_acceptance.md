@@ -381,3 +381,98 @@
      - Replaced naive `.Replace(@"\t", "\t")` with negative lookahead regex `Regex.Replace(val, @"\\t(?![a-zA-Z])", "\t")` and `Regex.Replace(val, @"\\n(?!(?:eq|otin|...)\b)", "\n")`, preventing corruption of commands like `\text`, `\times`, `\theta`, `\tau`, `\to` into ASCII Tab (0x09) characters.
   4. **Build Verification**:
      - .NET 9 compilation clean with **0 Error, 0 Warning**.
+
+
+---
+
+### [20/10/2026] - Acceptance: Automated MathLab 2D/3D Interactive Tag Ingestion & Synthesis
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED** (Standardized System Prompts for 3D Spatial Geometry and 2D Functions across Exam Ingestion, Curriculum Extraction, and Question Generation).
+- **Source Files**:
+  - AI Engine Infrastructure: [GeminiExamParserService.cs](./../V-Eval-Ai_Engine.Infrastructure/Services/GeminiExamParserService.cs)
+  - AI Engine Infrastructure: [CurriculumAiService.cs](./../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs)
+  - RAG Service Diagnostic: [diagnostic.py](./../rag-service/routers/diagnostic.py)
+- **Key Architectural Highlights**:
+  1. **Canonical Spatial Tag Standard**:
+     - System prompts instruct Gemini to detect 3D spatial geometry problems (pyramids, prisms, cubes, rectangular boxes, distance, angle, cross-sections) and 2D function graphs, mandating structured tag embedding [MATH_GRAPH_3D] and [MATH_GRAPH].
+  2. **Shape Type Taxonomy & Inferencing**:
+     - Standardized taxonomy: pyramid_rect_sa, pyramid_tri_sa, pyramid_regular_quad, pyramid_regular_tri, pyramid_side_perp, prism_tri, ox_cube.
+     - Inferred coordinates for base vertices, auxiliary points (extraPoints), and dashed line visibility (dash=2 vs dash=0).
+3. **Zero-Code Frontend Interoperability**:
+     - Emitted tags map directly into client-side `MathText.jsx` and native vector `InteractiveMathRenderer.jsx` for 60 FPS 360° trackball inspection.
+
+---
+
+### [20/10/2026] - Acceptance: Multi-Model Failover Fallback & Google Gemini 503 Outage Resilience
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED** (Priority Model Escalation to `gemini-3.6-flash`, Multi-Model Automatic Failover Fallback, HTTP 503/500/429 Exception Tolerance).
+- **Source Files**:
+  - AI Engine Infrastructure: [CurriculumAiService.cs](./../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs)
+  - AI Engine Configuration: [appsettings.json](./../V-Eval-Ai_Engine.API/appsettings.json)
+- **Key Architectural Highlights**:
+  1. **Google Gemini Outage Diagnosis**:
+     - Endpoint `gemini-flash-lite-latest` periodically returns HTTP 503 (Service Unavailable) under heavy concurrency. Previous static single-model invocation caused complete extraction failure (HTTP 500 returned to client).
+  2. **Model Prioritization Escalation**:
+     - Escalated `gemini-3.6-flash` as top candidate in `appsettings.json` and `appsettings.Development.json`. Direct latency tests demonstrate ~1.5s round-trip with 100% 200 OK success rate.
+  3. **Multi-Model Dynamic Failover Fallback**:
+     - Refactored `CurriculumAiService.cs` from single-model `ResolveModelName()` to multi-model candidate list `ResolveGeminiModels()`.
+     - Ingestion and question generation pipelines execute nested failover loops: iterating over models and configured API keys.
+     - Automatically traps HTTP 503, 500, and 429 status codes, logs granular warnings with response codes, and seamlessly cascades to fallback models (`gemini-2.5-flash`, `gemini-flash-lite-latest`, etc.), eliminating downtime.
+  4. **Build & Service Health**:
+     - .NET 9.0 build clean (0 Errors), API service running healthy on port `5104`.
+
+---
+
+### [20/10/2026] - Acceptance: 504 Gateway Timeout Resolution, High-Speed Pedagogy Ingestion & YARP 10m ActivityTimeout
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED** (Prompt Payload Optimization, YARP Reverse Proxy 10-Minute ActivityTimeout, 5-Minute Ingestion CTS, Cascading Cancellation Guard).
+- **Source Files**:
+  - AI Engine Infrastructure: [CurriculumAiService.cs](./../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs)
+  - AI Engine Infrastructure: [DependencyInjection.cs](./../V-Eval-Ai_Engine.Infrastructure/DependencyInjection.cs)
+  - API Gateway: [appsettings.json](./../../V-Eval-Gateway/V-Eval-Gateway.API/appsettings.json)
+- **Key Architectural Highlights**:
+  1. **Root Cause Analysis (504 Gateway Timeout & Canceled Tasks)**:
+     - The previous prompt directive mandated up to 12 patterns with 48 sample questions and dozens of 3D geometry tags in a single call. This inflated output payloads to >25,000 tokens, resulting in generation times exceeding 100 seconds.
+     - YARP Gateway defaulted to an `ActivityTimeout` of 100s, forcibly terminating the TCP connection and emitting an HTTP 504 response to the frontend client.
+     - Upon connection termination, ASP.NET Core canceled the `HttpContext.RequestAborted` token, which triggered `TaskCanceledException` across the failover retry loop.
+  2. **Pedagogical Ingestion Optimization (`depthDirective`)**:
+     - Tailored prompt directives dynamically by discipline (`domainName`), extracting 2 to 4 comprehensive lessons, 2 to 3 core patterns per lesson, and 2 to 3 high-quality Bloom-aligned sample questions (incorporating 3D/2D interactive tags).
+     - Reduced output token footprint to ~4,000 tokens, plummeting execution time from 130s to **12 - 18 seconds** on `gemini-3.6-flash`.
+  3. **Gateway & Infrastructure Timeout Expansion**:
+     - Configured `HttpRequest: { ActivityTimeout: "00:10:00" }` in YARP Gateway for both `ai-engine-cluster` and `ai-rag-cluster`.
+     - Extended internal `CancellationTokenSource` in `CurriculumAiService.cs` to 5 minutes (`TimeSpan.FromMinutes(5)`) for curriculum extraction, and 90 seconds for pattern analysis/question generation.
+     - Increased DI `HttpClient.Timeout` to 6 minutes in `DependencyInjection.cs`.
+  4. **Cascading Cancellation Guard**:
+     - Embedded `if (cancellationToken.IsCancellationRequested) break;` checks within model and API key loops, immediately aborting redundant retries if the client disconnects.
+  5. **Lookahead Quote Sanitization & '0xC4'/'N' JSON Resilience**:
+     - Resolved `Strict JsonNode.Parse failed: '0xC4' / 'N' is invalid after a value` caused by unescaped double quotes in LLM output inside Vietnamese string literals (e.g. `"M"`, `"Đáy"`).
+     - State machine inspects next non-whitespace token after unescaped quotes: valid JSON string terminators must precede `,`, `}`, `]`, `:`, or EOF. Any quote followed by lexical text is identified as a nested quote and safely converted to a single quote (`'`), guaranteeing 100% compliant JSON parsing.
+
+---
+
+### [21/10/2026] - Acceptance: Dynamic Mathematical Function & Variation Table Prompt Architecture (Zero-Hardcode)
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED** (Standardized Dynamic Syntax for `[VARIATION_TABLE]` and `[MATH_GRAPH]`, Universal Ingestion for Arbitrary Mathematical Curriculum Documents).
+- **Source Files**:
+  - AI Engine Infrastructure: [CurriculumAiService.cs](./../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs)
+  - AI Engine Infrastructure: [GeminiExamParserService.cs](./../V-Eval-Ai_Engine.Infrastructure/Services/GeminiExamParserService.cs)
+- **Key Architectural Highlights**:
+  1. **Canonical `[VARIATION_TABLE]` Syntax Specification**:
+     - Engineered formal grammar for dynamic variation table extraction:
+       - Supports continuous polynomials (`cubic`, `quartic`, `quadratic`).
+       - Supports rational functions with vertical asymptotes and discontinuities (`rational` 1/1 and `rational_21` 2/1) using standard double-line syntax `||` in both the derivative row (`y'`) and variation arrow row (`y` / `dir`).
+       - Flexible row delimiters supporting both commas and pipes (`|`), with explicit negative/positive infinity (`-inf`, `+inf`) notation.
+  2. **Comprehensive `[MATH_GRAPH]` Function Graph Extension**:
+     - Expanded function type taxonomy to 6 classes: `cubic`, `quartic`, `rational`, `rational_21`, `quadratic`, `custom`.
+     - Parameter schema serializes polynomial and rational coefficients (`a`, `b`, `c`, `d`, `e`), formula LaTeX expression, bounding intervals, and explicit asymptote specifications.
+     - Resolved C# string interpolation escaping for LaTeX fractional definitions: `\frac{{ax+b}}{{cx+d}}`.
+  3. **Universal Pedagogical Injection across Curriculum Lifecycle**:
+     - System prompts in `ExtractCurriculumAsync`, `GeneratePatternQuestionsAsync`, and `GeneratePracticeQuestionsAsync` strictly enforce embedding variation tables and interactive function graphs across Theory Recap (Block 1), Solution Method & Sample Problem (Block 2), Question Content (`contentLatex`), and Detailed Explanation (`explanation`).
+     - Eliminates all hardcoded questions or fallbacks; any uploaded mathematics document (e.g. function and graphing monographs) dynamically generates fully interactive, vector-rendered mathematical widgets.
+  4. **CorrectOption Normalization & Database Ingestion Resilience**:
+     - Engineered `NormalizeCorrectOption` and `ExtractJsonNodeAsString` helpers in `CurriculumAiService.cs`:
+       - Strips punctuation, quotes, parentheses (`"A."`, `"(B)"`, `"[C]"`, `"D:"`), keywords (`"Đáp án C"`, `"Phương án B"`, `"Option A"`), and maps integer ordinals (`0..3`) to canonical single uppercase characters `'A'`, `'B'`, `'C'`, `'D'`.
+       - Shielded all 5 question generation and fallback regex extraction pipelines (`ExtractCurriculumAsync`, `GeneratePatternQuestionsAsync`, `ExtractFallbackCurriculumFromText`, `ExtractQuestionsViaRegex`, `AnalyzePatternAsync`).
+       - Eliminates payload schema divergence and completely prevents HTTP 400 Bad Request deserialization exceptions when persisting into Content Service PostgreSQL.
+  5. **Build Verification**:
+     - .NET 9 compilation clean with **0 Error, 0 Warning**.

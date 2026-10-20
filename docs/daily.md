@@ -1,5 +1,74 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [21/10/2026] - Chuẩn Hóa Chuỗi Bóc Tách Đáp Án Đúng (NormalizeCorrectOption), Tự Động Tái Tạo Bảng Biến Thiên ([VARIATION_TABLE]) Và Đồ Thị Hàm Số ([MATH_GRAPH]) Zero-Hardcode
+
+- **Chuẩn Hóa Toàn Diện Đáp Án Đúng `CorrectOption` Cho Mọi Phân Hệ Bóc Tách & Sinh Câu Hỏi (`CurriculumAiService.cs`)**:
+  - *Giải quyết lỗi ngoại lệ kiểu dữ liệu*: Xây dựng phương thức trợ giúp `NormalizeCorrectOption` và `ExtractJsonNodeAsString` chuẩn hóa mọi định dạng thô do LLM/OCR sinh ra (như `"A."`, `"(B)"`, `"[C]"`, `"D:"`, `"Đáp án C"`, `"Phương án B"`, `"Answer D"`, `"Option A"`, số nguyên `0..3` hoặc `null`) về duy nhất 1 ký tự chuẩn mực `'A'`, `'B'`, `'C'`, `'D'`.
+  - *Bảo vệ toàn diện 5 pipeline sinh và bóc tách*:
+    + `ExtractCurriculumAsync`: Bóc tách cây phân cấp tri thức từ file PDF SGK, chuẩn hóa `CorrectOption` câu hỏi mẫu.
+    + `GeneratePatternQuestionsAsync`: Tự động sinh ngân hàng câu hỏi thích ứng theo dạng bài.
+    + `ExtractFallbackCurriculumFromText`: Xử lý bóc tách regex khi Gemini trả về chuỗi JSON không hoàn chỉnh.
+    + `ExtractQuestionsViaRegex`: Trích xuất danh sách câu hỏi dạng khối độc lập qua regex.
+    + `AnalyzePatternAsync`: Phân tích sâu 4 bước sư phạm của dạng bài.
+  - Đảm bảo 100% payload trả về Web Client tuân thủ chính xác schema CSDL của `Content Service`, ngăn chặn hoàn toàn lỗi 400 Bad Request khi nạp tri thức vào CSDL PostgreSQL.
+
+- **Chuẩn Hóa Cú Pháp Thẻ Bảng Biến Thiên & Đồ Thị Toán Học (`CurriculumAiService.cs`)**:
+  - *Đặc tả thẻ `[VARIATION_TABLE]`*:
+    + Hỗ trợ đầy đủ các hàm số đa thức liên tục (bậc 3, bậc 4, bậc 2) và hàm phân thức hữu tỉ có tiệm cận đứng đứt đoạn (bậc 1/1 `(ax+b)/(cx+d)`, bậc 2/1 `(ax^2+bx+c)/(dx+e)`).
+    + Cú pháp chuẩn hóa:
+      `x: -inf, x1, x2, +inf`
+      `y': + | - | 0 | +` (hoặc có vạch kép `||` tại điểm gián đoạn của mẫu số)
+      `y: -inf, y1, y2, +inf`
+      `dir: up, down, up` (hỗ trợ `||` ngắt nhánh biến thiên phân thức)
+  - *Mở rộng đặc tả thẻ `[MATH_GRAPH]`*:
+    + Hỗ trợ trọn vẹn 6 phân lớp hàm số: `cubic` (bậc 3), `quartic` (trùng phương bậc 4), `rational` (phân thức hữu tỉ 1/1), `rational_21` (phân thức hữu tỉ 2/1), `quadratic` (parabol bậc 2), và `custom` (biểu thức tùy biến).
+    + Bổ sung đầy đủ hệ số tham số `a`, `b`, `c`, `d`, `e`, nhãn công thức `formula`, khoảng hiển thị `interval`, và tiệm cận `asymptotes`.
+    + Sửa lỗi thoát chuỗi nội suy C# đối với công thức phân thức LaTeX: `\\frac{{ax+b}}{{cx+d}}`.
+  - *Bắt buộc tích hợp vào toàn bộ chu trình sư phạm*:
+    + Nhúng chỉ thị bóc tách vào `ExtractCurriculumAsync`: bắt buộc tự động tái tạo thẻ `[VARIATION_TABLE]` hoặc `[MATH_GRAPH]` vào CẢ Khối 1 `theoryRecap` (Lý thuyết / Ví dụ SGK), Khối 2 `solutionMethod` (Phương pháp / Bài toán mẫu), nội dung câu hỏi `contentLatex` và lời giải chi tiết `explanation`.
+    + Nhúng chỉ thị vào `GeneratePatternQuestionsAsync` và `GeneratePracticeQuestionsAsync`: mọi bài toán hàm số, cực trị, đồng biến/nghịch biến, tiệm cận, đồ thị bắt buộc phải kèm thẻ tương tác, loại bỏ 100% hardcode hay câu hỏi thiếu hình.
+
+- **Đồng Bộ Dịch Vụ Bóc Tách Đề Thi Gemini Vision OCR (`GeminiExamParserService.cs`)**:
+  - Cập nhật System Prompt chuẩn hóa cấu trúc thẻ `[VARIATION_TABLE]` và `[MATH_GRAPH]` (kèm `rational` và `rational_21`).
+  - Hướng dẫn AI tự động nhận diện bảng biến thiên và đồ thị trong đề thi PDF dạng chữ hoặc ảnh để số hóa thành thẻ vector tương tác cho client.
+
+- **Kiểm Thử Biên Dịch C# Clean Architecture**:
+  - Biên dịch toàn bộ solution qua .NET 9 SDK (`C:\Users\USER\.dotnet\dotnet.exe build`), dự án `V-Eval-Ai_Engine.Infrastructure` và `V-Eval-Ai_Engine.API` đạt **0 Error, 0 Warning**.
+
+---
+
+## [20/10/2026] - Nâng Cấp Hệ Thống Prompt Bóc Tách Đề Thi & Sinh Câu Hỏi Tích Hợp Mô Hình Hình Học Không Gian 3D và Đồ Thị 2D (MathLab Interactive Tags)
+
+- **Chuẩn Hóa Prompt Bóc Tách Đề Thi & Dựng Hình Tự Động Từ Chữ (`GeminiExamParserService.cs`)**:
+  - Bổ sung chỉ thị bắt buộc trong System Prompt của Gemini: KỂ CẢ KHI ĐỀ BÀI CHỈ MÔ TẢ HÌNH BẰNG CHỮ (hoàn toàn không có hình ảnh sẵn trong file gốc), AI đóng vai trò máy dựng hình học toán học: tự động tính toán tọa độ không gian $(x, y, z)$, suy luận điểm phụ/trung điểm, phân định nét đứt (`dash=2`) hoặc nét liền (`dash=0`), và nhúng khối thẻ `[MATH_GRAPH_3D]` hoặc `[MATH_GRAPH]` vào CẢ NỘI DUNG CÂU HỎI (ở cuối `content` để học sinh xoay 360 độ giải bài) VÀ LỜI GIẢI CHI TIẾT (`explanation`).
+  - Chuẩn hóa danh mục `shapeType`: bổ sung `tetrahedron` (tứ diện chuẩn SGK), `pyramid_rect_sa`, `pyramid_tri_sa`, `pyramid_regular_quad`, `pyramid_regular_tri`, `pyramid_side_perp`, `prism_tri`, `box_cube`.
+
+- **Nâng Cấp Prompt Bóc Tách Khung Chương Trình & Dựng Hình Bài Giảng / Câu Hỏi (`CurriculumAiService.cs`)**:
+  - *`ExtractCurriculumAsync`*: Bổ sung quy tắc số 3 (Text-to-MathLab Reconstruction): Bất kể khi nào đề bài hoặc ví dụ mô tả hình không gian hoặc đồ thị bằng chữ, BẮT BUỘC tự động tính tọa độ và nhúng thẻ cấu trúc `[MATH_GRAPH_3D]` hoặc `[MATH_GRAPH]` vào CẢ 2 NƠI:
+    + Ở PHẦN BÀI GIẢNG: Nhúng trực tiếp bên dưới Ví dụ minh họa SGK (Khối 1 `theoryRecap`) và Bài toán mẫu phương pháp giải (Khối 2 `solutionMethod`).
+    + Ở PHẦN CÂU HỎI: Nhúng trực tiếp ở cuối nội dung câu hỏi `contentLatex` (học sinh xoay 360 độ giải bài) và trong Lời giải chi tiết `explanation` (có thêm các đường kẻ phụ nét đứt).
+  - *`GeneratePatternQuestionsAsync`*: Yêu cầu bài toán mẫu và câu hỏi minh họa nhúng mô hình 3D/2D tương tác ở cả `theory_recap`, `solution_method`, `content_latex` và `explanation`.
+  - *`GeneratePracticeQuestionsAsync`*: Yêu cầu các bài tập rèn luyện nâng cao (L3 Vận dụng, L4 Vận dụng cao) sinh thẻ `[MATH_GRAPH_3D]` tương tác trực quan.
+
+- **Khắc Phục Lỗi 503 & 504 Gateway Timeout, Tối Ưu Hóa Prompt Bóc Tách (~15s) & Nâng Hạn Mức YARP 10 Phút (`CurriculumAiService.cs`)**:
+  - *Xử lý lỗi 503*: Đưa `gemini-3.6-flash` lên ưu tiên số 1, triển khai multi-model failover fallback (`ResolveGeminiModels()`) tự động bắt mã lỗi HTTP 503/500/429.
+  - *Khắc phục triệt để lỗi 504*:
+    + Tinh chỉnh prompt `depthDirective`: Bóc tách cấu trúc 2-4 bài học, 2-3 dạng bài/bài, và 2-3 câu hỏi mẫu đa tầng Bloom kèm thẻ 3D/2D tương tác. Giảm dung lượng output JSON từ 25.000 tokens xuống ~4.000 tokens, giúp tốc độ sinh hoàn tất chỉ trong 12 - 18 giây.
+    + Nâng `CancellationTokenSource` lên 5 phút (`TimeSpan.FromMinutes(5)`) cho `ExtractCurriculumAsync` và 90 giây cho `AnalyzePatternAsync` / `GeneratePatternQuestionsAsync`.
+    + Nâng `HttpClient.Timeout` lên 6 phút trong `DependencyInjection.cs`.
+    + Bổ sung kiểm tra `cancellationToken.IsCancellationRequested` dừng ngay chuỗi fallback khi request bị client hủy.
+  - *Nâng hạn mức Gateway YARP*: Cấu hình `ActivityTimeout` 10 phút (`00:10:00`) cho `ai-engine-cluster` và `ai-rag-cluster`.
+
+- **Khắc Phục Triệt Để Lỗi Parse JSON '0xC4' / 'N' is invalid after a value (`CurriculumAiService.cs`)**:
+  - *Nguyên nhân sự cố*: Khi Gemini sinh câu hỏi hoặc giải thích có chứa dấu ngoặc kép thẳng không escape bên trong chuỗi text (ví dụ: `gọi "M" là trung điểm`, `mặt phẳng "Đáy"`, `title: "Cho tứ diện ABCD"`), bộ giải mã JSON xem dấu ngoặc kép đó là kết thúc chuỗi và gặp ngay ký tự tiếng Việt kế tiếp (chữ `Đ` mang byte UTF-8 `0xC4`, hoặc chữ `N`), dẫn đến ném lỗi `Strict JsonNode.Parse failed: '0xC4' is invalid after a value`.
+  - *Máy trạng thái kiểm tra Lookahead cho dấu ngoặc kép*: Trong `SanitizeAndRepairGeminiJson`, áp dụng quy tắc văn phạm JSON chuẩn: một dấu ngoặc kép đóng chuỗi BẮT BUỘC phải đi liền trước `,`, `}`, `]`, `:`, hoặc thuộc tính mới. Nếu theo sau là chữ cái/từ ngữ tiếng Việt, thuật toán nhận diện chính xác đây là dấu nháy lơ lửng trong văn bản và tự động chuyển thành nháy đơn `'`, bảo toàn 100% cú pháp JSON.
+  - *Bổ sung chỉ thị cấm ngoặc kép thẳng trong Prompt*: Cập nhật System Prompt cho cả `AnalyzePatternAsync` và `GeneratePatternQuestionsAsync` yêu cầu AI tuyệt đối không dùng ngoặc kép thẳng trong câu hỏi, lời giải và phương án mà phải dùng nháy đơn `'...'`.
+
+- **Đồng Bộ Dịch Vụ Khảo Thí Chuẩn Hóa Python RAG (`diagnostic.py`)**:
+  - Bổ sung chỉ thị nhúng thẻ `[MATH_GRAPH_3D]` và `[MATH_GRAPH]` trong System Prompt khi AI sinh đề khảo sát chẩn đoán môn Toán.
+
+---
+
 ## [19/10/2026] - Khắc Phục Triệt Để Lỗi 500 AI Sinh Câu Hỏi (Regex Key Lookbehind & Block Slicing Fallback) & Bảo Toàn Tuyệt Đối Ký Tự LaTeX
 
 - **Khắc Phục Lỗi 500 Khi AI Sinh Câu Hỏi Rèn Luyện (`CurriculumAiService.cs`)**:

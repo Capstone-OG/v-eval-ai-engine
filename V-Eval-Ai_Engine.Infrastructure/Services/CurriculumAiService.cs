@@ -64,18 +64,31 @@ public class CurriculumAiService : ICurriculumAiService
             .ToList();
     }
 
-    private string ResolveModelName()
+    private List<string> ResolveGeminiModels()
     {
-        var configured = _configuration["AiSettings:GeminiModel"];
-        if (!string.IsNullOrWhiteSpace(configured)) return configured.Trim();
-
         var models = _configuration.GetSection("AiSettings:GeminiModels").Get<string[]>();
-        if (models != null && models.Length > 0 && !string.IsNullOrWhiteSpace(models[0]))
+        if (models != null && models.Length > 0)
         {
-            return models[0].Trim();
+            return models
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Select(m => m.Trim())
+                .Distinct()
+                .ToList();
         }
 
-        return "gemini-2.0-flash";
+        var single = _configuration["AiSettings:GeminiModel"];
+        if (!string.IsNullOrWhiteSpace(single))
+        {
+            return new List<string> { single.Trim() };
+        }
+
+        return new List<string> { 
+            "gemini-3.6-flash",
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-flash-lite",
+            "gemini-flash-lite-latest",
+            "gemini-3.8-flash"
+        };
     }
 
     public async Task<ImportCurriculumRequestDto> ExtractCurriculumAsync(
@@ -171,22 +184,16 @@ public class CurriculumAiService : ICurriculumAiService
 
         string textSnippet = extractedText.Length > 100000 ? extractedText[..100000] : extractedText;
 
-        string depthDirective = @"YÊU CẦU BÓC TÁCH TOÀN DIỆN, ĐA DẠNG BÀI TOÁN & PHỦ RỘNG 100% CÁC PHẦN (COMPREHENSIVE EXTRACTION):
-- TÀI LIỆU CÓ QUY MÔ LỚN GỒM NHIỀU PHẦN / CHỦ ĐỀ HỌC THUẬT.
-- BẮT BUỘC QUÉT TOÀN BỘ CÁC PHẦN (Phần I Lý thuyết, Phần II Bài tập phân dạng, Phần III Nâng cao, Phần IV Ứng dụng thực tế, Phần V Trắc nghiệm):
-  + BẮT BUỘC BÓC TÁCH TỪ 4 ĐẾN 5 BÀI HỌC (`lessons`) bao quát toàn diện các phần:
-    * Bài 1: Bản chất số oxi hóa & Quy tắc xác định (hoặc chủ đề nền tảng 1).
-    * Bài 2: Cân bằng phản ứng oxi hóa - khử nâng cao (Thăng bằng electron & Ion-electron).
-    * Bài 3: Phương pháp giải toán bảo toàn electron (Kim loại tác dụng acid & Hỗn hợp khí).
-    * Bài 4: Phương pháp quy đổi nâng cao trong giải toán hóa học (Quy đổi nguyên tố & Oxide giả định).
-    * Bài 5: Bài toán ứng dụng thực tế, ĐGNL & Bẫy đề thi nâng cao (Thổi nồng độ cồn, pin điện hóa, ăn mòn, HSG).
-  + MỖI BÀI HỌC (LESSON) BẮT BUỘC NHẬN DIỆN TỪ 2 ĐẾN 3 DẠNG BÀI TOÁN CHI TIẾT (`patterns`). TUYỆT ĐỐI KHÔNG ĐỂ 1 DẠNG BÀI ĐƠN ĐỘC!
-  + TỔNG SỐ DẠNG BÀI TRÊN TOÀN CHƯƠNG PHẢI ĐẠT TỪ 8 ĐẾN 12 DẠNG BÀI CHI TIẾT.
-  + MỖI DẠNG BÀI CÓ ĐỦ 4 CÂU HỎI BÀI MẪU (Câu 1: L1 Nhận biết, Câu 2: L2 Thông hiểu, Câu 3: L3 Vận dụng, Câu 4: L4 Vận dụng cao), kèm KaTeX và giải súc tích.";
+        string depthDirective = $@"YÊU CẦU BÓC TÁCH CẤU TRÚC TRI THỨC VÀ CÁC DẠNG BÀI TRỌNG TÂM (CURRICULUM INGESTION DIRECTIVE):
+- Phân tích bám sát 100% nội dung thực tế từ tài liệu thuộc lĩnh vực: {domainName}.
+- Cấu trúc bóc tách gồm:
+  + Từ 2 đến 4 Bài học (`lessons`) bao quát trọn vẹn chủ đề/chuyên đề trong tài liệu.
+  + Mỗi Bài học nhận diện từ 2 đến 3 Dạng bài (`patterns`) cốt lõi (tổng cộng 4 đến 8 dạng bài cho toàn chuyên đề).
+  + Mỗi Dạng bài có từ 2 đến 3 Câu hỏi bài mẫu (`questions`) đại diện các cấp độ Bloom (Nhận biết/Thông hiểu và Vận dụng/Vận dụng cao), có KaTeX chuẩn xác, đáp án và lời giải chi tiết.";
 
         // 2. Thử gọi Google Gemini qua C# HttpClient
         var apiKeys = ResolveApiKeys();
-        string modelName = ResolveModelName();
+        var geminiModels = ResolveGeminiModels();
         string geminiBaseUrl = _configuration["AiSettings:GeminiBaseUrl"] ?? "https://generativelanguage.googleapis.com/v1beta";
 
         if (apiKeys.Count > 0)
@@ -215,13 +222,57 @@ QUY TẮC BẮT BUỘC VỀ VÍ DỤ MINH HỌA, BÀI MẪU & NGÂN HÀNG CÂU H
      * '### ⚠️ Các bẫy đề thi ĐGNL thường gặp:' (1-2 bẫy đề thi hay gặp).
      * '{tipHeading}' ({tipGuideline}).
    - `videoUrl`: null, `durationSeconds`: 600.
-   - `questions`: MỖI DẠNG BÀI CÓ ĐÚNG 4 CÂU HỎI TRẮC NGHIỆM ĐA TẦNG BLOOM (L1 -> L4):
-     * Câu 1: [L1 - Nhận biết] Câu hỏi lý thuyết / khái niệm / nhận diện hiện tượng.
-     * Câu 2: [L2 - Thông hiểu] Ví dụ mẫu áp dụng trực tiếp quy tắc/công thức/đọc hiểu.
-     * Câu 3: [L3 - Vận dụng] Câu hỏi vận dụng ĐGNL, phân tích ngữ cảnh / số liệu.
-     * Câu 4: [L4 - Vận dụng cao] Bài toán/câu hỏi tổng hợp nâng cao, phân loại học sinh.
+   - `questions`: MỖI DẠNG BÀI CÓ TỪ 2 ĐẾN 3 CÂU HỎI TRẮC NGHIỆM ĐẠI DIỆN CÁC CẤP ĐỘ BLOOM (L1/L2 -> L3/L4):
+     * Câu 1: [L1 - Nhận biết / L2 - Thông hiểu] Câu hỏi lý thuyết, khái niệm hoặc ví dụ áp dụng trực tiếp.
+     * Câu 2: [L3 - Vận dụng / L4 - Vận dụng cao] Bài toán vận dụng tổng hợp, thực tế hoặc phân loại học sinh (kèm hình 3D/2D nếu là hình học/hàm số).
      Mỗi câu gồm: difficultyLevel (1-4), contentLatex, optionA, optionB, optionC, optionD, correctOption ('A'|'B'|'C'|'D'), explanation (giải súc tích).
-3. ĐẦU RA JSON BẮT BUỘC:
+3. BẮT BUỘC DỰNG MÔ HÌNH HÌNH HỌC 3D, BẢNG BIẾN THIÊN & ĐỒ THỊ 2D TƯƠNG TÁC (TEXT-TO-MATHLAB RECONSTRUCTION):
+   - ĐẶC BIỆT QUAN TRỌNG: KỂ CẢ KHI TÀI LIỆU/ĐỀ BÀI CHỈ MÔ TẢ HÌNH HỌC, HÀM SỐ HOẶC BẢNG BIẾN THIÊN BẰNG CHỮ THUẦN TÚY (hoàn toàn không có hình ảnh sẵn trong file gốc):
+     BẠN BẮT BUỘC ĐÓNG VAI TRÒ MÁY DỰNG TOÁN HỌC, tự động tính toán và nhúng các khối thẻ cấu trúc [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào CẢ 2 NƠI:
+     + Ở PHẦN BÀI GIẢNG: Nhúng trực tiếp bên dưới Ví dụ minh họa SGK (Khối 1 `theoryRecap`) và Bài toán mẫu áp dụng (Khối 2 `solutionMethod`).
+     + Ở PHẦN CÂU HỎI: Nhúng trực tiếp ở cuối nội dung câu hỏi `contentLatex` (để học sinh quan sát xoay 360 độ hoặc đọc đồ thị giải bài) và trong Lời giải chi tiết `explanation`.
+   
+   - [A] ĐỐI VỚI HÌNH HỌC KHÔNG GIAN 3D [MATH_GRAPH_3D]:
+     [MATH_GRAPH_3D]
+     title: Cho tứ diện ABCD
+     shapeType: tetrahedron
+     dimensions: h=4,w=4,d=3.5,r=3,planeD=1.8
+     vertices: A:A(1.3,1.2,4);B:B(0,0,0);C:C(4,0,0);D:D(2,3.5,0)
+     extraPoints: M:name=M:edge=A,B:ratio=0.5:color=#ec4899;N:name=N:edge=A,C:ratio=0.5:color=#ec4899
+     auxLines: M-N:dash=0:color=#ef4444;B-C:dash=0:color=#0f172a
+     [/MATH_GRAPH_3D]
+     (Các shapeType: tetrahedron [tứ diện ABCD], pyramid_rect_sa [chóp SA vuông góc đáy], pyramid_tri_sa [chóp đáy tam giác SA vuông góc], pyramid_regular_quad [chóp tứ giác đều], pyramid_regular_tri [chóp tam giác đều], prism_tri [lăng trụ tam giác], box_cube [khối hộp/lập phương]).
+
+   - [B] ĐỐI VỚI BẢNG BIẾN THIÊN [VARIATION_TABLE] (Chuẩn SGK GDPT 2018):
+     Khi đề bài hoặc bài giảng nói về Bảng biến thiên (tính đơn điệu, cực trị, GTLN/GTNN, tiệm cận):
+     (LƯU Ý: Nếu đã dùng [VARIATION_TABLE] thì TUYỆT ĐỐI KHÔNG sinh thêm [MATH_GRAPH]! Mỗi thuộc tính BẮT BUỘC xuống dòng rõ ràng):
+     * Hàm đa thức liên tục (bậc ba, trùng phương bậc bốn, bậc hai):
+     [VARIATION_TABLE]
+     title: Bảng biến thiên hàm số y = f(x)
+     x: -\infty | x_1 | x_2 | +\infty
+     y': + | 0 | - | 0 | +
+     y: -\infty | y_max | y_min | +\infty
+     dir: up | down | up
+     [/VARIATION_TABLE]
+     * Hàm phân thức hữu tỉ có tiệm cận đứng / vạch kép (||):
+     [VARIATION_TABLE]
+     title: Bảng biến thiên hàm số phân thức y = \\frac{{ax+b}}{{cx+d}}
+     x: -\infty | x_0 | +\infty
+     y': - | || | -
+     y: y_asymp | -\infty || +\infty | y_asymp
+     dir: down || down
+     [/VARIATION_TABLE]
+
+   - [C] ĐỐI VỚI ĐỒ THỊ HÀM SỐ 2D [MATH_GRAPH]:
+     (Chỉ dùng khi đề bài yêu cầu vẽ hoặc nhận dạng ĐỒ THỊ hình vẽ cụ thể, KHÔNG dùng chung với [VARIATION_TABLE]):
+     [MATH_GRAPH]
+     title: Đồ thị hàm số y = f(x)
+     formula: y = x^3 - 3*x + 1
+     type: cubic
+     params: a=1,b=0,c=-3,d=1
+     [/MATH_GRAPH]
+     (Các type hợp lệ: cubic [bậc ba y=ax^3+bx^2+cx+d, params: a,b,c,d], quartic [bậc bốn trùng phương y=ax^4+bx^2+c, params: a,b,c], rational [phân thức bậc 1/1 y=(ax+b)/(cx+d), params: a,b,c,d], rational_21 [phân thức bậc 2/1 y=(ax^2+bx+c)/(dx+e), params: a,b,c,d,e], quadratic [parabol y=ax^2+bx+c, params: a,b,c], custom [biểu thức tùy ý expr=...]).
+4. ĐẦU RA JSON BẮT BUỘC:
 Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
 {{
   ""domainId"": ""{domainId}"",
@@ -240,13 +291,13 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
               ""weight"": 0.05,
               ""classification"": ""..."",
               ""coreSkill"": ""..."",
-              ""theoryRecap"": ""[Định lý & Công thức SGK]\n\n### 📌 Ví dụ minh họa SGK:\n**Ví dụ:** ...\n**Phân tích & Lời giải:** ..."",
-              ""solutionMethod"": ""Bước 1: ...\nBước 2: ...\n\n{sampleHeading}\n**{sampleKey}** ...\n**Hướng dẫn giải:** ...\n\n### ⚠️ Các bẫy đề thi:\n...\n\n{tipHeading}\n..."",
+              ""theoryRecap"": ""[Định lý & Công thức SGK]\n\n### 📌 Ví dụ minh họa SGK:\n**Ví dụ:** Cho hình chóp S.ABCD có đáy là hình vuông, SA vuông góc đáy...\n**Phân tích & Lời giải:** ...\n\n[MATH_GRAPH_3D]\ntitle: Cho hình chóp S.ABCD\nshapeType: pyramid_rect_sa\ndimensions: h=4,w=4,d=3.5,r=3,planeD=1.8\nvertices: S:S(0,0,4);A:A(0,0,0);B:B(4,0,0);C:C(4,3.5,0);D:D(0,3.5,0)\nextraPoints: M:name=M:edge=S,C:ratio=0.5:color=#ec4899\nauxLines: M-A:dash=2:color=#ef4444\n[/MATH_GRAPH_3D]"",
+              ""solutionMethod"": ""Bước 1: ...\nBước 2: ...\n\n{sampleHeading}\n**{sampleKey}** Cho tứ diện ABCD...\n**Hướng dẫn giải:** ...\n\n[MATH_GRAPH_3D]\ntitle: Cho tứ diện ABCD\nshapeType: tetrahedron\ndimensions: h=4,w=4,d=3.5,r=3,planeD=1.8\nvertices: A:A(1.3,1.2,4);B:B(0,0,0);C:C(4,0,0);D:D(2,3.5,0)\nextraPoints: M:name=M:edge=A,B:ratio=0.5:color=#ec4899\nauxLines: M-C:dash=0:color=#ef4444\n[/MATH_GRAPH_3D]\n\n### ⚠️ Các bẫy đề thi:\n...\n\n{tipHeading}\n..."",
               ""durationSeconds"": 600,
               ""questions"": [
                 {{
                   ""difficultyLevel"": 1,
-                  ""contentLatex"": ""[Câu 1 - Nhận biết]..."",
+                  ""contentLatex"": ""[Câu 1 - Nhận biết] Cho hình chóp S.ABCD..."",
                   ""optionA"": ""..."",
                   ""optionB"": ""..."",
                   ""optionC"": ""..."",
@@ -266,13 +317,13 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
                 }},
                 {{
                   ""difficultyLevel"": 3,
-                  ""contentLatex"": ""[Câu 3 - Vận dụng]..."",
+                  ""contentLatex"": ""[Câu 3 - Vận dụng] Cho hình chóp S.ABCD có đáy là hình thang...\n\n[MATH_GRAPH_3D]\ntitle: Cho hình chóp S.ABCD\nshapeType: pyramid_rect_sa\ndimensions: h=4,w=4,d=3.5,r=3,planeD=1.8\nvertices: S:S(0,0,4);A:A(0,0,0);B:B(4,0,0);C:C(4,3.5,0);D:D(0,3.5,0)\nextraPoints: M:name=M:edge=C,D:ratio=0.5:color=#ec4899\nauxLines: B-M:dash=2:color=#ef4444;A-C:dash=2:color=#0f172a\n[/MATH_GRAPH_3D]"",
                   ""optionA"": ""..."",
                   ""optionB"": ""..."",
                   ""optionC"": ""..."",
                   ""optionD"": ""..."",
                   ""correctOption"": ""C"",
-                  ""explanation"": ""...""
+                  ""explanation"": ""Lời giải chi tiết từng bước: Giao tuyến là SI.\n\n[MATH_GRAPH_3D]\ntitle: Thiết diện S.ABCD\nshapeType: pyramid_rect_sa\ndimensions: h=4,w=4,d=3.5,r=3,planeD=1.8\nvertices: S:S(0,0,4);A:A(0,0,0);B:B(4,0,0);C:C(4,3.5,0);D:D(0,3.5,0)\nextraPoints: M:name=M:edge=C,D:ratio=0.5:color=#ec4899;I:name=I:edge=A,C:ratio=0.5:color=#ef4444\nauxLines: S-I:dash=0:color=#ef4444;B-M:dash=2:color=#0f172a\n[/MATH_GRAPH_3D]""
                 }},
                 {{
                   ""difficultyLevel"": 4,
@@ -349,95 +400,116 @@ TÀI LIỆU CẦN BÓC TÁCH:
 {textSnippet}
 
 LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX (CRITICAL JSON RULES):
-1. TRÍCH XUẤT 100% DỮ LIỆU THẬT: Toàn bộ Chương, Bài học, Dạng bài, Ví dụ và Câu hỏi trắc nghiệm phải được trích xuất THỰC TẾ từ tài liệu được cung cấp ở trên. Tuyệt đối không tự bịa đặt nội dung mẫu chung chung.
+1. TRÍCH XUẤT 100% DỮ LIỆU THẬT & TỰ ĐỘNG DỰNG HÌNH 3D/2D/BẢNG BIẾN THIÊN TỪ CHỮ: Toàn bộ Chương, Bài học, Dạng bài, Ví dụ và Câu hỏi trắc nghiệm phải được trích xuất THỰC TẾ từ tài liệu được cung cấp ở trên (TUYỆT ĐỐI KHÔNG HARDCODE MẪU CỐ ĐỊNH). ĐẶC BIỆT: Đối với các bài toán hình học không gian (chóp, tứ diện, lăng trụ, hộp), đồ thị hàm số hoặc bảng biến thiên được mô tả bằng chữ trong tài liệu (kể cả khi file PDF gốc không có hình vẽ in sẵn), BẮT BUỘC đóng vai trò máy dựng hình, tự động tính toán tọa độ và nhúng thẻ [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào ví dụ SGK (Khối 1), bài toán mẫu (Khối 2) và câu hỏi trắc nghiệm (Khối 4)!
 2. ESCAPE LATEX TRONG JSON: Mọi ký tự gạch chéo ngược LaTeX BẮT BUỘC phải dùng hai gạch chéo ngược (double backslash): \\frac, \\sqrt, \\Delta, \\{{, \\}}, \\%, \\$, \\alpha, \\beta, \\times, \\text... Tuyệt đối không dùng 1 gạch chéo ngược đơn độc.
 3. QUY TẮC DẤU NGOẶC KÉP TRÍCH DẪN: TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng "" bên trong nội dung văn bản (đề bài, lý thuyết, giải thích, phương án A-D). Nếu cần trích dẫn thuật ngữ, tên chất hay công thức, BẮT BUỘC dùng dấu nháy đơn '...' (ví dụ: 'chất khử', 'Fe').
 4. ĐẦU RA HOÀN CHỈNH: Đảm bảo đóng đầy đủ các dấu ngoặc nhọn }} và ngoặc vuông ]] để JSON hợp lệ 100%. Không sinh bất kỳ đoạn chat giải thích nào ngoài khối JSON.";
 
-            foreach (var key in apiKeys)
+            foreach (var modelName in geminiModels)
             {
-                try
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    string url = $"{geminiBaseUrl.TrimEnd('/')}/models/{modelName}:generateContent?key={key}";
-                    var payload = new JsonObject
+                    _logger.LogWarning("Tiến trình bóc tách đã bị hủy từ phía Client/Gateway.");
+                    break;
+                }
+
+                foreach (var key in apiKeys)
+                {
+                    if (cancellationToken.IsCancellationRequested) break;
+
+                    try
                     {
-                        ["contents"] = new JsonArray
+                        string url = $"{geminiBaseUrl.TrimEnd('/')}/models/{modelName}:generateContent?key={key}";
+                        var payload = new JsonObject
                         {
-                            new JsonObject
+                            ["contents"] = new JsonArray
                             {
-                                ["parts"] = new JsonArray
+                                new JsonObject
                                 {
-                                    new JsonObject { ["text"] = prompt }
+                                    ["parts"] = new JsonArray
+                                    {
+                                        new JsonObject { ["text"] = prompt }
+                                    }
+                                }
+                            },
+                            ["generationConfig"] = new JsonObject
+                            {
+                                ["temperature"] = 0.1,
+                                ["maxOutputTokens"] = 32768,
+                                ["responseMimeType"] = "application/json"
+                            }
+                        };
+
+                        using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url)
+                        {
+                            Content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json")
+                        };
+
+                        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+                        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
+
+                        var response = await _httpClient.SendAsync(requestMessage, linkedCts.Token);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            string respJson = await response.Content.ReadAsStringAsync(cancellationToken);
+                            var docNode = JsonNode.Parse(respJson);
+                            string? contentText = docNode?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
+
+                            if (!string.IsNullOrEmpty(contentText))
+                            {
+                                contentText = SanitizeAndRepairGeminiJson(contentText);
+                                ImportCurriculumRequestDto? parsed = null;
+
+                                try
+                                {
+                                    parsed = JsonSerializer.Deserialize<ImportCurriculumRequestDto>(contentText, new JsonSerializerOptions 
+                                    { 
+                                        PropertyNameCaseInsensitive = true,
+                                        AllowTrailingCommas = true
+                                    });
+                                }
+                                catch (Exception jsonEx)
+                                {
+                                    _logger.LogWarning("Strict JSON deserialize gặp lỗi ({Msg}), chuyển sang bộ phân tích JsonNode mềm dẻo...", jsonEx.Message);
+                                    parsed = TryParseCurriculumFromLooseJson(contentText, domainId, domainName);
+                                }
+
+                                if (parsed == null || parsed.Chapters.Count == 0)
+                                {
+                                    _logger.LogWarning("JsonNode phân tích không trọn vẹn, kích hoạt bộ bóc tách Regex Real-Data Engine...");
+                                    parsed = ExtractCurriculumViaRegex(contentText, domainId, domainName);
+                                }
+
+                                if (parsed != null && parsed.Chapters.Count > 0)
+                                {
+                                    stopwatch.Stop();
+                                    parsed.ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2);
+                                    parsed.IsRealExtraction = true;
+                                    parsed.SourceFileName = fileName ?? "Direct_Text_Input";
+                                    parsed.TotalPagesProcessed = totalPagesProcessed > 0 ? totalPagesProcessed : 1;
+                                    parsed.TotalCharactersExtracted = extractedText.Length;
+
+                                    _logger.LogInformation("C# AI Engine trích xuất thành công {Count} chương DỮ LIỆU THẬT trong {Elapsed:F2}s ({Ms} ms) từ tệp '{FileName}' bằng mô hình '{Model}'.", 
+                                        parsed.Chapters.Count, parsed.ProcessingTimeSeconds, stopwatch.ElapsedMilliseconds, parsed.SourceFileName, modelName);
+                                    return parsed;
                                 }
                             }
-                        },
-                        ["generationConfig"] = new JsonObject
-                        {
-                            ["temperature"] = 0.1,
-                            ["maxOutputTokens"] = 32768,
-                            ["responseMimeType"] = "application/json"
                         }
-                    };
-
-                    using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url)
-                    {
-                        Content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json")
-                    };
-
-                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
-                    using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
-
-                    var response = await _httpClient.SendAsync(requestMessage, linkedCts.Token);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        string respJson = await response.Content.ReadAsStringAsync(cancellationToken);
-                        var docNode = JsonNode.Parse(respJson);
-                        string? contentText = docNode?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
-
-                        if (!string.IsNullOrEmpty(contentText))
+                        else
                         {
-                            contentText = SanitizeAndRepairGeminiJson(contentText);
-                            ImportCurriculumRequestDto? parsed = null;
-
-                            try
-                            {
-                                parsed = JsonSerializer.Deserialize<ImportCurriculumRequestDto>(contentText, new JsonSerializerOptions 
-                                { 
-                                    PropertyNameCaseInsensitive = true,
-                                    AllowTrailingCommas = true
-                                });
-                            }
-                            catch (Exception jsonEx)
-                            {
-                                _logger.LogWarning("Strict JSON deserialize gặp lỗi ({Msg}), chuyển sang bộ phân tích JsonNode mềm dẻo...", jsonEx.Message);
-                                parsed = TryParseCurriculumFromLooseJson(contentText, domainId, domainName);
-                            }
-
-                            if (parsed == null || parsed.Chapters.Count == 0)
-                            {
-                                _logger.LogWarning("JsonNode phân tích không trọn vẹn, kích hoạt bộ bóc tách Regex Real-Data Engine...");
-                                parsed = ExtractCurriculumViaRegex(contentText, domainId, domainName);
-                            }
-
-                            if (parsed != null && parsed.Chapters.Count > 0)
-                            {
-                                stopwatch.Stop();
-                                parsed.ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2);
-                                parsed.IsRealExtraction = true;
-                                parsed.SourceFileName = fileName ?? "Direct_Text_Input";
-                                parsed.TotalPagesProcessed = totalPagesProcessed > 0 ? totalPagesProcessed : 1;
-                                parsed.TotalCharactersExtracted = extractedText.Length;
-
-                                _logger.LogInformation("C# AI Engine trích xuất thành công {Count} chương DỮ LIỆU THẬT trong {Elapsed:F2}s ({Ms} ms) từ tệp '{FileName}'.", 
-                                    parsed.Chapters.Count, parsed.ProcessingTimeSeconds, stopwatch.ElapsedMilliseconds, parsed.SourceFileName);
-                                return parsed;
-                            }
+                            _logger.LogWarning("Gemini API model '{Model}' trả về HTTP {StatusCode}, tiếp tục chuyển đổi model/key tiếp theo.", 
+                                modelName, (int)response.StatusCode);
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning("Gọi Gemini API thất bại ({Message}), tiếp tục kiểm tra key/model tiếp theo.", ex.Message);
+                    catch (Exception ex)
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            _logger.LogWarning("Tiến trình bóc tách đã bị hủy từ phía Client/Gateway ({Message}). Dừng toàn bộ các model dự phòng.", ex.Message);
+                            break;
+                        }
+                        _logger.LogWarning("Gọi Gemini API model '{Model}' thất bại ({Message}), tiếp tục kiểm tra key/model tiếp theo.", modelName, ex.Message);
+                    }
                 }
             }
         }
@@ -457,7 +529,7 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX (CRITICAL JSO
         string domainName = request.DomainName?.Trim() ?? "Toán học & Tư duy định lượng";
 
         var apiKeys = ResolveApiKeys();
-        string modelName = ResolveModelName();
+        var geminiModels = ResolveGeminiModels();
         string geminiBaseUrl = _configuration["AiSettings:GeminiBaseUrl"] ?? "https://generativelanguage.googleapis.com/v1beta";
 
         if (apiKeys.Count > 0)
@@ -477,10 +549,11 @@ QUY TẮC BẮT BUỘC:
 5. `solution_method`: Quy trình giải / làm bài 4 bước chi tiết chuẩn mực.
 6. `exam_traps`: 2-3 bẫy đề thi ĐGNL học sinh hay mắc sai lầm nhất.
 7. `casio_tricks`: {(isStem ? "Kỹ thuật bấm máy Casio (fx-580VN X, fx-880BTG) hoặc mẹo tư duy nhanh." : "Mẹo tư duy nhanh, chiến thuật đọc hiểu/hành văn, kỹ thuật phân bổ thời gian và mẹo ghi điểm tối đa ĐGNL (TUYỆT ĐỐI KHÔNG đề cập máy tính Casio vì đây là môn Ngữ văn / Khoa học xã hội).")}
-8. `sample_question`: 1 câu hỏi trắc nghiệm minh họa 4 phương án kèm lời giải chi tiết.
+8. `sample_question`: 1 câu hỏi trắc nghiệm minh họa 4 phương án kèm lời giải chi tiết. ĐẶC BIỆT: KỂ CẢ KHI BÀI TOÁN CHỈ MÔ TẢ HÌNH/HÀM SỐ BẰNG CHỮ (như tứ diện ABCD, chóp S.ABCD, lăng trụ, hộp, lập phương, hàm số, bảng biến thiên...), BẮT BUỘC tự động tính toán tọa độ và nhúng thẻ [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào CẢ 3 NƠI: trong ví dụ của `theory_recap`, trong bài toán mẫu của `solution_method`, và trong `sample_question` (ở cả `content_latex` và `explanation`)! (Cú pháp Bảng biến thiên: [VARIATION_TABLE]\ntitle: Bảng biến thiên\nx: -\\infty | 1 | +\\infty\ny': + | 0 | -\ny: -\\infty | 2 | -\\infty\ndir: up | down\n[/VARIATION_TABLE]).
 
 LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
 - Mọi ký tự gạch chéo ngược LaTeX BẮT BUỘC dùng 2 gạch chéo ngược: \\frac, \\sqrt, \\Delta, \\{{, \\}}, \\%, \\$, \\alpha... Tuyệt đối không dùng 1 gạch chéo ngược đơn độc.
+- TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng "" bên trong nội dung văn bản (đề bài, lý thuyết, giải thích, phương án A-D). Nếu cần trích dẫn thuật ngữ, điểm hay công thức, BẮT BUỘC dùng dấu nháy đơn '...' (ví dụ: 'chất khử', 'Fe', 'S.ABCD', 'M', 'N').
 - Chỉ trả về duy nhất 1 JSON object hợp lệ.
 
 ĐẦU RA JSON BẮT BUỘC:
@@ -505,82 +578,95 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
   }}
 }}";
 
-            foreach (var key in apiKeys)
+            foreach (var modelName in geminiModels)
             {
-                try
+                if (cancellationToken.IsCancellationRequested) break;
+
+                foreach (var key in apiKeys)
                 {
-                    string url = $"{geminiBaseUrl.TrimEnd('/')}/models/{modelName}:generateContent?key={key}";
-                    var payload = new JsonObject
+                    if (cancellationToken.IsCancellationRequested) break;
+
+                    try
                     {
-                        ["contents"] = new JsonArray
+                        string url = $"{geminiBaseUrl.TrimEnd('/')}/models/{modelName}:generateContent?key={key}";
+                        var payload = new JsonObject
                         {
-                            new JsonObject
+                            ["contents"] = new JsonArray
                             {
-                                ["parts"] = new JsonArray
+                                new JsonObject
                                 {
-                                    new JsonObject { ["text"] = prompt }
+                                    ["parts"] = new JsonArray
+                                    {
+                                        new JsonObject { ["text"] = prompt }
+                                    }
+                                }
+                            },
+                            ["generationConfig"] = new JsonObject
+                            {
+                                ["temperature"] = 0.1,
+                                ["maxOutputTokens"] = 8192,
+                                ["responseMimeType"] = "application/json"
+                            }
+                        };
+
+                        using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url)
+                        {
+                            Content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json")
+                        };
+
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+                        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
+
+                        var response = await _httpClient.SendAsync(requestMessage, linkedCts.Token);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            string respJson = await response.Content.ReadAsStringAsync(cancellationToken);
+                            var docNode = JsonNode.Parse(respJson);
+                            string? contentText = docNode?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
+
+                            if (!string.IsNullOrEmpty(contentText))
+                            {
+                                contentText = SanitizeAndRepairGeminiJson(contentText);
+                                AnalyzePatternResponseDto? parsed = null;
+                                try
+                                {
+                                    parsed = JsonSerializer.Deserialize<AnalyzePatternResponseDto>(contentText, new JsonSerializerOptions 
+                                    { 
+                                        PropertyNameCaseInsensitive = true,
+                                        AllowTrailingCommas = true
+                                    });
+                                }
+                                catch (Exception jsonEx)
+                                {
+                                    _logger.LogWarning("Strict JSON deserialize pattern gặp lỗi ({Msg}), kích hoạt bộ bóc tách Regex...", jsonEx.Message);
+                                    parsed = ExtractPatternAnalysisViaRegex(contentText, patternName);
+                                }
+
+                                if (parsed == null || string.IsNullOrWhiteSpace(parsed.PatternName))
+                                {
+                                    parsed = ExtractPatternAnalysisViaRegex(contentText, patternName);
+                                }
+
+                                if (parsed != null)
+                                {
+                                    stopwatch.Stop();
+                                    parsed.ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2);
+                                    _logger.LogInformation("C# AI Engine nhận diện thành công dạng bài '{Pattern}' DỮ LIỆU THẬT trong {Elapsed:F2}s bằng mô hình '{Model}'.", patternName, parsed.ProcessingTimeSeconds, modelName);
+                                    return parsed;
                                 }
                             }
-                        },
-                        ["generationConfig"] = new JsonObject
-                        {
-                            ["temperature"] = 0.1,
-                            ["maxOutputTokens"] = 8192,
-                            ["responseMimeType"] = "application/json"
                         }
-                    };
-
-                    using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url)
-                    {
-                        Content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json")
-                    };
-
-                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-                    using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
-
-                    var response = await _httpClient.SendAsync(requestMessage, linkedCts.Token);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        string respJson = await response.Content.ReadAsStringAsync(cancellationToken);
-                        var docNode = JsonNode.Parse(respJson);
-                        string? contentText = docNode?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
-
-                        if (!string.IsNullOrEmpty(contentText))
+                        else
                         {
-                            contentText = SanitizeAndRepairGeminiJson(contentText);
-                            AnalyzePatternResponseDto? parsed = null;
-                            try
-                            {
-                                parsed = JsonSerializer.Deserialize<AnalyzePatternResponseDto>(contentText, new JsonSerializerOptions 
-                                { 
-                                    PropertyNameCaseInsensitive = true,
-                                    AllowTrailingCommas = true
-                                });
-                            }
-                            catch (Exception jsonEx)
-                            {
-                                _logger.LogWarning("Strict JSON deserialize pattern gặp lỗi ({Msg}), kích hoạt bộ bóc tách Regex...", jsonEx.Message);
-                                parsed = ExtractPatternAnalysisViaRegex(contentText, patternName);
-                            }
-
-                            if (parsed == null || string.IsNullOrWhiteSpace(parsed.PatternName))
-                            {
-                                parsed = ExtractPatternAnalysisViaRegex(contentText, patternName);
-                            }
-
-                            if (parsed != null)
-                            {
-                                stopwatch.Stop();
-                                parsed.ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2);
-                                _logger.LogInformation("C# AI Engine nhận diện thành công dạng bài '{Pattern}' DỮ LIỆU THẬT trong {Elapsed:F2}s.", patternName, parsed.ProcessingTimeSeconds);
-                                return parsed;
-                            }
+                            _logger.LogWarning("Gemini AI pattern analysis model '{Model}' trả về HTTP {StatusCode}, tiếp tục chuyển đổi model/key tiếp theo.", 
+                                modelName, (int)response.StatusCode);
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning("Gemini AI pattern analysis encountered an error: {Message}", ex.Message);
+                    catch (Exception ex)
+                    {
+                        if (cancellationToken.IsCancellationRequested) break;
+                        _logger.LogWarning("Gemini AI pattern analysis model '{Model}' error: {Message}", modelName, ex.Message);
+                    }
                 }
             }
         }
@@ -603,7 +689,7 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
         int count = request.Count <= 0 ? 2 : request.Count;
 
         var apiKeys = ResolveApiKeys();
-        string modelName = ResolveModelName();
+        var geminiModels = ResolveGeminiModels();
         string geminiBaseUrl = _configuration["AiSettings:GeminiBaseUrl"] ?? "https://generativelanguage.googleapis.com/v1beta";
 
         if (apiKeys.Count > 0)
@@ -640,9 +726,11 @@ QUY TẮC BẮT BUỘC VỀ SƯ PHẠM:
    - Câu hỏi L4: Đo lường tư duy đánh giá, liên hệ nâng cao bối cảnh thời đại, chiều sâu tư tưởng nhân văn hoặc phong cách tác giả.
 2. ĐỐI VỚI CÁC MÔN STEM (Toán, Lý, Hóa, Sinh, Tin):
    - Câu hỏi phải bám sát đúng mô hình toán/khoa học, thuật toán và công thức của dạng này.
+   - Nếu là dạng bài Hình học không gian, Đồ thị hàm số hoặc Bảng biến thiên, BẮT BUỘC nhúng thẻ tương tác [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào `contentLatex` hoặc `explanation` để học sinh và giáo viên quan sát trực quan.
 
 LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
 - Mọi ký tự gạch chéo ngược LaTeX BẮT BUỘC dùng 2 gạch chéo ngược: \\frac, \\sqrt, \\Delta, \\{{, \\}}, \\%, \\$, \\alpha...
+- TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng "" bên trong nội dung văn bản (đề bài, lý thuyết, giải thích, phương án A-D). Nếu cần trích dẫn thuật ngữ, tên điểm hay công thức, BẮT BUỘC dùng dấu nháy đơn '...' (ví dụ: 'chất khử', 'Fe', 'S.ABCD', 'M', 'N').
 - Chỉ trả về duy nhất 1 JSON object hợp lệ theo schema sau:
 
 {{
@@ -670,104 +758,117 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
   ]
 }}";
 
-            foreach (var key in apiKeys)
+            foreach (var modelName in geminiModels)
             {
-                try
+                if (cancellationToken.IsCancellationRequested) break;
+
+                foreach (var key in apiKeys)
                 {
-                    string url = $"{geminiBaseUrl.TrimEnd('/')}/models/{modelName}:generateContent?key={key}";
-                    var payload = new JsonObject
+                    if (cancellationToken.IsCancellationRequested) break;
+
+                    try
                     {
-                        ["contents"] = new JsonArray
+                        string url = $"{geminiBaseUrl.TrimEnd('/')}/models/{modelName}:generateContent?key={key}";
+                        var payload = new JsonObject
                         {
-                            new JsonObject
+                            ["contents"] = new JsonArray
                             {
-                                ["parts"] = new JsonArray
+                                new JsonObject
                                 {
-                                    new JsonObject { ["text"] = prompt }
-                                }
-                            }
-                        },
-                        ["generationConfig"] = new JsonObject
-                        {
-                            ["temperature"] = 0.7,
-                            ["maxOutputTokens"] = 8192,
-                            ["responseMimeType"] = "application/json"
-                        }
-                    };
-
-                    using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url)
-                    {
-                        Content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json")
-                    };
-
-                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-                    using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
-
-                    var response = await _httpClient.SendAsync(requestMessage, linkedCts.Token);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        string respJson = await response.Content.ReadAsStringAsync(cancellationToken);
-                        var docNode = JsonNode.Parse(respJson);
-                        string? contentText = docNode?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
-
-                        if (!string.IsNullOrEmpty(contentText))
-                        {
-                            contentText = SanitizeAndRepairGeminiJson(contentText);
-                            JsonNode? parsedNode = null;
-                            try
-                            {
-                                parsedNode = JsonNode.Parse(contentText);
-                            }
-                            catch (Exception parseEx)
-                            {
-                                _logger.LogWarning("Strict JsonNode.Parse failed: {Message}. Attempting loose regex extraction.", parseEx.Message);
-                            }
-
-                            var questionsArray = parsedNode?["questions"]?.AsArray();
-                            var resultQuestions = new List<ImportQuestionDto>();
-
-                            if (questionsArray != null && questionsArray.Count > 0)
-                            {
-                                foreach (var qNode in questionsArray)
-                                {
-                                    if (qNode == null) continue;
-                                    var q = new ImportQuestionDto
+                                    ["parts"] = new JsonArray
                                     {
-                                        DifficultyLevel = qNode["difficultyLevel"]?.GetValue<int>() ?? qNode["difficulty_level"]?.GetValue<int>() ?? 3,
-                                        ContentLatex = qNode["contentLatex"]?.GetValue<string>() ?? qNode["content_latex"]?.GetValue<string>() ?? string.Empty,
-                                        OptionA = qNode["optionA"]?.GetValue<string>() ?? qNode["option_a"]?.GetValue<string>() ?? string.Empty,
-                                        OptionB = qNode["optionB"]?.GetValue<string>() ?? qNode["option_b"]?.GetValue<string>() ?? string.Empty,
-                                        OptionC = qNode["optionC"]?.GetValue<string>() ?? qNode["option_c"]?.GetValue<string>() ?? string.Empty,
-                                        OptionD = qNode["optionD"]?.GetValue<string>() ?? qNode["option_d"]?.GetValue<string>() ?? string.Empty,
-                                        CorrectOption = qNode["correctOption"]?.GetValue<string>() ?? qNode["correct_option"]?.GetValue<string>() ?? "A",
-                                        Explanation = qNode["explanation"]?.GetValue<string>() ?? string.Empty
-                                    };
-                                    if (!string.IsNullOrWhiteSpace(q.ContentLatex))
-                                    {
-                                        resultQuestions.Add(q);
+                                        new JsonObject { ["text"] = prompt }
                                     }
                                 }
-                            }
-                            else
+                            },
+                            ["generationConfig"] = new JsonObject
                             {
-                                resultQuestions = ExtractQuestionsViaRegex(contentText);
+                                ["temperature"] = 0.7,
+                                ["maxOutputTokens"] = 8192,
+                                ["responseMimeType"] = "application/json"
                             }
+                        };
 
-                            if (resultQuestions.Count > 0)
+                        using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url)
+                        {
+                            Content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json")
+                        };
+
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+                        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
+
+                        var response = await _httpClient.SendAsync(requestMessage, linkedCts.Token);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            string respJson = await response.Content.ReadAsStringAsync(cancellationToken);
+                            var docNode = JsonNode.Parse(respJson);
+                            string? contentText = docNode?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.GetValue<string>();
+
+                            if (!string.IsNullOrEmpty(contentText))
                             {
-                                stopwatch.Stop();
-                                return new GeneratePatternQuestionsResponseDto
+                                contentText = SanitizeAndRepairGeminiJson(contentText);
+                                JsonNode? parsedNode = null;
+                                try
                                 {
-                                    Questions = resultQuestions,
-                                    ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2)
-                                };
+                                    parsedNode = JsonNode.Parse(contentText);
+                                }
+                                catch (Exception parseEx)
+                                {
+                                    _logger.LogWarning("Strict JsonNode.Parse failed: {Message}. Attempting loose regex extraction.", parseEx.Message);
+                                }
+
+                                var questionsArray = parsedNode?["questions"]?.AsArray();
+                                var resultQuestions = new List<ImportQuestionDto>();
+
+                                if (questionsArray != null && questionsArray.Count > 0)
+                                {
+                                    foreach (var qNode in questionsArray)
+                                    {
+                                        if (qNode == null) continue;
+                                        var q = new ImportQuestionDto
+                                        {
+                                            DifficultyLevel = qNode["difficultyLevel"]?.GetValue<int>() ?? qNode["difficulty_level"]?.GetValue<int>() ?? 3,
+                                            ContentLatex = qNode["contentLatex"]?.GetValue<string>() ?? qNode["content_latex"]?.GetValue<string>() ?? string.Empty,
+                                            OptionA = qNode["optionA"]?.GetValue<string>() ?? qNode["option_a"]?.GetValue<string>() ?? string.Empty,
+                                            OptionB = qNode["optionB"]?.GetValue<string>() ?? qNode["option_b"]?.GetValue<string>() ?? string.Empty,
+                                            OptionC = qNode["optionC"]?.GetValue<string>() ?? qNode["option_c"]?.GetValue<string>() ?? string.Empty,
+                                            OptionD = qNode["optionD"]?.GetValue<string>() ?? qNode["option_d"]?.GetValue<string>() ?? string.Empty,
+                                            CorrectOption = NormalizeCorrectOption(ExtractJsonNodeAsString(qNode["correctOption"] ?? qNode["correct_option"])),
+                                            Explanation = qNode["explanation"]?.GetValue<string>() ?? string.Empty
+                                        };
+                                        if (!string.IsNullOrWhiteSpace(q.ContentLatex))
+                                        {
+                                            resultQuestions.Add(q);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    resultQuestions = ExtractQuestionsViaRegex(contentText);
+                                }
+
+                                if (resultQuestions.Count > 0)
+                                {
+                                    stopwatch.Stop();
+                                    return new GeneratePatternQuestionsResponseDto
+                                    {
+                                        Questions = resultQuestions,
+                                        ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2)
+                                    };
+                                }
                             }
                         }
+                        else
+                        {
+                            _logger.LogWarning("Gemini AI generate pattern questions model '{Model}' trả về HTTP {StatusCode}, tiếp tục chuyển đổi model/key tiếp theo.", 
+                                modelName, (int)response.StatusCode);
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning("Gemini AI generate pattern questions error: {Message}", ex.Message);
+                    catch (Exception ex)
+                    {
+                        if (cancellationToken.IsCancellationRequested) break;
+                        _logger.LogWarning("Gemini AI generate pattern questions model '{Model}' error: {Message}", modelName, ex.Message);
+                    }
                 }
             }
         }
@@ -825,6 +926,9 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
         // 0.2 Sửa lỗi Gemini gõ nhầm dấu phẩy thay vì hai chấm sau tên thuộc tính (ví dụ: "propertyName", "value" -> "propertyName": "value")
         // Bắt buộc dùng lookbehind (?<=[\{\,]\s*) để chỉ sửa khi là tên trường, tuyệt đối không sửa giá trị như "correctOption": "B",
         cleaned = Regex.Replace(cleaned, @"(?<=[\{\,]\s*)(""[a-zA-Z0-9_]{2,40}"")\s*,\s*(?=""|\[|\{|-?[0-9]|true|false)", "$1: ");
+
+        // 0.3 Sửa lỗi Gemini quên bọc ngoặc kép ở giá trị chuỗi (ví dụ: "optionA": m in (SAC), -> "optionA": "m in (SAC)",)
+        cleaned = Regex.Replace(cleaned, @"(?<=""(?:option[A-D]|correctOption|classification|coreSkill)""\s*:\s*)(?![""{\[\d]|true|false|null)([^,\n\r]+)(?=[,\n\r])", "\"$1\"");
 
         // 1. Phục hồi các ký tự điều khiển ASCII bị nuốt do escape
         cleaned = cleaned.Replace("\x0crac", "\\\\frac")
@@ -906,8 +1010,47 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
 
             if (c == '"')
             {
-                inString = false;
-                sb.Append(c);
+                // Kiểm tra xem đây là dấu ngoặc kép đóng chuỗi hợp lệ hay dấu ngoặc kép lơ lửng bên trong nội dung
+                int nextIdx = i + 1;
+                while (nextIdx < cleaned.Length && (cleaned[nextIdx] == ' ' || cleaned[nextIdx] == '\t' || cleaned[nextIdx] == '\r' || cleaned[nextIdx] == '\n'))
+                {
+                    nextIdx++;
+                }
+
+                char nextChar = nextIdx < cleaned.Length ? cleaned[nextIdx] : '\0';
+
+                // Trong JSON chuẩn, dấu ngoặc kép đóng chuỗi BẮT BUỘC phải đi liền trước một trong các ký tự:
+                // ',' (phần tử hoặc thuộc tính tiếp theo)
+                // '}' (kết thúc object)
+                // ']' (kết thúc array)
+                // ':' (kết thúc key/tên thuộc tính)
+                // '\0' (cuối văn bản)
+                bool isClosingQuote = (nextChar == ',' || nextChar == '}' || nextChar == ']' || nextChar == ':' || nextChar == '\0');
+
+                if (!isClosingQuote && nextChar == '"')
+                {
+                    // Trường hợp AI quên dấu phẩy giữa 2 thuộc tính: "prop1": "val1" \n "prop2": "val2"
+                    string sub = cleaned.Substring(nextIdx);
+                    if (Regex.IsMatch(sub, @"^""[a-zA-Z0-9_]{2,40}""\s*:"))
+                    {
+                        inString = false;
+                        sb.Append("\",");
+                        i = nextIdx - 1;
+                        continue;
+                    }
+                }
+
+                if (isClosingQuote)
+                {
+                    inString = false;
+                    sb.Append(c);
+                }
+                else
+                {
+                    // Dấu ngoặc kép không escape ở giữa nội dung tiếng Việt (ví dụ: "Đoạn thẳng", "M", "N"...)
+                    // Thay thế bằng nháy đơn để bảo vệ cấu trúc cú pháp JSON 100%
+                    sb.Append('\'');
+                }
                 continue;
             }
 
@@ -1101,7 +1244,7 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
                                             OptionB = qNode["optionB"]?.GetValue<string>() ?? string.Empty,
                                             OptionC = qNode["optionC"]?.GetValue<string>() ?? string.Empty,
                                             OptionD = qNode["optionD"]?.GetValue<string>() ?? string.Empty,
-                                            CorrectOption = qNode["correctOption"]?.GetValue<string>() ?? "A",
+                                            CorrectOption = NormalizeCorrectOption(ExtractJsonNodeAsString(qNode["correctOption"] ?? qNode["correct_option"])),
                                             Explanation = qNode["explanation"]?.GetValue<string>()
                                         });
                                     }
@@ -1211,8 +1354,7 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
                                 diff = dVal;
                             }
 
-                            string correct = ExtractRegexField(qBlock, "correctOption") ?? "A";
-                            if (correct.Length > 1) correct = correct.Substring(0, 1);
+                            string correct = NormalizeCorrectOption(ExtractRegexField(qBlock, "correctOption") ?? ExtractRegexField(qBlock, "correct_option"));
 
                             string qContent = ExtractRegexField(qBlock, "contentLatex") ?? qMatch.Groups[1].Value;
                             pat.Questions.Add(new ImportQuestionDto
@@ -1290,7 +1432,7 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
                     OptionB = ExtractRegexField(text, "option_b") ?? string.Empty,
                     OptionC = ExtractRegexField(text, "option_c") ?? string.Empty,
                     OptionD = ExtractRegexField(text, "option_d") ?? string.Empty,
-                    CorrectOption = ExtractRegexField(text, "correct_option") ?? "A",
+                    CorrectOption = NormalizeCorrectOption(ExtractRegexField(text, "correct_option")),
                     Explanation = ExtractRegexField(text, "explanation")
                 };
             }
@@ -1323,6 +1465,61 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
         }
 
         return null;
+    }
+
+    private static string NormalizeCorrectOption(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return "A";
+        raw = raw.Trim();
+
+        // 1. Nếu chỉ là 1 ký tự hoặc có dấu bao quanh như "A.", "(B)", "[C]", "D:"
+        string stripped = raw.Trim(" \t\r\n.:();,[]'\"".ToCharArray());
+        if (stripped.Length == 1)
+        {
+            char c = char.ToUpperInvariant(stripped[0]);
+            if (c >= 'A' && c <= 'D') return c.ToString();
+            if (c >= '0' && c <= '3') return ((char)('A' + (c - '0'))).ToString();
+            if (c >= '1' && c <= '4') return ((char)('A' + (c - '1'))).ToString();
+        }
+
+        // 2. Tìm khớp từ khóa (Đáp án A, Phương án B, Option C, Answer D, Chọn A...)
+        var match = Regex.Match(raw, @"(?:(?:đáp\s*án|phương\s*án|chọn|câu|answer|choice|option)\s*[:\-\.]?\s*)?([A-D])\b", RegexOptions.IgnoreCase);
+        if (match.Success && match.Groups[1].Success)
+        {
+            return match.Groups[1].Value.ToUpperInvariant();
+        }
+
+        // 3. Quét tìm ký tự A, B, C, D đầu tiên
+        foreach (char ch in raw)
+        {
+            char upper = char.ToUpperInvariant(ch);
+            if (upper >= 'A' && upper <= 'D') return upper.ToString();
+        }
+
+        // 4. Quét số 0..3 trong chuỗi
+        foreach (char ch in raw)
+        {
+            if (ch >= '0' && ch <= '3') return ((char)('A' + (ch - '0'))).ToString();
+            if (ch >= '1' && ch <= '4') return ((char)('A' + (ch - '1'))).ToString();
+        }
+
+        return "A";
+    }
+
+    private static string ExtractJsonNodeAsString(JsonNode? node, string fallback = "")
+    {
+        if (node == null) return fallback;
+        if (node is JsonValue jVal)
+        {
+            if (jVal.TryGetValue<string>(out var s)) return s;
+            if (jVal.TryGetValue<int>(out var i))
+            {
+                if (i >= 0 && i <= 3) return ((char)('A' + i)).ToString();
+                return i.ToString();
+            }
+            return jVal.ToString();
+        }
+        return node.ToString() ?? fallback;
     }
 
     private static List<ImportQuestionDto> ExtractQuestionsViaRegex(string text)
@@ -1369,7 +1566,7 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
                     OptionB = ExtractRegexField(block, "optionB") ?? ExtractRegexField(block, "option_b") ?? string.Empty,
                     OptionC = ExtractRegexField(block, "optionC") ?? ExtractRegexField(block, "option_c") ?? string.Empty,
                     OptionD = ExtractRegexField(block, "optionD") ?? ExtractRegexField(block, "option_d") ?? string.Empty,
-                    CorrectOption = ExtractRegexField(block, "correctOption") ?? ExtractRegexField(block, "correct_option") ?? "A",
+                    CorrectOption = NormalizeCorrectOption(ExtractRegexField(block, "correctOption") ?? ExtractRegexField(block, "correct_option")),
                     Explanation = ExtractRegexField(block, "explanation") ?? string.Empty
                 });
             }

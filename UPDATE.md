@@ -1,17 +1,19 @@
 # NHẬT KÝ CẬP NHẬT (UPDATE LOG) - AI ENGINE
 
-## [19/10/2026] - Khắc Phục Triệt Để Lỗi 500 AI Sinh Câu Hỏi (Regex Key Lookbehind & Block Slicing Fallback) & Loại Bỏ Chữ 'text' Thừa Trước Công Thức Hóa Học
+## [21/10/2026] - Chuẩn Hóa Bóc Tách Đáp Án Đúng (NormalizeCorrectOption), Bảng Biến Thiên ([VARIATION_TABLE]) Và Đồ Thị ([MATH_GRAPH]) Zero-Hardcode
 
-- **Khắc Phục Lỗi 500 Khi AI Sinh Câu Hỏi Rèn Luyện (`CurriculumAiService.cs`)**:
-  - *Nguyên Nhân Gốc Rễ 1 (Lỗi `':' is invalid after a value`)*:
-    + Biểu thức Regex trong `SanitizeAndRepairGeminiJson` trước đây (`@("([a-zA-Z0-9_]+)")\s*,\s*(?="|\[|\{|-?[0-9]|true|false)`) đã vô tình khớp với các cặp giá trị chuỗi như `"correct_option": "B",` và biến đổi thành `"correct_option": "B": "explanation": ...`, khiến bộ giải mã `System.Text.Json` vấp lỗi cú pháp JSON và ném ngoại lệ `Strict JsonNode.Parse failed: ':' is invalid after a value`.
-    + *Khắc phục*: Sử dụng Lookbehind dương bắt buộc `(?<=[\{\,]\s*)` để chỉ sửa dấu phẩy khi nó đứng ngay sau tên thuộc tính (thuộc tính luôn bắt đầu sau `{` hoặc `,`), tuyệt đối không đụng vào giá trị (nằm sau `:`).
-  - *Nguyên Nhân Gốc Rễ 2 (Bộ Bóc Tách Regex Dự Phòng Bị Tắc Nghẽn Do Dấu Ngoặc Nhọn `{...}` Trong LaTeX)*:
-    + Hàm dự phòng `ExtractQuestionsViaRegex` trước đây sử dụng mẫu `\{[^{}]*"(?:contentLatex|content_latex)"[^{}]*\}`. Nhóm ký tự phủ định `[^{}]*` bị ngắt ngay lập tức khi gặp các dấu ngoặc nhọn `{...}` trong công thức LaTeX (ví dụ: `SO_4^{2-}`, `\frac{a}{b}`), dẫn đến số lượng câu hỏi trích xuất trả về 0 và kích hoạt lỗi HTTP 500.
-    + *Khắc phục*: Tái cấu trúc cơ chế bóc tách theo thuật toán **Question Block Slicing**: Tìm mốc xuất hiện của khóa `"contentLatex"` / `"content_latex"`, cắt lát các khối JSON theo ranh giới câu hỏi mà không phụ thuộc vào dấu ngoặc nhọn lồng nhau bên trong biểu thức LaTeX.
-  - *Bảo Toàn Chuỗi Thoát LaTeX Không Bị Nuốt Thành Ký Tự Tab (`ExtractRegexField`)*:
-    + Thay thế việc gọi trực tiếp `.Replace(@"\t", "\t")` bằng Regex bảo vệ `Regex.Replace(val, @"\\t(?![a-zA-Z])", "\t")` và `Regex.Replace(val, @"\\n(?!(?:eq|otin|...)\b)", "\n")`, ngăn chặn việc biến đổi các lệnh LaTeX bắt đầu bằng `\t` (`\text`, `\times`, `\theta`, `\tau`, `\to`) thành ký tự điều khiển ASCII Tab (0x09).
-    + Áp dụng `ExtractRegexField` để unescape chuỗi `ContentLatex` trong `ExtractCurriculumViaRegex` thay vì lưu chuỗi raw.
+- **Chuẩn Hóa Toàn Diện Đáp Án Đúng `CorrectOption` Cho Mọi Phân Hệ Bóc Tách & Sinh Câu Hỏi (`CurriculumAiService.cs`)**:
+  - Xây dựng phương thức `NormalizeCorrectOption` và `ExtractJsonNodeAsString` chuẩn hóa mọi định dạng thô từ LLM/OCR (`"A."`, `"(B)"`, `"[C]"`, `"D:"`, `"Đáp án C"`, `"Phương án B"`, `"Option A"`, số nguyên `0..3` hoặc `null`) về duy nhất 1 ký tự chuẩn mực `'A'`, `'B'`, `'C'`, `'D'`.
+  - Bảo vệ toàn bộ 5 pipeline: bóc tách tri thức PDF (`ExtractCurriculumAsync`), sinh câu hỏi dạng bài (`GeneratePatternQuestionsAsync`), trích xuất regex dự phòng (`ExtractFallbackCurriculumFromText`, `ExtractQuestionsViaRegex`), và phân tích bản chất dạng bài (`AnalyzePatternAsync`).
+  - Đảm bảo 100% payload trả về Web Client tuân thủ chính xác schema CSDL của `Content Service`, ngăn chặn hoàn toàn lỗi 400 Bad Request khi nạp tri thức vào CSDL PostgreSQL.
 
-- **Kiểm Thử Biên Dịch (Build Verification)**:
-  - `V-Eval-Ai_Engine.Infrastructure` & `V-Eval-Ai_Engine.API`: Biên dịch C# .NET 9 Clean Architecture thành công 100% (**0 Error, 0 Warning**).
+- **Chuẩn Hóa Cú Pháp Thẻ Bảng Biến Thiên & Đồ Thị Toán Học (`CurriculumAiService.cs`)**:
+  - Đặc tả chuẩn thẻ `[VARIATION_TABLE]` hỗ trợ hàm đa thức liên tục và hàm phân thức hữu tỉ 1/1, 2/1 với vạch kép `||`.
+  - Mở rộng đặc tả thẻ `[MATH_GRAPH]` 6 loại hàm số (`cubic`, `quartic`, `rational`, `rational_21`, `quadratic`, `custom`), công thức LaTeX, khoảng hiển thị và tiệm cận.
+  - Tự động nhúng vào cả Lý thuyết SGK (Khối 1), Phương pháp giải (Khối 2), nội dung câu hỏi `contentLatex` và lời giải `explanation`.
+
+- **Đồng Bộ Dịch Vụ Bóc Tách Đề Thi Gemini Vision OCR (`GeminiExamParserService.cs`)**:
+  - Cập nhật System Prompt chuẩn hóa cấu trúc thẻ `[VARIATION_TABLE]` và `[MATH_GRAPH]`, tự động số hóa bảng biến thiên và đồ thị từ PDF sang thẻ vector tương tác cho client.
+
+- **Kiểm Thử Biên Dịch C# Clean Architecture**:
+  - `V-Eval-Ai_Engine.Infrastructure` và `V-Eval-Ai_Engine.API` biên dịch sạch 100% (**0 Error, 0 Warning** trên .NET 9 SDK).
