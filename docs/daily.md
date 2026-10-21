@@ -1,5 +1,213 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [21/10/2026] - Chuẩn Hóa Chuỗi Bóc Tách Đáp Án Đúng (NormalizeCorrectOption), Tự Động Tái Tạo Bảng Biến Thiên ([VARIATION_TABLE]) Và Đồ Thị Hàm Số ([MATH_GRAPH]) Zero-Hardcode
+
+- **Bổ Sung Dual-Case Mapping & Khắc Phục Triệt Để Null TheoryRecap/SolutionMethod (`CurriculumAiService.cs`)**:
+  - Hỗ trợ song song cả camelCase (`theoryRecap`, `solutionMethod`, `videoUrl`) lẫn snake_case (`theory_recap`, `solution_method`, `video_url`) trong bộ bóc tách linh hoạt `TryParseCurriculumFromLooseJson` và `ExtractCurriculumViaRegex`.
+  - Khởi tạo mặc định `string.Empty` thay vì `null` trong `CurriculumAiDtos.cs`, ngăn chặn hoàn toàn lỗi 400 Bad Request (`The TheoryRecap field is required`) khi client chuyển tiếp payload nạp tri thức sang Content Service.
+
+- **Chuẩn Hóa Toàn Diện Đáp Án Đúng `CorrectOption` Cho Mọi Phân Hệ Bóc Tách & Sinh Câu Hỏi (`CurriculumAiService.cs`)**:
+  - *Giải quyết lỗi ngoại lệ kiểu dữ liệu*: Xây dựng phương thức trợ giúp `NormalizeCorrectOption` và `ExtractJsonNodeAsString` chuẩn hóa mọi định dạng thô do LLM/OCR sinh ra (như `"A."`, `"(B)"`, `"[C]"`, `"D:"`, `"Đáp án C"`, `"Phương án B"`, `"Answer D"`, `"Option A"`, số nguyên `0..3` hoặc `null`) về duy nhất 1 ký tự chuẩn mực `'A'`, `'B'`, `'C'`, `'D'`.
+  - *Bảo vệ toàn diện 5 pipeline sinh và bóc tách*:
+    + `ExtractCurriculumAsync`: Bóc tách cây phân cấp tri thức từ file PDF SGK, chuẩn hóa `CorrectOption` câu hỏi mẫu.
+    + `GeneratePatternQuestionsAsync`: Tự động sinh ngân hàng câu hỏi thích ứng theo dạng bài.
+    + `ExtractFallbackCurriculumFromText`: Xử lý bóc tách regex khi Gemini trả về chuỗi JSON không hoàn chỉnh.
+    + `ExtractQuestionsViaRegex`: Trích xuất danh sách câu hỏi dạng khối độc lập qua regex.
+    + `AnalyzePatternAsync`: Phân tích sâu 4 bước sư phạm của dạng bài.
+  - Đảm bảo 100% payload trả về Web Client tuân thủ chính xác schema CSDL của `Content Service`, ngăn chặn hoàn toàn lỗi 400 Bad Request khi nạp tri thức vào CSDL PostgreSQL.
+
+- **Chuẩn Hóa Cú Pháp Thẻ Bảng Biến Thiên & Đồ Thị Toán Học (`CurriculumAiService.cs`)**:
+  - *Đặc tả thẻ `[VARIATION_TABLE]`*:
+    + Hỗ trợ đầy đủ các hàm số đa thức liên tục (bậc 3, bậc 4, bậc 2) và hàm phân thức hữu tỉ có tiệm cận đứng đứt đoạn (bậc 1/1 `(ax+b)/(cx+d)`, bậc 2/1 `(ax^2+bx+c)/(dx+e)`).
+    + Cú pháp chuẩn hóa:
+      `x: -inf, x1, x2, +inf`
+      `y': + | - | 0 | +` (hoặc có vạch kép `||` tại điểm gián đoạn của mẫu số)
+      `y: -inf, y1, y2, +inf`
+      `dir: up, down, up` (hỗ trợ `||` ngắt nhánh biến thiên phân thức)
+  - *Mở rộng đặc tả thẻ `[MATH_GRAPH]`*:
+    + Hỗ trợ trọn vẹn 6 phân lớp hàm số: `cubic` (bậc 3), `quartic` (trùng phương bậc 4), `rational` (phân thức hữu tỉ 1/1), `rational_21` (phân thức hữu tỉ 2/1), `quadratic` (parabol bậc 2), và `custom` (biểu thức tùy biến).
+    + Bổ sung đầy đủ hệ số tham số `a`, `b`, `c`, `d`, `e`, nhãn công thức `formula`, khoảng hiển thị `interval`, và tiệm cận `asymptotes`.
+    + Sửa lỗi thoát chuỗi nội suy C# đối với công thức phân thức LaTeX: `\\frac{{ax+b}}{{cx+d}}`.
+  - *Bắt buộc tích hợp vào toàn bộ chu trình sư phạm*:
+    + Nhúng chỉ thị bóc tách vào `ExtractCurriculumAsync`: bắt buộc tự động tái tạo thẻ `[VARIATION_TABLE]` hoặc `[MATH_GRAPH]` vào CẢ Khối 1 `theoryRecap` (Lý thuyết / Ví dụ SGK), Khối 2 `solutionMethod` (Phương pháp / Bài toán mẫu), nội dung câu hỏi `contentLatex` và lời giải chi tiết `explanation`.
+    + Nhúng chỉ thị vào `GeneratePatternQuestionsAsync` và `GeneratePracticeQuestionsAsync`: mọi bài toán hàm số, cực trị, đồng biến/nghịch biến, tiệm cận, đồ thị bắt buộc phải kèm thẻ tương tác, loại bỏ 100% hardcode hay câu hỏi thiếu hình.
+
+- **Đồng Bộ Dịch Vụ Bóc Tách Đề Thi Gemini Vision OCR (`GeminiExamParserService.cs`)**:
+  - Cập nhật System Prompt chuẩn hóa cấu trúc thẻ `[VARIATION_TABLE]` và `[MATH_GRAPH]` (kèm `rational` và `rational_21`).
+  - Hướng dẫn AI tự động nhận diện bảng biến thiên và đồ thị trong đề thi PDF dạng chữ hoặc ảnh để số hóa thành thẻ vector tương tác cho client.
+
+- **Kiểm Thử Biên Dịch C# Clean Architecture**:
+  - Biên dịch toàn bộ solution qua .NET 9 SDK (`C:\Users\USER\.dotnet\dotnet.exe build`), dự án `V-Eval-Ai_Engine.Infrastructure` và `V-Eval-Ai_Engine.API` đạt **0 Error, 0 Warning**.
+
+---
+
+## [20/10/2026] - Nâng Cấp Hệ Thống Prompt Bóc Tách Đề Thi & Sinh Câu Hỏi Tích Hợp Mô Hình Hình Học Không Gian 3D và Đồ Thị 2D (MathLab Interactive Tags)
+
+- **Chuẩn Hóa Prompt Bóc Tách Đề Thi & Dựng Hình Tự Động Từ Chữ (`GeminiExamParserService.cs`)**:
+  - Bổ sung chỉ thị bắt buộc trong System Prompt của Gemini: KỂ CẢ KHI ĐỀ BÀI CHỈ MÔ TẢ HÌNH BẰNG CHỮ (hoàn toàn không có hình ảnh sẵn trong file gốc), AI đóng vai trò máy dựng hình học toán học: tự động tính toán tọa độ không gian $(x, y, z)$, suy luận điểm phụ/trung điểm, phân định nét đứt (`dash=2`) hoặc nét liền (`dash=0`), và nhúng khối thẻ `[MATH_GRAPH_3D]` hoặc `[MATH_GRAPH]` vào CẢ NỘI DUNG CÂU HỎI (ở cuối `content` để học sinh xoay 360 độ giải bài) VÀ LỜI GIẢI CHI TIẾT (`explanation`).
+  - Chuẩn hóa danh mục `shapeType`: bổ sung `tetrahedron` (tứ diện chuẩn SGK), `pyramid_rect_sa`, `pyramid_tri_sa`, `pyramid_regular_quad`, `pyramid_regular_tri`, `pyramid_side_perp`, `prism_tri`, `box_cube`.
+
+- **Nâng Cấp Prompt Bóc Tách Khung Chương Trình & Dựng Hình Bài Giảng / Câu Hỏi (`CurriculumAiService.cs`)**:
+  - *`ExtractCurriculumAsync`*: Bổ sung quy tắc số 3 (Text-to-MathLab Reconstruction): Bất kể khi nào đề bài hoặc ví dụ mô tả hình không gian hoặc đồ thị bằng chữ, BẮT BUỘC tự động tính tọa độ và nhúng thẻ cấu trúc `[MATH_GRAPH_3D]` hoặc `[MATH_GRAPH]` vào CẢ 2 NƠI:
+    + Ở PHẦN BÀI GIẢNG: Nhúng trực tiếp bên dưới Ví dụ minh họa SGK (Khối 1 `theoryRecap`) và Bài toán mẫu phương pháp giải (Khối 2 `solutionMethod`).
+    + Ở PHẦN CÂU HỎI: Nhúng trực tiếp ở cuối nội dung câu hỏi `contentLatex` (học sinh xoay 360 độ giải bài) và trong Lời giải chi tiết `explanation` (có thêm các đường kẻ phụ nét đứt).
+  - *`GeneratePatternQuestionsAsync`*: Yêu cầu bài toán mẫu và câu hỏi minh họa nhúng mô hình 3D/2D tương tác ở cả `theory_recap`, `solution_method`, `content_latex` và `explanation`.
+  - *`GeneratePracticeQuestionsAsync`*: Yêu cầu các bài tập rèn luyện nâng cao (L3 Vận dụng, L4 Vận dụng cao) sinh thẻ `[MATH_GRAPH_3D]` tương tác trực quan.
+
+- **Khắc Phục Lỗi 503 & 504 Gateway Timeout, Tối Ưu Hóa Prompt Bóc Tách (~15s) & Nâng Hạn Mức YARP 10 Phút (`CurriculumAiService.cs`)**:
+  - *Xử lý lỗi 503*: Đưa `gemini-3.6-flash` lên ưu tiên số 1, triển khai multi-model failover fallback (`ResolveGeminiModels()`) tự động bắt mã lỗi HTTP 503/500/429.
+  - *Khắc phục triệt để lỗi 504*:
+    + Tinh chỉnh prompt `depthDirective`: Bóc tách cấu trúc 2-4 bài học, 2-3 dạng bài/bài, và 2-3 câu hỏi mẫu đa tầng Bloom kèm thẻ 3D/2D tương tác. Giảm dung lượng output JSON từ 25.000 tokens xuống ~4.000 tokens, giúp tốc độ sinh hoàn tất chỉ trong 12 - 18 giây.
+    + Nâng `CancellationTokenSource` lên 5 phút (`TimeSpan.FromMinutes(5)`) cho `ExtractCurriculumAsync` và 90 giây cho `AnalyzePatternAsync` / `GeneratePatternQuestionsAsync`.
+    + Nâng `HttpClient.Timeout` lên 6 phút trong `DependencyInjection.cs`.
+    + Bổ sung kiểm tra `cancellationToken.IsCancellationRequested` dừng ngay chuỗi fallback khi request bị client hủy.
+  - *Nâng hạn mức Gateway YARP*: Cấu hình `ActivityTimeout` 10 phút (`00:10:00`) cho `ai-engine-cluster` và `ai-rag-cluster`.
+
+- **Khắc Phục Triệt Để Lỗi Parse JSON '0xC4' / 'N' is invalid after a value (`CurriculumAiService.cs`)**:
+  - *Nguyên nhân sự cố*: Khi Gemini sinh câu hỏi hoặc giải thích có chứa dấu ngoặc kép thẳng không escape bên trong chuỗi text (ví dụ: `gọi "M" là trung điểm`, `mặt phẳng "Đáy"`, `title: "Cho tứ diện ABCD"`), bộ giải mã JSON xem dấu ngoặc kép đó là kết thúc chuỗi và gặp ngay ký tự tiếng Việt kế tiếp (chữ `Đ` mang byte UTF-8 `0xC4`, hoặc chữ `N`), dẫn đến ném lỗi `Strict JsonNode.Parse failed: '0xC4' is invalid after a value`.
+  - *Máy trạng thái kiểm tra Lookahead cho dấu ngoặc kép*: Trong `SanitizeAndRepairGeminiJson`, áp dụng quy tắc văn phạm JSON chuẩn: một dấu ngoặc kép đóng chuỗi BẮT BUỘC phải đi liền trước `,`, `}`, `]`, `:`, hoặc thuộc tính mới. Nếu theo sau là chữ cái/từ ngữ tiếng Việt, thuật toán nhận diện chính xác đây là dấu nháy lơ lửng trong văn bản và tự động chuyển thành nháy đơn `'`, bảo toàn 100% cú pháp JSON.
+  - *Bổ sung chỉ thị cấm ngoặc kép thẳng trong Prompt*: Cập nhật System Prompt cho cả `AnalyzePatternAsync` và `GeneratePatternQuestionsAsync` yêu cầu AI tuyệt đối không dùng ngoặc kép thẳng trong câu hỏi, lời giải và phương án mà phải dùng nháy đơn `'...'`.
+
+- **Đồng Bộ Dịch Vụ Khảo Thí Chuẩn Hóa Python RAG (`diagnostic.py`)**:
+  - Bổ sung chỉ thị nhúng thẻ `[MATH_GRAPH_3D]` và `[MATH_GRAPH]` trong System Prompt khi AI sinh đề khảo sát chẩn đoán môn Toán.
+
+---
+
+## [19/10/2026] - Khắc Phục Triệt Để Lỗi 500 AI Sinh Câu Hỏi (Regex Key Lookbehind & Block Slicing Fallback) & Bảo Toàn Tuyệt Đối Ký Tự LaTeX
+
+- **Khắc Phục Lỗi 500 Khi AI Sinh Câu Hỏi Rèn Luyện (`CurriculumAiService.cs`)**:
+  - *Nguyên Nhân Gốc Rễ 1 (Lỗi `':' is invalid after a value`)*:
+    + Biểu thức Regex trong `SanitizeAndRepairGeminiJson` trước đây (`@("([a-zA-Z0-9_]+)")\s*,\s*(?="|\[|\{|-?[0-9]|true|false)`) đã vô tình khớp với các cặp giá trị chuỗi như `"correct_option": "B",` và biến đổi thành `"correct_option": "B": "explanation": ...`, khiến bộ giải mã `System.Text.Json` vấp lỗi cú pháp JSON và ném ngoại lệ `Strict JsonNode.Parse failed: ':' is invalid after a value`.
+    + *Khắc phục*: Sử dụng Lookbehind dương bắt buộc `(?<=[\{\,]\s*)` để chỉ sửa dấu phẩy khi nó đứng ngay sau tên thuộc tính (thuộc tính luôn bắt đầu sau `{` hoặc `,`), tuyệt đối không đụng vào giá trị (nằm sau `:`).
+  - *Nguyên Nhân Gốc Rễ 2 (Bộ Bóc Tách Regex Dự Phòng Bị Tắc Nghẽn Do Dấu Ngoặc Nhọn `{...}` Trong LaTeX)*:
+    + Hàm dự phòng `ExtractQuestionsViaRegex` trước đây sử dụng mẫu `\{[^{}]*"(?:contentLatex|content_latex)"[^{}]*\}`. Nhóm ký tự phủ định `[^{}]*` bị ngắt ngay lập tức khi gặp các dấu ngoặc nhọn `{...}` trong công thức LaTeX (ví dụ: `SO_4^{2-}`, `\frac{a}{b}`), dẫn đến số lượng câu hỏi trích xuất trả về 0 và kích hoạt lỗi HTTP 500.
+    + *Khắc phục*: Tái cấu trúc cơ chế bóc tách theo thuật toán **Question Block Slicing**: Tìm mốc xuất hiện của khóa `"contentLatex"` / `"content_latex"`, cắt lát các khối JSON theo ranh giới câu hỏi mà không phụ thuộc vào dấu ngoặc nhọn lồng nhau bên trong biểu thức LaTeX.
+  - *Bảo Toàn Chuỗi Thoát LaTeX Không Bị Nuốt Thành Ký Tự Tab (`ExtractRegexField`)*:
+    + Thay thế việc gọi trực tiếp `.Replace(@"\t", "\t")` bằng Regex bảo vệ `Regex.Replace(val, @"\\t(?![a-zA-Z])", "\t")` và `Regex.Replace(val, @"\\n(?!(?:eq|otin|...)\b)", "\n")`, ngăn chặn việc biến đổi các lệnh LaTeX bắt đầu bằng `\t` (`\text`, `\times`, `\theta`, `\tau`, `\to`) thành ký tự điều khiển ASCII Tab (0x09).
+    + Áp dụng `ExtractRegexField` để unescape chuỗi `ContentLatex` trong `ExtractCurriculumViaRegex` thay vì lưu chuỗi raw.
+
+- **Chuẩn Hóa Tiền Tố Bài Mẫu Tránh Lỗi Font Emoji (`CurriculumAiService.cs`)**:
+  - Chuẩn hóa tiền tố bài toán mẫu trong prompt sinh bài giảng từ `### 📝` sang `### 📄` loại bỏ hoàn toàn nguy cơ hiển thị lỗi glyph/tofu trên hệ điều hành Windows.
+
+- **Kiểm Thử Biên Dịch (Build Verification)**:
+  - `V-Eval-Ai_Engine.Infrastructure` & `V-Eval-Ai_Engine.API`: Biên dịch C# .NET 9 Clean Architecture thành công 100% (**0 Error, 0 Warning**).
+
+---
+
+## [18/10/2026] - Domain-Aware Prompting: Chuẩn Hóa Sư Phạm Phân Định Rõ STEM vs Ngữ Văn / KHXH & Loại Bỏ Triệt Để Mẹo Casio Trong Ngữ Văn
+
+- **Domain-Aware Prompting Trong `CurriculumAiService.cs`**:
+  - *Nhận diện lĩnh vực môn học*:
+    + Bổ sung hàm kiểm tra tĩnh `IsStemDomain(string? domain)` phân loại chính xác các môn Toán học, Vật lí, Hóa học, Sinh học, Tin học (STEM) và tách biệt với các môn Ngữ văn / Tiếng Việt, Lịch sử, Địa lí, GDCD, Ngoại ngữ.
+  - *Tinh chỉnh Prompt Gemini trong `ExtractCurriculumStructureAsync`*:
+    + Đối với môn Ngữ văn / Khoa học xã hội: Chỉ thị rõ ràng cho Gemini:
+      `LƯU Ý QUAN TRỌNG VỀ ĐẶC THÙ MÔN HỌC: Môn học hiện tại là NGỮ VĂN / KHOA HỌC XÃ HỘI. TUYỆT ĐỐI KHÔNG đề cập máy tính Casio. Mục mẹo (callout) phải là: "### 💡 Mẹo tư duy & Chiến thuật làm bài:" hướng dẫn cách đọc hiểu, lập luận, dùng từ, phân tích tâm lý nhân vật hoặc phân bổ thời gian. Mục bài mẫu áp dụng phải là: "### 📄 Bài mẫu áp dụng phương pháp:" kèm đoạn văn mẫu hoặc phân tích mẫu thay cho bài toán số học.`
+    + Đối với môn STEM: Giữ nguyên hướng dẫn kỹ thuật bấm máy tính Casio fx-580VN X / fx-880BTG và `### 📝 Bài toán mẫu áp dụng phương pháp:`.
+  - *Tinh chỉnh Prompt Gemini trong `AnalyzePatternAsync`*:
+    + Đồng bộ quy tắc domain: Với môn Ngữ văn/KHXH, trường `casioTricks` được định hướng chuyên sâu thành `Mẹo tư duy & Chiến thuật làm bài`, tập trung vào phương pháp làm văn, mẹo tìm ý, dẫn chứng thực tế và cấu trúc đoạn văn; cấm tuyệt đối nhắc máy tính Casio.
+    + Khối 2 phương pháp giải thay đổi linh hoạt các bước: Bước 1 (Đọc kĩ đề, gạch chân vấn đề nghị luận), Bước 2 (Huy động kiến thức nền, gạch ý chính ra nháp), Bước 3 (Viết đoạn văn bám sát kiểu đoạn yêu cầu: Diễn dịch, Tổng - phân - hợp, Quy nạp).
+
+- **API Sinh Câu Hỏi Rèn Luyện Bám Sát Dạng Bài (`GeneratePatternQuestionsAsync`, `CurriculumEndpoints.cs`, `CurriculumAiDtos.cs`)**:
+  - *Mô hình dữ liệu DTO (`CurriculumAiDtos.cs`)*:
+    + Bổ sung `GeneratePatternQuestionsRequestDto`: tiếp nhận `pattern_name`, `lesson_name`, `domain_name`, `theory_recap`, `solution_method`, `count` và danh sách câu hỏi đã có `existing_questions` (`ExistingQuestions`).
+    + Bổ sung `GeneratePatternQuestionsResponseDto`: trả về danh sách `questions` chuẩn `CurriculumPracticeQuestionDto` kèm đo lường telemetry `processing_time_seconds`.
+  - *Phương thức dịch vụ `GeneratePatternQuestionsAsync` (`CurriculumAiService.cs`)*:
+    + Tích hợp Gemini LLM (`gemini-2.5-flash` / `gemini-3.6-flash`) với prompt sư phạm đa tầng chuyên sâu.
+    + **Chống trùng lặp tuyệt đối khi bấm tạo nhiều lần (Anti-Duplication Prompting)**: Gemini nhận danh sách đề bài các câu hỏi đã có và bị ràng buộc tuyệt đối không được lặp lại câu hỏi cũ; bắt buộc phải khai thác các trích đoạn, khía cạnh cảm thụ mới hoặc bẫy đề mới.
+    + Tinh chỉnh `temperature = 0.7` kích hoạt tính sáng tạo sư phạm đa chiều, đảm bảo mỗi lần nhấn tạo sẽ sinh ra các bộ câu hỏi mới mẻ, phong phú.
+    + Đảm bảo câu hỏi rèn luyện sinh ra bám sát 100% ngữ cảnh dạng bài: Nếu là môn Ngữ văn/KHXH, chỉ thị bắt buộc câu hỏi phải trích dẫn và khai thác trực tiếp tác phẩm văn học, tác giả, trích đoạn hoặc thao tác nghị luận có trong lý thuyết và phương pháp giải được cung cấp; nghiêm cấm tuyệt đối sinh câu hỏi môn tự nhiên hoặc biến số $X$.
+    + Nếu là môn Toán/STEM: Tập trung vào dữ kiện số học, mô hình hóa, các bước biến đổi và bẫy đề thi theo đúng phương pháp 4 bước của dạng bài.
+  - *Endpoint API RESTful (`CurriculumEndpoints.cs`)*:
+    + Ánh xạ `POST /api/ai-engine/curriculum/generate-questions`.
+    + Tích hợp đầy đủ metadata OpenAPI: `.Produces<GeneratePatternQuestionsResponseDto>(StatusCodes.Status200OK)`.
+
+- **Kiểm Thử Biên Dịch (Build Verification)**:
+  - `V-Eval-Ai_Engine.Infrastructure` & `V-Eval-Ai_Engine.API`: Biên dịch C# .NET 9 Clean Architecture thành công 100% (**0 Error**).
+
+---
+
+## [17/10/2026] - Triệt Tiêu 100% Hardcode & Mock Fallback, Trích Xuất Dữ Liệu Thật 100%, Đo Lường Thời Gian Xử Lý Tệp Thực Tế, Khử Lỗi Token Truncation & Thoát Ký Tự LaTeX RFC 8259
+
+- **Triệt Tiêu 100% Hardcode & Mock Fallback Trong `CurriculumAiService.cs`**:
+  - *Tuân thủ nguyên tắc Dữ liệu thật 100%*: Loại bỏ hoàn toàn hơn 1.780 dòng code hardcode, heuristic mock patterns và câu hỏi mẫu tự tạo trước đây (`EnrichGeneralKnowledgeTheory`, `GenerateHeuristicCurriculum`, `GenerateHeuristicPatternAnalysis`, `EnrichPatternPedagogyAndQuestions`...).
+  - Nếu Gemini AI hoặc đường truyền mạng gặp sự cố, ném `InvalidOperationException` minh thị để người dùng nắm rõ nguyên nhân thay vì ngụy tạo nội dung ảo hoặc bịp dữ liệu.
+- **Đo Lường & Ghi Nhận Chính Xác Thời Gian Xử Lý Tệp Trực Tiếp (`ProcessingTimeSeconds`, `Stopwatch`)**:
+  - Tích hợp `System.Diagnostics.Stopwatch` đo lường thời gian thực tế xử lý tệp và bóc tách AI.
+  - Bổ sung các trường telemetry vào `ImportCurriculumRequestDto`: `ProcessingTimeSeconds`, `IsRealExtraction = true`, `SourceFileName`, `TotalPagesProcessed`, `TotalCharactersExtracted`.
+  - Bổ sung `ProcessingTimeSeconds` vào `AnalyzePatternResponseDto`.
+- **Giải Quyết Triệt Để Lỗi Phân Tích JSON & Token Truncation Của Gemini**:
+  - Nâng trần `maxOutputTokens` lên `32768` (tránh lỗi `Expected start of a property name or value, but instead reached end of data`).
+  - Xây dựng bộ phục hồi JSON tự động `RepairTruncatedJson` để cân bằng dấu ngoặc `{}` và `[]` cùng đóng chuỗi quote khi response bị ngắt nhịp do giới hạn token.
+  - Xây dựng bộ tiền xử lý và escape hợp lệ `SanitizeAndRepairGeminiJson`: Khử lỗi `'{' is an invalid escapable character within a JSON string` (RFC 8259) bằng cách double-escape cho toàn bộ ký tự LaTeX `\\{`, `\\}`, `\\Delta`, `\\frac`, `\\sqrt`...
+  - Xây dựng bộ phân tích mềm dẻo `TryParseCurriculumFromLooseJson` để bóc tách cấu trúc dữ liệu theo `JsonNode` khi `JsonSerializer.Deserialize` nghiêm ngặt gặp vấn đề về trailing format.
+- **Nâng Cấp Bóc Tách Đa Dạng Bài Toán & Phủ Kín 5 Phần Của Tài Liệu (4-5 Bài Học, 8-12 Dạng Bài)**:
+  - Tối ưu hóa prompt chỉ thị cấu trúc bóc tách toàn diện: Bắt buộc quét đủ 5 Phần của tài liệu (Phần I Lý thuyết, Phần II Bài tập phân dạng, Phần III Nâng cao HSG, Phần IV Ứng dụng thực tế & ĐGNL, Phần V Trắc nghiệm).
+  - Yêu cầu mỗi bài học phải có tối thiểu từ 2 đến 3 dạng bài chi tiết (`patterns`), đạt tổng từ 8 đến 12 dạng bài trên toàn chương.
+  - Bổ sung Bài 5 chuyên sâu về Bài toán ứng dụng thực tế (Breathalyzer nồng độ cồn, pin điện hóa, ăn mòn kim loại) và bài toán phân loại điểm 9-10 ĐGNL.
+  - Mỗi dạng bài trang bị đúng 4 câu hỏi bài mẫu phân tầng Bloom (L1 Nhận biết, L2 Thông hiểu, L3 Vận dụng, L4 Vận dụng cao) với lời giải súc tích để bảo đảm nằm gọn trong trần token an toàn.
+- **Kiểm Thử Biên Dịch**:
+  - `dotnet build` đạt 100% (**0 Error**).
+
+---
+
+## [16/10/2026] - Nâng Cấp Toàn Diện Độ Chi Tiết Cây Tri Thức (16 Dạng Bài/5 Bài Học), 4-5 Câu Vận Dụng/Vận Dụng Cao Mỗi Dạng (Tổng 224 Bài Tập Mẫu), Làm Giàu Kiến Thức Nền Tảng SGK Đa Tầng & Khử Lỗi Thoát Ký Tự JSON
+
+- **Mở Rộng Chi Tiết Cây Tri Thức Chuyên Sâu (16 Dạng Bài / 5 Bài Học Chi Tiết)**:
+  - *Giải Quyết Triệt Để Tình Trạng Trống Trải Cây Phân Cấp*: Nâng cấp cấu trúc phân chương chuyên đề từ 10 dạng bài lên **16 dạng bài học thuật chi tiết** bao phủ 100% các chủ đề trọng điểm:
+    - *Bài 1 (3 dạng)*: Xác định số oxi hóa hợp chất vô cơ/ion, Hợp chất hữu cơ & trường hợp dị thường (peroxide, superoxide, hydride), Nhận diện chất oxi hóa/khử & phân loại phản ứng.
+    - *Bài 2 (4 dạng)*: Cân bằng thăng bằng electron phức tạp, Phương pháp ion - electron trong 3 môi trường, Phản ứng tự oxi hóa - khử/nội phân tử/chỉ số ẩn ($Fe_xO_y$), Oxi hóa khử hữu cơ ($KMnO_4$).
+    - *Bài 3 (3 dạng)*: Kim loại tác dụng acid oxi hóa, Hỗn hợp sản phẩm khử ($NO, N_2O, N_2, NH_4NO_3$) & sơ đồ đường chéo, Kim loại với dung dịch muối & điện phân Faraday.
+    - *Bài 4 (3 dạng)*: Quy đổi đa oxide về nguyên tố tự do ($Fe, Cu, O$), Quy đổi quặng sulfide ($Fe, Cu, S$), Quy đổi cụm phân tử giả định tối ưu số ẩn.
+    - *Bài 5 (3 dạng)*: Kiểm tra nồng độ cồn Breathalyzer, Chuẩn độ lượng vết (Vitamin C, Oxy hòa tan DO - Winkler), Pin điện hóa Galvanic ($E^0$, chiều phản ứng, $E^0_{\text{pin}}$).
+- **Mở Rộng Ngân Hàng Câu Hỏi: 4-5 Câu Cho Cả Hai Cấp Vận Dụng L3 & L4 (14 Câu/Dạng, Tổng 224 Câu)**:
+  - *Đáp Ứng Nghiêm Ngặt Yêu Cầu Sư Phạm*: Mỗi dạng bài được trang bị ngân hàng bài tập đa tầng gồm:
+    - **L1 (Nhận biết)**: $\ge 2$ câu hỏi lý thuyết cốt lõi.
+    - **L2 (Thông hiểu)**: $\ge 2$ câu hỏi hiểu bản chất và cân bằng bán phản ứng.
+    - **L3 (Vận dụng)**: **5 câu hỏi tính toán định lượng chuyên sâu**.
+    - **L4 (Vận dụng cao)**: **5 câu hỏi mô hình hóa thực tế và bài toán điểm 9-10 ĐGNL VNU-HCM**.
+    - $\Rightarrow$ **Tổng cộng: 14 câu hỏi/dạng $\times$ 16 dạng bài = 224 câu hỏi mẫu chuyên sâu** có đầy đủ đề bài KaTeX, 4 phương án lựa chọn và lời giải chi tiết từng bước.
+- **Làm Giàu Kiến Thức Nền Tảng SGK (Khối 1) Đa Tầng & Trực Quan**:
+  - Tự động bổ sung định nghĩa khoa học chuẩn SGK GDPT 2018, hệ thống đầy đủ 4 quy tắc gán số oxi hóa, bảng các trường hợp ngoại lệ đặc thù ($H_2O_2, KO_2, OF_2, NaH$) và lưu ý khảo thí ĐGNL.
+  - Tự động bổ sung khối *Ví dụ minh họa SGK* (`### 📌`) và *Bài toán mẫu áp dụng phương pháp* (`### 📝`).
+- **Khử Lỗi Thoát Ký Tự JSON Trong Gemini Response (`CleanJsonFences`)**:
+  - Bổ sung bộ tiền xử lý Regex `Regex.Replace(result, @"\\([%$&_#^{}])", "$1")` loại bỏ các ký tự escape LaTeX bất hợp lệ (`\%`, `\$`) sinh ra bởi Gemini, ngăn ngừa triệt để lỗi `JsonException` khi parse.
+- **Kiểm Thử Biên Dịch & Vận Hành**:
+  - `dotnet build` đạt 100% (**0 Error, 0 Warning**).
+  - API AI Engine chạy ổn định trên HTTP port 5104.
+  - `python test_ai_extract.py`: Trích xuất thành công 16 dạng bài với đúng 224 câu hỏi trắc nghiệm (đạt tỷ lệ 5 câu L3 và 5 câu L4 cho từng dạng bài).
+
+---
+
+## [15/10/2026] - Chuyển Đổi Hoàn Toàn & Triển Khai Động Cơ AI Tri Thức Bóc Tách Khung Chương Trình & Dạng Bài Bằng C# Thuần (.NET 9 Clean Architecture), Hỗ Trợ Tài Liệu Khổ Lớn 79-99+ Trang
+- **Chuyển Đổi Toàn Bộ Sang C# Thuần (.NET 9) Trong AI Engine (`V-Eval-Ai_Engine`)**:
+  - Di chuyển và chuẩn hóa toàn bộ tính năng trích xuất khung chương trình và phân tích dạng bài từ prototype Python sang 100% C# .NET 9 Clean Architecture.
+  - **Application Layer**:
+    - [CurriculumAiDtos.cs](./V-Eval-Ai_Engine.Application/DTOs/CurriculumAiDtos.cs): Khai báo đầy đủ các DTO chuẩn mực cho cây phân cấp (`ImportCurriculumRequestDto`, `ImportChapterDto`, `ImportLessonDto`, `ImportPatternDto`, `ImportQuestionDto`) và DTO nhận diện dạng bài (`AnalyzePatternRequestDto`, `AnalyzePatternResponseDto`, `PatternExemplarQuestionDto`).
+    - [ICurriculumAiService.cs](./V-Eval-Ai_Engine.Application/Interfaces/ICurriculumAiService.cs): Hợp đồng xử lý bóc tách tài liệu và phân tích dạng bài sư phạm, bổ sung hỗ trợ trích lọc theo dải trang (`startPage`, `endPage`) và độ sâu bóc tách (`extractionDepth`).
+  - **Infrastructure Layer**:
+    - [CurriculumAiService.cs](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs): Trích xuất nội dung từ tệp PDF trực tiếp bằng `UglyToad.PdfPig`, tệp Word DOCX bằng `System.IO.Compression.ZipArchive` với cơ chế bảo toàn cấu trúc ngắt dòng `</w:p>`, `</w:tr>` thành `\n`.
+    - **Nâng Cấp Xử Lý Tài Liệu Khổ Lớn (79 - 100+ Trang)**: Áp dụng cơ chế cắt lát trang và bảo toàn cấu trúc đề mục, nâng trần ký tự lên 120.000 ký tự và cấu hình `maxOutputTokens = 8192` cùng timeout 90 giây.
+    - Tối ưu hóa prompt chuyên sâu ĐGNL VNU-HCM: Bắt buộc AI phân tách đầy đủ từ 3 đến 6 Bài học và 8 đến 16 Dạng bài chi tiết đối với tài liệu chuyên đề lớn, không gom cụm sơ sài 1-2 bài.
+    - Bộ xử lý làm sạch JSON chuyên sâu: Tự động loại bỏ markdown code fences và phục hồi ký tự escape cho công thức toán học và hóa học (`\ge`, `\le`, `\frac`, `\times`, `\Delta`, `\text`, `\mathrm`...).
+    - Heuristic Engine nâng cấp: Tự động nhận diện môn học và sinh đầy đủ 5 bài học kèm 10 dạng bài chuyên sâu khi mạng gián đoạn.
+    - [DependencyInjection.cs](./V-Eval-Ai_Engine.Infrastructure/DependencyInjection.cs): Đăng ký `ICurriculumAiService` vào DI container với timeout 3 phút.
+  - **API Layer**:
+    - [CurriculumEndpoints.cs](./V-Eval-Ai_Engine.API/Endpoints/CurriculumEndpoints.cs): Cung cấp 2 Minimal API endpoints:
+      - `POST /api/ai-engine/curriculum/extract`: Nhận đa định dạng (PDF, Word, Text) hoặc JSON payload, tiếp nhận các tham số `start_page`, `end_page`, `extraction_depth`.
+      - `POST /api/ai-engine/curriculum/analyze-pattern`: Phân tích sâu 4 khối nội dung dạng bài toán theo chuẩn Bloom L1-L4.
+    - [Program.cs](./V-Eval-Ai_Engine.API/Program.cs): Đăng ký `app.MapCurriculumEndpoints()`.
+- **Đồng Bộ Web Client & Khôi Phục Python Service**:
+  - Cập nhật [aiService.js](../../V-Eval-Web_Client/src/services/aiService.js): Định tuyến trực tiếp các hàm `extractCurriculumFromDocument` và `analyzePatternWithAi` đến các endpoint C# `/api/ai-engine/curriculum/...`.
+  - Hoàn trả nguyên trạng các file Python `rag-service/routers/documents.py` và `rag-service/schemas.py`.
+- **Khắc Phục Lỗi Type Hint Mapping Tại `documents.py:293` (`rag-service/routers/documents.py`)**:
+  - Khắc phục lỗi static type checking `Expected argument after ** to be a mapping, got: dict[str, Any] | tuple[Any, ...]` bằng cách ánh xạ minh thị từng thuộc tính đối tượng `DocumentVersionItem(id=..., document_group_id=..., file_name=..., version=..., file_hash=..., status=..., is_current=..., total_chunks=..., created_at=..., error_message=...)`.
+  - Kiểm thử `python -m py_compile` hoàn thành sạch sẽ 100% (**0 error**).
+- **Kiểm Thử Vận Hành & Biên Dịch**:
+  - `dotnet build` toàn bộ `V-Eval-Ai_Engine.sln` đạt 100% thành công (**0 error, 0 warning**).
+  - `npm run build` trên `V-Eval-Web_Client` đạt 100% thành công (876ms).
+  - Kiểm thử trực tiếp tệp DOCX 79 trang `thuvienhoclieu.com-4.-Chuyen-de-4.-Phan-ung-oxi-hoa-khu.docx`: Bóc tách thành công **5 Bài học lớn và 10 Dạng bài chi tiết**.
+---
+
 ## [12/10/2026] - Triển Khai Giai Đoạn 6 Core Flow 4 GraphRAG: Human-in-the-Loop Feedback & Mentor Dashboard
 - **Mở Rộng API Thẩm Định Sư Phạm Dành Cho Mentor (`rag-service/routers/socratic_tutor.py`)**:
   - `POST /api/v1/socratic/interactions/{id}/report`: Tiếp nhận phản hồi từ học sinh khi phát hiện gợi ý không chính xác (`student_reported = TRUE`, ghi nhận lý do báo cáo).

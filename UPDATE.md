@@ -1,18 +1,16 @@
-# Nhật Ký Cập Nhật (Update Log) - AI Engine
+# NHẬT KÝ CẬP NHẬT (UPDATE LOG) - AI ENGINE
 
-## [12/10/2026] - Triển Khai Giai Đoạn 6 Core Flow 4 GraphRAG: Human-in-the-Loop Feedback & Mentor Studio
+## [21/10/2026] - Chuẩn Hóa Bóc Tách Đáp Án Đúng (NormalizeCorrectOption), Bổ Sung Dual-Case Mapping TheoryRecap/SolutionMethod, Bảng Biến Thiên ([VARIATION_TABLE]) Và Đồ Thị ([MATH_GRAPH]) Zero-Hardcode
 
-- **Mở Rộng API Thẩm Định Sư Phạm Dành Cho Mentor (`rag-service/routers/socratic_tutor.py`)**:
-  - `POST /api/v1/socratic/interactions/{id}/report`: Tiếp nhận phản hồi từ học sinh khi phát hiện gợi ý sai (`student_reported = TRUE`, ghi nhận lý do báo cáo).
-  - `GET /api/v1/socratic/interactions`: Truy vấn lịch sử tương tác đa chiều (lọc `reported_only`, phân trang), ánh xạ đầy đủ thông tin Dạng bài chuẩn (`pattern_name`, `core_theory_latex`) và Bẫy nhận thức (`trap_name`, `misconception_explanation`).
-  - `POST /api/v1/socratic/interactions/{id}/override-exemplar`: Hành động 1 của Mentor — Lưu lời giải mẫu chuẩn do Mentor chỉnh sửa vào bảng `v_eval_ai.pattern_exemplars` và cập nhật `OVERRIDDEN_EXEMPLAR_SAVED`.
-  - `POST /api/v1/socratic/interactions/{id}/add-trap`: Hành động 2 của Mentor — Bổ sung bẫy tư duy mới phát hiện vào bảng `v_eval_ai.pattern_traps` và cập nhật `NEW_TRAP_ADDED`.
-  - `GET /api/v1/socratic/view-mentor`: Cung cấp giao diện trực quan phục vụ Mentor kiểm duyệt.
-- **Xây Dựng Giao Diện Quản Trị Thẩm Định Mentor Studio (`V-Eval-Ai_Engine.API/wwwroot/view-tutor-mentor.html`)**:
-  - Thiết kế Glassmorphic dark theme hiện đại, tích hợp KaTeX kết xuất công thức toán học STEM.
-  - Phân tách 2 vùng làm việc: Danh sách tương tác với bộ lọc tương tác bị báo cáo và Vùng thanh tra Subgraph Context.
-  - Cung cấp form thao tác nhanh cho Mentor: Lưu Lời giải mẫu chuẩn (Exemplar) và Bổ sung Bẫy tư duy (Trap) tức thì vào Supabase Knowledge Graph.
-  - Ánh xạ endpoint `/api/ai-engine/view-tutor-mentor` trong .NET `ExamEndpoints.cs`.
-- **Kiểm Thử & Nghiệm Thu**:
-  - Viết bộ test `tests/test_socratic_mentor.py`, đạt 5/5 unit tests passed. Toàn bộ 27/27 unit tests của hệ thống đạt 100%.
-  - Biên dịch .NET 9 `V-Eval-Ai_Engine.sln` đạt 100% thành công (0 error).
+- **Bổ Sung Dual-Case Mapping & Khắc Phục Triệt Để Null TheoryRecap/SolutionMethod (`CurriculumAiService.cs`)**:
+  - Hỗ trợ song song cả camelCase (`theoryRecap`, `solutionMethod`, `videoUrl`) lẫn snake_case (`theory_recap`, `solution_method`, `video_url`) trong bộ bóc tách linh hoạt `TryParseCurriculumFromLooseJson` và `ExtractCurriculumViaRegex`.
+  - Khởi tạo mặc định `string.Empty` thay vì `null` trong [`CurriculumAiDtos.cs`](./V-Eval-Ai_Engine.Application/DTOs/CurriculumAiDtos.cs), ngăn chặn hoàn toàn lỗi 400 Bad Request (`The TheoryRecap field is required`) khi client chuyển tiếp payload nạp tri thức sang Content Service.
+- **Chuẩn Hóa Toàn Diện Đáp Án Đúng `CorrectOption` Cho Mọi Phân Hệ Bóc Tách & Sinh Câu Hỏi (`CurriculumAiService.cs`)**:
+  - Xây dựng phương thức `NormalizeCorrectOption` và `ExtractJsonNodeAsString` chuẩn hóa mọi định dạng thô từ LLM/OCR (`"A."`, `"(B)"`, `"[C]"`, `"D:"`, `"Đáp án C"`, `"Phương án B"`, `"Option A"`, số nguyên `0..3` hoặc `null`) về duy nhất 1 ký tự chuẩn mực `'A'`, `'B'`, `'C'`, `'D'`.
+  - Bảo vệ toàn bộ 5 pipeline: bóc tách tri thức PDF (`ExtractCurriculumAsync`), sinh câu hỏi dạng bài (`GeneratePatternQuestionsAsync`), trích xuất regex dự phòng (`ExtractFallbackCurriculumFromText`, `ExtractQuestionsViaRegex`), và phân tích bản chất dạng bài (`AnalyzePatternAsync`).
+- **Chuẩn Hóa Cú Pháp Thẻ Bảng Biến Thiên & Đồ Thị Toán Học (`CurriculumAiService.cs`)**:
+  - Đặc tả chuẩn thẻ `[VARIATION_TABLE]` hỗ trợ hàm đa thức liên tục và hàm phân thức hữu tỉ 1/1, 2/1 với vạch kép `||`.
+  - Mở rộng đặc tả thẻ `[MATH_GRAPH]` 6 loại hàm số (`cubic`, `quartic`, `rational`, `rational_21`, `quadratic`, `custom`), công thức LaTeX, khoảng hiển thị và tiệm cận.
+  - Tự động nhúng vào cả Lý thuyết SGK (Khối 1), Phương pháp giải (Khối 2), nội dung câu hỏi `contentLatex` và lời giải `explanation`.
+- **Kiểm Thử Biên Dịch C# Clean Architecture**:
+  - `V-Eval-Ai_Engine.Application` và `V-Eval-Ai_Engine.Infrastructure` biên dịch sạch 100% (**0 Error, 0 Warning** trên .NET 9 SDK).

@@ -574,7 +574,7 @@ QUY CHUẨN BIÊN SOẠN BẮT BUỘC:
    - Mỗi câu hỏi phải có đúng 1 phương án đúng ('correct') duy nhất trong 4 phương án ['A', 'B', 'C', 'D'].
    - 3 phương án còn lại là phương án nhiễu sai hợp lý.
    - Lời giải ('explanation') phải giải thích rõ ràng, mạch lạc, trực tiếp chỉ ra vì sao đáp án đó đúng. TUYỆT ĐỐI KHÔNG xin lỗi, KHÔNG nói 'giả sử đề bài sửa thành...', KHÔNG tự nhận sai sót trong lời giải.
-3. KÝ HIỆU & CÔNG THỨC: Nếu có công thức toán/lý/hóa (nếu môn tự nhiên), BẮT BUỘC bọc trong dấu dollar: $...$.
+3. KÝ HIỆU & CÔNG THỨC: Nếu có công thức toán/lý/hóa (nếu môn tự nhiên), BẮT BUỘC bọc trong dấu dollar: $...$. Nếu câu hỏi thuộc Hình học không gian (khối chóp, lăng trụ, lập phương...) hoặc Đồ thị hàm số, BẮT BUỘC nhúng thẻ tương tác [MATH_GRAPH_3D] hoặc [MATH_GRAPH] vào nội dung câu hỏi hoặc lời giải.
 4. MỖI CÂU HỎI gồm đúng 4 phương án trong mảng 'options'.
 5. PHÂN BỔ ĐÁP ÁN ĐÚNG CÂN BẰNG: Phân bổ đáp án đúng 'correct' rải đều giữa A, B, C, D (khoảng 25% mỗi chữ cái), không dồn toàn bộ vào A hay B.
 6. 'bloom' là số nguyên từ 1 đến 6. Phân bổ theo thang Bloom đã yêu cầu."""
