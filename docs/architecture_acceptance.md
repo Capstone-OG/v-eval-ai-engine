@@ -265,6 +265,7 @@
 
 ---
 
+<<<<<<< HEAD
 ### [15/10/2026] - Acceptance: Pure C# .NET 9 Clean Architecture Curriculum & Pattern AI Engine with High-Capacity Document Slicing
 - **Architecture Acceptor**: `ThinhTran2412` (Lead Reviewer / Architect).
 - **Acceptance Status**: 🟢 **APPROVED / ACCEPTED** (100% Pure C# .NET 9 Clean Architecture, Zero Hardcoding, KaTeX Resilient Sanitizer, High-Capacity PDF Slicing).
@@ -400,6 +401,173 @@
      - Inferred coordinates for base vertices, auxiliary points (extraPoints), and dashed line visibility (dash=2 vs dash=0).
 3. **Zero-Code Frontend Interoperability**:
      - Emitted tags map directly into client-side `MathText.jsx` and native vector `InteractiveMathRenderer.jsx` for 60 FPS 360° trackball inspection.
+
+---
+
+### [08/10/2026] - Architecture Acceptance: Core Flow 4 GraphRAG Phase 1 (Database DDL Schema & Archetype Seeding)
+- **Architecture Acceptor**: `ThinhTran2412` (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED** (Standardized pgvector schema & seeded Knowledge Graph).
+- **Target Files**:
+  - [`rag-service/database/graph_schema.sql`](./../rag-service/database/graph_schema.sql)
+  - [`rag-service/database/apply_graph_schema.py`](./../rag-service/database/apply_graph_schema.py)
+  - [`rag-service/database/seed_archetypes.py`](./../rag-service/database/seed_archetypes.py)
+
+#### 1. Database DDL Schema Design (`v_eval_ai` Schema on Supabase)
+- **Archetype Patterns Table (`archetype_patterns`)**:
+  - Represents Level 4 in the V-Eval Taxonomy: `Domain -> Subject -> Skill -> Archetype Pattern`.
+  - Stored fields: `pattern_code` (Unique), `pattern_name`, `skill_id` (FK to `practice.skills`), `core_theory_latex`, `fast_solution_strategy`, `difficulty_tier`, `embedding vector(3072)`.
+  - **Index Design Rationale**: pgvector HNSW indexes have an upper limit of 2,000 dimensions (`ProgramLimitExceeded` error on 3072d vectors). Because `archetype_patterns` acts as a curated archetype bank with ~50 to 200 patterns per subject, sequential cosine scans (`ORDER BY embedding <=> query_vector LIMIT 1`) execute in under 1ms without approximate recall loss or maintenance overhead.
+- **Pattern Exemplars Table (`pattern_exemplars`)**:
+  - Stores golden exam problems curated by the Academic team.
+  - Fields include `question_text_latex`, `options_json` (A, B, C, D), `correct_option`, `solution_steps_json` (step-by-step LaTeX derivations).
+- **Pattern Traps Table (`pattern_traps`)**:
+  - Maps common cognitive misconceptions directly to distractor options.
+  - Fields: `trap_option` (e.g. 'B', 'D'), `misconception_name`, `trap_explanation`, `socratic_hint` (guiding questions used by the Socratic tutor without giving away the direct answer).
+- **Novel Pattern Proposals Table (`novel_pattern_proposals`)**:
+  - Staging ground for questions with low archetype similarity (< 0.75), isolating unverified patterns until Academic review and approval.
+- **AI Tutor Interaction Logs Table (`ai_tutor_interaction_logs`)**:
+  - Stores multi-turn Socratic transcripts, retrieved subgraph context, student evaluation flags, and human-in-the-loop audit data.
+
+#### 2. Cross-Platform Execution & Data Seeding
+- Synchronous `psycopg` connection used for script reliability on Windows without event loop conflicts.
+- Real 3072-dimensional vector embedding generated via Google Gemini Embedding API (`models/gemini-embedding-001`) using `embed_query` (same task type later used by the Novelty Detector, keeping archetype and question vectors in one embedding space).
+- Seeded pattern `MATH_ASYMPTOTE_PARAM_01` (Tiệm cận đồ thị hàm số chứa tham số m) linked to Skill `1d9b72ec-1f60-4406-981e-03ee8a4058bc`, complete with 1 golden exemplar and 2 cognitive traps.
+
+---
+
+### [08/10/2026] - Architecture Acceptance: Core Flow 4 GraphRAG Phase 2 (Novelty Detector & Academic Graph API)
+- **Architecture Acceptor**: `ThinhTran2412` (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - [`rag-service/graph/graph_db.py`](./../rag-service/graph/graph_db.py)
+  - [`rag-service/graph/novelty_detector.py`](./../rag-service/graph/novelty_detector.py)
+  - [`rag-service/routers/academic_graph.py`](./../rag-service/routers/academic_graph.py)
+  - [`rag-service/tests/test_novelty_detector.py`](./../rag-service/tests/test_novelty_detector.py)
+
+#### 1. Integration Contract with the .NET Vision Pipeline
+- The existing `GeminiExamParserService.cs` is reused unchanged. Its `ParsedExamDto` JSON (snake_case: `single_questions`, `passages[].questions`, `options`, `image_url`...) is accepted as-is by `POST /api/v1/academic-graph/novelty/check` via the `parsed_exam` field.
+- Passage-cluster questions are flattened and tagged with `passage_range` for reviewer traceability.
+
+#### 2. Decision Algorithm
+- Embedding input = normalized question stem + sorted options (distractors often define the archetype).
+- `similarity = 1 - (q <=> archetype_embedding)`, exact sequential scan (3072d exceeds the HNSW 2000d limit; archetype bank is small).
+- `similarity >= 0.75` -> `MATCHED_EXISTING`; `< 0.75` -> `NOVEL_PATTERN_CANDIDATE`. Threshold configurable per request or via `NOVELTY_SIMILARITY_THRESHOLD`.
+- Staging is idempotent: a question already `PENDING_REVIEW` is reused (`duplicate_proposal = true`) instead of re-inserted, so re-uploading the same exam does not flood the Academic queue.
+
+#### 3. Academic Review Workflow
+- `GET /api/v1/academic-graph/proposals` lists proposals ordered by lowest similarity first (most novel on top) with nearest archetype info.
+- `PATCH /api/v1/academic-graph/proposals/{id}/review` records `APPROVED | MERGED | REJECTED`; `MERGED` requires a valid `merged_into_archetype_id`; only `PENDING_REVIEW` rows can transition (404 otherwise).
+
+#### 4. Infrastructure Decisions
+- Dedicated `GRAPH_DATABASE_URL` (fallback `DATABASE_URL`) because the local `DATABASE_URL` targets the legacy `rag_db` container while the Knowledge Graph lives on Supabase.
+- `prepare_threshold=None` for Supabase pgbouncer compatibility; `connect_timeout=15` to fail fast.
+- Sync endpoints (`def`) so FastAPI offloads blocking psycopg/Gemini calls to its threadpool.
+
+#### 5. Verification
+- Live Supabase: similar asymptote question `0.78-0.79` (MATCHED); physics / literature questions `0.53-0.55` (NOVEL). Review transitions verified (200 / 400 / 404). Smoke data cleaned.
+- Offline unit tests: 7/7 passed. `dotnet build`: 0 errors.
+
+---
+
+### [09/10/2026] - Architecture Acceptance: Core Flow 4 GraphRAG Phase 3 (Hybrid GraphRAG Retriever)
+- **Architecture Acceptor**: `ThinhTran2412` (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - [`rag-service/graph/hybrid_retriever.py`](./../rag-service/graph/hybrid_retriever.py)
+  - [`rag-service/database/seed_archetypes.py`](./../rag-service/database/seed_archetypes.py)
+  - [`rag-service/routers/academic_graph.py`](./../rag-service/routers/academic_graph.py)
+  - [`rag-service/tests/test_hybrid_retriever.py`](./../rag-service/tests/test_hybrid_retriever.py)
+
+#### 1. Two-Hop Subgraph Retrieval Architecture
+- **Hop 1 (Vector Anchor)**:
+  - Embeds the student question stem + options using Gemini 3072d (`embed_query`).
+  - Resolves top-k candidate archetypes scoped to the question's taxonomy `skill_id`.
+  - Implements automatic fallback to global scope (`GLOBAL`) if the skill scope yields no match or has similarity below threshold, tolerating coarse or misclassified skill IDs.
+- **Fail-Closed Grounding**:
+  - Enforces `min_similarity = 0.75`. If the closest archetype similarity is $< 0.75$, the status returns `LOW_CONFIDENCE` with empty exemplars and traps, strictly preventing the Socratic tutor from grounding on irrelevant theorems.
+- **Hop 2 (Graph Relational Expansion & Safe Trap Alignment)**:
+  - Traverses from anchor archetype to `pattern_exemplars` (sorted by text match ratio) and `pattern_traps`.
+  - **Safe Trap Strategy**: Distinguishes between exact exemplar questions vs rearranged variants. Option letters (A/B/C/D) are only mapped directly (`EXEMPLAR_OPTION_LETTER`) if the question matches an exemplar ($\ge 90\%$). For variant questions where distractors may be shuffled, all archetype traps are returned as candidates (`ARCHETYPE_CANDIDATES`) for semantic alignment in Phase 4.
+  - Strips LaTeX delimiters (`$`, `\`, `{`, `}`) during text normalization to ensure robust string similarity calculation across mathematical notations.
+
+#### 2. Verification & Testing
+- Live Supabase integration verified across 5 distinct test scenarios:
+  1. Identical exemplar problem -> `GROUNDED`, exact trap mapped via option letter.
+  2. Variant problem with shuffled distractors -> `GROUNDED`, candidate traps returned.
+  3. Mislabeled skill parameter -> automatically recovered via global fallback.
+  4. Out-of-graph question (literature) -> safely returns `LOW_CONFIDENCE`.
+  5. Correct student answer -> returns `GROUNDED` without activating error misconceptions.
+- Unit testing: 15/15 unit tests passing (100%), 0 build errors across the .NET solution.
+
+---
+
+### [10/10/2026] - Architecture Acceptance: Core Flow 4 GraphRAG Phase 4 (Socratic Tutor & LLM-as-a-Judge)
+- **Architecture Acceptor**: `ThinhTran2412` (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - [`rag-service/socratic/validator_judge.py`](./../rag-service/socratic/validator_judge.py)
+  - [`rag-service/socratic/socratic_engine.py`](./../rag-service/socratic/socratic_engine.py)
+  - [`rag-service/routers/socratic_tutor.py`](./../rag-service/routers/socratic_tutor.py)
+  - [`rag-service/tests/test_socratic_engine.py`](./../rag-service/tests/test_socratic_engine.py)
+
+#### 1. Two-Layer Socratic Gating & LLM-as-a-Judge
+- **Fast Heuristic Pre-Check (`_fast_heuristic_guard`)**:
+  - Employs regex guards against blatant solution leaks (e.g. `chọn phương án A`, `đáp án đúng là B`) before invoking LLM inference, ensuring zero-latency rejection on obvious violations.
+- **LLM-as-a-Judge Structural Validator (`validator_judge.py`)**:
+  - Inspects AI draft responses under `temperature = 0.0` with structured JSON schema output (`JudgeValidationResult`).
+  - Enforces 3 non-negotiable criteria:
+    1. `revealed_direct_answer == False`: Absolutely forbids full mathematical resolution or dictating the correct option to the student.
+    2. `consistent_with_ground_truth == True`: Guides the student's reasoning strictly towards the verified ground-truth option.
+    3. `grounded_in_theorems == True`: Confines explanations to the retrieved curriculum theorems.
+  - Fail-safe fallback: If all judge models encounter rate limits or outages, rejects by default and triggers the verified Ground-Truth fallback.
+- **Socratic Guidance Generation & Safe Fallback (`socratic_engine.py`)**:
+  - Formats multi-turn Socratic system prompts: pinpoints the student's cognitive misconception, reminds of core anchor formulas, and poses a single guiding question for student-led problem solving.
+  - If the draft is rejected by the Judge, the engine seamlessly outputs a structured fallback synthesized from the Knowledge Graph (`💡 Gợi ý phương pháp giải chuẩn...`) without breaking student session continuity.
+
+#### 2. Real-Time Streaming & Interaction Audit
+- **REST & SSE Streaming Endpoints (`socratic_tutor.py`)**:
+  - `POST /api/v1/socratic/ask`: Synchronous JSON response for non-streaming clients and verification tools.
+  - `POST /api/v1/socratic/ask-stream`: Native `text/event-stream` emitting `metadata`, pacing `token` events, and `done` events with the persisted interaction ID.
+  - Automatic audit logging into Supabase PostgreSQL table `v_eval_ai.ai_tutor_interaction_logs` recording student option, correct option, matched trap, complete transcript, and validation status.
+
+#### 3. Verification & Testing
+- Live end-to-end API execution on Supabase verified:
+  - Synchronous `/ask` endpoint returned status 200, successfully logged interaction `a3a315fd-...`.
+  - SSE streaming `/ask-stream` emitted 236 lines of smooth token events, successfully logged interaction `ad817693-...`.
+- Full offline test suite: 22/22 unit tests passing (100%).
+- .NET solution verification: `dotnet build V-Eval-Ai_Engine.sln` succeeded with 0 errors.
+
+---
+
+### [12/10/2026] - Architecture Acceptance: Core Flow 4 GraphRAG Phase 6 (Human-in-the-Loop Feedback & Mentor Studio)
+- **Architecture Acceptor**: `ThinhTran2412` (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - [`rag-service/routers/socratic_tutor.py`](./../rag-service/routers/socratic_tutor.py)
+  - [`V-Eval-Ai_Engine.API/wwwroot/view-tutor-mentor.html`](./../V-Eval-Ai_Engine.API/wwwroot/view-tutor-mentor.html)
+  - [`V-Eval-Ai_Engine.API/Endpoints/ExamEndpoints.cs`](./../V-Eval-Ai_Engine.API/Endpoints/ExamEndpoints.cs)
+  - [`rag-service/tests/test_socratic_mentor.py`](./../rag-service/tests/test_socratic_mentor.py)
+
+#### 1. Human-in-the-Loop Socratic Feedback Loop
+- **Student Flagging Pipeline (`/interactions/{id}/report`)**:
+  - Sets `student_reported = TRUE` and persists optional feedback notes in `v_eval_ai.ai_tutor_interaction_logs`.
+  - Seamlessly flags flawed or confusing AI explanations for immediate academic staff inspection.
+- **Mentor Action 1: Override Solution as Golden PatternExemplar (`/override-exemplar`)**:
+  - Empowers subject mentors to review student interaction transcripts alongside Knowledge Graph context.
+  - Generates a new `pattern_exemplars` row linked to `archetype_pattern_id` with LaTeX math derivations, retraining the retriever on human-refined exemplars.
+  - Atomically marks the interaction record with `mentor_resolution = 'OVERRIDDEN_EXEMPLAR_SAVED'`.
+- **Mentor Action 2: Dynamic Cognitive Trap Expansion (`/add-trap`)**:
+  - Allows mentors to catalog newly uncovered misconceptions directly into `pattern_traps`.
+  - Captures `trap_name`, `wrong_option`, `misconception_explanation`, and `socratic_hint`.
+  - Atomically marks the interaction record with `mentor_resolution = 'NEW_TRAP_ADDED'`.
+
+#### 2. Mentor Studio Web Dashboard
+- Standalone responsive workspace served at `/api/ai-engine/view-tutor-mentor` (ASP.NET Core) and `/api/v1/socratic/view-mentor` (FastAPI).
+- Inter-operates with KaTeX for mathematical notation formatting and glassmorphic UI inspection cards.
+
+#### 3. Verification & Testing
+- Automated testing: 5 new unit tests added in `tests/test_socratic_mentor.py`, reaching 27/27 total passing tests across all GraphRAG phases.
+- Build verification: `dotnet build V-Eval-Ai_Engine.sln` succeeded with 0 errors.
 
 ---
 
