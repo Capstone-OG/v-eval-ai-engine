@@ -74,10 +74,10 @@ public class ImportPatternDto
     public string? CoreSkill { get; set; }
 
     [JsonPropertyName("theoryRecap")]
-    public string? TheoryRecap { get; set; }
+    public string TheoryRecap { get; set; } = string.Empty;
 
     [JsonPropertyName("solutionMethod")]
-    public string? SolutionMethod { get; set; }
+    public string SolutionMethod { get; set; } = string.Empty;
 
     [JsonPropertyName("videoUrl")]
     public string? VideoUrl { get; set; }

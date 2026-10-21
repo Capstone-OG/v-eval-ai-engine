@@ -1220,14 +1220,14 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
                                 if (patNode == null) continue;
                                 var pat = new ImportPatternDto
                                 {
-                                    PatternName = patNode["patternName"]?.GetValue<string>() ?? "Dạng bài",
+                                    PatternName = patNode["patternName"]?.GetValue<string>() ?? patNode["pattern_name"]?.GetValue<string>() ?? "Dạng bài",
                                     Weight = patNode["weight"] != null ? patNode["weight"]!.GetValue<double>() : 0.05,
                                     Classification = patNode["classification"]?.GetValue<string>(),
-                                    CoreSkill = patNode["coreSkill"]?.GetValue<string>(),
-                                    TheoryRecap = patNode["theoryRecap"]?.GetValue<string>(),
-                                    SolutionMethod = patNode["solutionMethod"]?.GetValue<string>(),
-                                    VideoUrl = patNode["videoUrl"]?.GetValue<string>(),
-                                    DurationSeconds = patNode["durationSeconds"] != null ? patNode["durationSeconds"]!.GetValue<int>() : 600
+                                    CoreSkill = patNode["coreSkill"]?.GetValue<string>() ?? patNode["core_skill"]?.GetValue<string>(),
+                                    TheoryRecap = patNode["theoryRecap"]?.GetValue<string>() ?? patNode["theory_recap"]?.GetValue<string>() ?? string.Empty,
+                                    SolutionMethod = patNode["solutionMethod"]?.GetValue<string>() ?? patNode["solution_method"]?.GetValue<string>() ?? string.Empty,
+                                    VideoUrl = patNode["videoUrl"]?.GetValue<string>() ?? patNode["video_url"]?.GetValue<string>(),
+                                    DurationSeconds = patNode["durationSeconds"] != null ? patNode["durationSeconds"]!.GetValue<int>() : (patNode["duration_seconds"] != null ? patNode["duration_seconds"]!.GetValue<int>() : 600)
                                 };
 
                                 var questionsNode = patNode["questions"] as JsonArray;
@@ -1332,9 +1332,10 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
                         {
                             PatternName = patMatch.Groups[1].Value,
                             Classification = ExtractRegexField(patBlock, "classification") ?? "Dạng bài trọng tâm",
-                            CoreSkill = ExtractRegexField(patBlock, "coreSkill") ?? "Tư duy giải toán",
-                            TheoryRecap = ExtractRegexField(patBlock, "theoryRecap"),
-                            SolutionMethod = ExtractRegexField(patBlock, "solutionMethod"),
+                            CoreSkill = ExtractRegexField(patBlock, "coreSkill") ?? ExtractRegexField(patBlock, "core_skill") ?? "Tư duy giải toán",
+                            TheoryRecap = ExtractRegexField(patBlock, "theoryRecap") ?? ExtractRegexField(patBlock, "theory_recap") ?? string.Empty,
+                            SolutionMethod = ExtractRegexField(patBlock, "solutionMethod") ?? ExtractRegexField(patBlock, "solution_method") ?? string.Empty,
+                            VideoUrl = ExtractRegexField(patBlock, "videoUrl") ?? ExtractRegexField(patBlock, "video_url"),
                             DurationSeconds = 600,
                             Weight = 0.05
                         };

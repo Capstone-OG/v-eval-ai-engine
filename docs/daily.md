@@ -2,6 +2,10 @@
 
 ## [21/10/2026] - Chuẩn Hóa Chuỗi Bóc Tách Đáp Án Đúng (NormalizeCorrectOption), Tự Động Tái Tạo Bảng Biến Thiên ([VARIATION_TABLE]) Và Đồ Thị Hàm Số ([MATH_GRAPH]) Zero-Hardcode
 
+- **Bổ Sung Dual-Case Mapping & Khắc Phục Triệt Để Null TheoryRecap/SolutionMethod (`CurriculumAiService.cs`)**:
+  - Hỗ trợ song song cả camelCase (`theoryRecap`, `solutionMethod`, `videoUrl`) lẫn snake_case (`theory_recap`, `solution_method`, `video_url`) trong bộ bóc tách linh hoạt `TryParseCurriculumFromLooseJson` và `ExtractCurriculumViaRegex`.
+  - Khởi tạo mặc định `string.Empty` thay vì `null` trong `CurriculumAiDtos.cs`, ngăn chặn hoàn toàn lỗi 400 Bad Request (`The TheoryRecap field is required`) khi client chuyển tiếp payload nạp tri thức sang Content Service.
+
 - **Chuẩn Hóa Toàn Diện Đáp Án Đúng `CorrectOption` Cho Mọi Phân Hệ Bóc Tách & Sinh Câu Hỏi (`CurriculumAiService.cs`)**:
   - *Giải quyết lỗi ngoại lệ kiểu dữ liệu*: Xây dựng phương thức trợ giúp `NormalizeCorrectOption` và `ExtractJsonNodeAsString` chuẩn hóa mọi định dạng thô do LLM/OCR sinh ra (như `"A."`, `"(B)"`, `"[C]"`, `"D:"`, `"Đáp án C"`, `"Phương án B"`, `"Answer D"`, `"Option A"`, số nguyên `0..3` hoặc `null`) về duy nhất 1 ký tự chuẩn mực `'A'`, `'B'`, `'C'`, `'D'`.
   - *Bảo vệ toàn diện 5 pipeline sinh và bóc tách*:
