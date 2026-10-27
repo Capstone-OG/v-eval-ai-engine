@@ -43,3 +43,8 @@ jobs:
     # 6. Build projects
     - name: Build
       run: dotnet build --no-restore --configuration Release
+
+    # 7. Run Unit Tests
+    - name: Run Tests
+      run: dotnet test --no-build --configuration Release --verbosity normal
+
