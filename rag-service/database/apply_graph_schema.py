@@ -52,6 +52,10 @@ def apply_schema():
             print("Verified tables in schema 'v_eval_ai':", tables)
 
             expected_tables = [
+                "KnowledgeSources",
+                "KnowledgeVectorChunks",
+                "TheoreticalDocuments",
+                "TutorSessions",
                 "ai_tutor_interaction_logs",
                 "archetype_patterns",
                 "novel_pattern_proposals",
@@ -62,7 +66,7 @@ def apply_schema():
             if missing:
                 print(f"[WARN] Missing expected tables: {missing}")
             else:
-                print("[SUCCESS] All 5 Knowledge Graph tables created and verified successfully!")
+                print("[SUCCESS] All 9 Knowledge Graph & RAG tables created and verified successfully!")
 
 if __name__ == "__main__":
     apply_schema()

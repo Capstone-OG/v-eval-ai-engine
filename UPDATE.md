@@ -13,4 +13,9 @@
   - Bổ sung bước thực thi `dotnet test --no-build --configuration Release --verbosity normal` vào `.github/workflows/ci.yml`.
 - **Đồng Bộ Thực Thể Miền CSDL & Sơ Đồ ERD**:
   - Đồng bộ ánh xạ 2 Domain Entities [`TheoreticalDocument.cs`](./V-Eval-Ai_Engine.Domain/Entities/TheoreticalDocument.cs) và [`TutorSession.cs`](./V-Eval-Ai_Engine.Domain/Entities/TutorSession.cs) vào CSDL chuẩn [`docs/SQL/SQL.sql`](../../docs/SQL/SQL.sql) (`v_eval_ai."TheoreticalDocuments"` và `v_eval_ai."TutorSessions"`) và sơ đồ thực thể [`docs/diagrams/erd.mmd`](../../docs/diagrams/erd.mmd).
+- **Chuẩn Hóa Kích Thước Vector Embedding 768 Chiều & Đồng Bộ Kịch Bản Migration DDL**:
+  - Chuẩn hóa thống nhất toàn hệ thống kích thước vector embedding về **768 chiều** (Google Gemini `text-embedding-004`) cho cả `KnowledgeVectorChunks` và `archetype_patterns`.
+  - Khắc phục giới hạn kích thước chỉ mục HNSW của pgvector (ngưỡng tối đa 2000 chiều), thiết lập chỉ mục `idx_archetype_patterns_hnsw` chạy mượt mà < 1ms.
+  - Cập nhật [`rag-service/database/graph_schema.sql`](./rag-service/database/graph_schema.sql) và [`rag-service/database/apply_graph_schema.py`](./rag-service/database/apply_graph_schema.py) đồng bộ đầy đủ 9 bảng của schema `v_eval_ai`.
+
 
