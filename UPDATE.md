@@ -11,3 +11,6 @@
   - Tích hợp project vào `V-Eval-Ai_Engine.sln`.
 - **Tích Hợp Tự Động Hóa CI/CD Workflow**:
   - Bổ sung bước thực thi `dotnet test --no-build --configuration Release --verbosity normal` vào `.github/workflows/ci.yml`.
+- **Đồng Bộ Thực Thể Miền CSDL & Sơ Đồ ERD**:
+  - Đồng bộ ánh xạ 2 Domain Entities [`TheoreticalDocument.cs`](./V-Eval-Ai_Engine.Domain/Entities/TheoreticalDocument.cs) và [`TutorSession.cs`](./V-Eval-Ai_Engine.Domain/Entities/TutorSession.cs) vào CSDL chuẩn [`docs/SQL/SQL.sql`](../../docs/SQL/SQL.sql) (`v_eval_ai."TheoreticalDocuments"` và `v_eval_ai."TutorSessions"`) và sơ đồ thực thể [`docs/diagrams/erd.mmd`](../../docs/diagrams/erd.mmd).
+
