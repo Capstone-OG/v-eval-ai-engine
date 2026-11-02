@@ -1,5 +1,16 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [02/11/2026] - Thiết Lập Kiến Trúc Test Nền Tảng Cho AI ENGINE
+
+- **Chuẩn Hóa Hạ Tầng Dự Án Kiểm Thử (V-Eval-Ai_Engine.Tests)**:
+  - Nâng cấp bộ thư viện kiểm thử: `xunit` (2.9.2), `Moq` (4.20.72), `FluentAssertions` (7.2.0), `coverlet.collector` (6.0.2).
+  - Tích hợp Global Usings giúp code test ngắn gọn, sạch sẽ, không cần lặp lại namespace kiểm thử.
+  - Cấu hình công cụ ReportGenerator v5.4.18 qua `.config/dotnet-tools.json` để phục vụ xuất báo cáo Code Coverage dạng HTML.
+  - Phân vùng cấu trúc thư mục kiểm thử chuẩn hóa: `Commands/`, `Queries/`, `Validators/`, `Common/`.
+- **Bảo Vệ Kho Lưu Trữ & Script Vận Hành**:
+  - Bổ sung `TestResults/` và `*.cobertura.xml` vào `.gitignore` của dịch vụ.
+  - Tạo script `Scripts/test.bat` hỗ trợ chạy test nhanh và xem báo cáo coverage trực tiếp tại máy phát triển.
+
 ## [21/10/2026] - Chuẩn Hóa Chuỗi Bóc Tách Đáp Án Đúng (NormalizeCorrectOption), Tự Động Tái Tạo Bảng Biến Thiên ([VARIATION_TABLE]) Và Đồ Thị Hàm Số ([MATH_GRAPH]) Zero-Hardcode
 
 - **Bổ Sung Dual-Case Mapping & Khắc Phục Triệt Để Null TheoryRecap/SolutionMethod (`CurriculumAiService.cs`)**:
