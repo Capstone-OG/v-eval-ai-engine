@@ -1,5 +1,5 @@
-"""
-hybrid_retriever.py — Hybrid GraphRAG Retriever (Core Flow 4 / Phase 3)
+﻿"""
+hybrid_retriever.py â€” Hybrid GraphRAG Retriever (Core Flow 4 / Phase 3)
 ========================================================================
 When a student taps "Ask AI Tutor" on a wrong answer, this module extracts the
 grounded *Socratic subgraph* from the Knowledge Graph (schema ``v_eval_ai``):
@@ -246,6 +246,94 @@ class HybridGraphRetriever:
 
     # -- public API ------------------------------------------------------------
 
+    # -- Hop 1b: keyword fallback anchor (offline / embedding failure resilient) --
+
+    def _anchor_candidates_by_keywords(self, cur, question_text: str, skill_id: Optional[str]) -> list[ArchetypeNode]:
+        cur.execute(
+            f"""
+            SELECT id::text AS id, pattern_code, pattern_name, skill_id::text AS skill_id,
+                   core_theorems, fast_solving_heuristics, description
+            FROM {GRAPH_SCHEMA}.archetype_patterns
+            WHERE is_verified = TRUE
+              AND (%(skill)s::uuid IS NULL OR skill_id = %(skill)s::uuid);
+            """,
+            {"skill": skill_id},
+        )
+        rows = cur.fetchall()
+        if not rows and skill_id:
+            cur.execute(
+                f"""
+                SELECT id::text AS id, pattern_code, pattern_name, skill_id::text AS skill_id,
+                       core_theorems, fast_solving_heuristics, description
+                FROM {GRAPH_SCHEMA}.archetype_patterns
+                WHERE is_verified = TRUE;
+                """
+            )
+            rows = cur.fetchall()
+
+        q_lower = question_text.lower()
+        keywords_map = {
+            "ARCH_LOGIC_PROPOSITION_01": [
+                "má»‡nh Ä‘á»", "kÃ©o theo", "logic", "suy luáº­n", "báº£ng chÃ¢n trá»‹", "phá»§ Ä‘á»‹nh", "tÆ°Æ¡ng Ä‘Æ°Æ¡ng",
+                "p \Rightarrow q", "p \land", "p \lor", "contrapositive", "pháº£n Ä‘áº£o"
+            ],
+            "ARCH_MATH_PROGRESSION_01": [
+                "cáº¥p sá»‘ cá»™ng", "cáº¥p sá»‘ nhÃ¢n", "cÃ´ng sai", "cÃ´ng bá»™i", "dÃ£y sá»‘", "u_n", "u_1", "u_5"
+            ],
+            "ARCH_MATH_LOG_EXP_01": [
+                "logarit", "log_", "\log", "táº­p xÃ¡c Ä‘á»‹nh", "mÅ©", "lÅ©y thá»«a"
+            ],
+            "ARCH_MATH_FUNCTION_MONOTONICITY_01": [
+                "Ä‘á»“ng biáº¿n", "nghá»‹ch biáº¿n", "Ä‘áº¡o hÃ m", "báº£ng biáº¿n thiÃªn", "hÃ m sá»‘ báº­c", "Ä‘Æ¡n Ä‘iá»‡u"
+            ],
+            "MATH_ASYMPTOTE_PARAM_01": [
+                "tiá»‡m cáº­n", "tiá»‡m cáº­n Ä‘á»©ng", "tiá»‡m cáº­n ngang", "tham sá»‘ m"
+            ],
+            "ARCH_LANG_VIETNAMESE_01": [
+                "chÃ­nh táº£", "xÃ¡n láº¡n", "sÃ¡ng láº¡ng", "tá»« hÃ¡n viá»‡t", "viáº¿t Ä‘Ãºng"
+            ],
+            "PHYS_SHM_MAX_SPEED_01": [
+                "dao Ä‘á»™ng", "Ä‘iá»u hÃ²a", "tá»‘c Ä‘á»™ cá»±c Ä‘áº¡i", "gia tá»‘c cá»±c Ä‘áº¡i", "v_max", "a_max"
+            ],
+        }
+
+        scored = []
+        for r in rows:
+            code = r["pattern_code"]
+            name = (r["pattern_name"] or "").lower()
+            desc = (r["description"] or "").lower()
+
+            score = 0.0
+            if code in keywords_map:
+                for kw in keywords_map[code]:
+                    if kw in q_lower:
+                        score += 0.35
+
+            for w in name.split():
+                if len(w) >= 3 and w in q_lower:
+                    score += 0.15
+            for w in desc.split():
+                if len(w) >= 4 and w in q_lower:
+                    score += 0.05
+
+            if score > 0:
+                similarity = min(0.92, max(0.5, 0.70 + score))
+                scored.append((similarity, r))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [
+            ArchetypeNode(
+                id=r["id"],
+                pattern_code=r["pattern_code"],
+                pattern_name=r["pattern_name"],
+                skill_id=r["skill_id"],
+                core_theorems=r["core_theorems"],
+                fast_solving_heuristics=r["fast_solving_heuristics"],
+                similarity=round(sim, 6)
+            )
+            for sim, r in scored[:self.top_k]
+        ]
+
     def retrieve(
         self,
         question_latex: str,
@@ -257,7 +345,13 @@ class HybridGraphRetriever:
         """Return the grounded Socratic subgraph for a (wrongly answered) question."""
         started = time.perf_counter()
         question_text = build_question_text(question_latex, options)
-        vector_literal = to_pgvector(self._embed(question_text))
+        vector_literal = None
+        try:
+            vector = self._embed(question_text)
+            if vector:
+                vector_literal = to_pgvector(vector)
+        except Exception as embed_err:
+            logger.warning("Vector embedding failed (%s). Falling back to keyword search in Knowledge Graph.", embed_err)
         sel = (student_selected_option or "").strip().upper() or None
 
         result = SocraticSubgraph(
@@ -270,23 +364,29 @@ class HybridGraphRetriever:
         with graph_connection() as conn:
             with conn.cursor() as cur:
                 candidates, scope = [], None
-                if skill_id:
-                    candidates, scope = self._anchor_candidates(cur, vector_literal, skill_id), SCOPE_SKILL
-                # Fall back to the whole graph when the skill scope is empty OR too weak
-                # (e.g. the caller passed a mislabeled / coarse skill_id).
+                if vector_literal:
+                    if skill_id:
+                        candidates, scope = self._anchor_candidates(cur, vector_literal, skill_id), SCOPE_SKILL
+                    # Fall back to the whole graph when the skill scope is empty OR too weak
+                    if not candidates or candidates[0].similarity < self.min_similarity:
+                        global_candidates = self._anchor_candidates(cur, vector_literal, None)
+                        if global_candidates and (
+                            not candidates or global_candidates[0].similarity > candidates[0].similarity
+                        ):
+                            candidates, scope = global_candidates, SCOPE_GLOBAL
+
+                # Fallback to keyword-based anchor retrieval if vector search failed or yielded LOW_CONFIDENCE
                 if not candidates or candidates[0].similarity < self.min_similarity:
-                    global_candidates = self._anchor_candidates(cur, vector_literal, None)
-                    if global_candidates and (
-                        not candidates or global_candidates[0].similarity > candidates[0].similarity
-                    ):
-                        candidates, scope = global_candidates, SCOPE_GLOBAL
+                    kw_candidates = self._anchor_candidates_by_keywords(cur, question_text, skill_id)
+                    if kw_candidates and (not candidates or kw_candidates[0].similarity > candidates[0].similarity):
+                        candidates, scope = kw_candidates, (SCOPE_SKILL if skill_id else SCOPE_GLOBAL)
 
                 if candidates:
                     result.scope = scope
                     result.anchor, result.alternatives = candidates[0], candidates[1:]
                     result.status = classify_anchor(result.anchor.similarity, self.min_similarity)
 
-                if result.status == STATUS_GROUNDED:
+                if result.status == STATUS_GROUNDED and result.anchor:
                     exemplars, traps = self._expand(cur, result.anchor.id, question_text)
                     result.exemplars = exemplars
                     result.matched_trap, result.candidate_traps, result.trap_match_strategy = resolve_traps(
@@ -303,3 +403,4 @@ class HybridGraphRetriever:
             result.trap_match_strategy, result.retrieval_ms,
         )
         return result
+

@@ -1,5 +1,5 @@
-"""
-socratic_engine.py — Socratic AI Tutor Guidance Engine (Core Flow 4 / Phase 4)
+﻿"""
+socratic_engine.py â€” Socratic AI Tutor Guidance Engine (Core Flow 4 / Phase 4)
 =============================================================================
 Coordinates Socratic prompt construction, two-layer validation guardrails,
 LLM-as-a-Judge gating, and real-time SSE streaming.
@@ -60,29 +60,29 @@ def extract_subgraph_payload(subgraph_context: dict[str, Any]) -> dict[str, str]
     """Extract and normalize knowledge elements from SocraticSubgraph dict."""
     is_grounded = subgraph_context.get("status") == "GROUNDED" or subgraph_context.get("is_grounded", False)
     anchor = (subgraph_context.get("anchor") or {}) if is_grounded else {}
-    pattern_name = anchor.get("pattern_name") or subgraph_context.get("pattern_name") or "Dạng bài chuẩn ĐGNL"
-    core_theorems = anchor.get("core_theorems") or subgraph_context.get("core_theorems") or "Vận dụng định lý và tính chất cơ bản."
+    pattern_name = anchor.get("pattern_name") or subgraph_context.get("pattern_name") or "Dáº¡ng bÃ i chuáº©n ÄGNL"
+    core_theorems = anchor.get("core_theorems") or subgraph_context.get("core_theorems") or "Váº­n dá»¥ng Ä‘á»‹nh lÃ½ vÃ  tÃ­nh cháº¥t cÆ¡ báº£n."
     fast_heuristics = anchor.get("fast_solving_heuristics") or subgraph_context.get("fast_solving_heuristics") or ""
 
     matched_trap = subgraph_context.get("matched_trap") or {}
     candidate_traps = subgraph_context.get("candidate_traps") or []
 
     if matched_trap:
-        trap_name = matched_trap.get("trap_name", "Lỗi tính toán hoặc áp dụng công thức")
-        misconception = matched_trap.get("misconception_explanation", "Chưa kiểm tra kỹ điều kiện bài toán.")
-        socratic_hint = matched_trap.get("socratic_hint", "Em hãy đối chiếu lại các bước tính toán.")
+        trap_name = matched_trap.get("trap_name", "Lá»—i tÃ­nh toÃ¡n hoáº·c Ã¡p dá»¥ng cÃ´ng thá»©c")
+        misconception = matched_trap.get("misconception_explanation", "ChÆ°a kiá»ƒm tra ká»¹ Ä‘iá»u kiá»‡n bÃ i toÃ¡n.")
+        socratic_hint = matched_trap.get("socratic_hint", "Em hÃ£y Ä‘á»‘i chiáº¿u láº¡i cÃ¡c bÆ°á»›c tÃ­nh toÃ¡n.")
     elif candidate_traps:
         trap_summaries = []
         for t in candidate_traps:
-            opt = f" (phương án {t.get('wrong_option')})" if t.get("wrong_option") else ""
+            opt = f" (phÆ°Æ¡ng Ã¡n {t.get('wrong_option')})" if t.get("wrong_option") else ""
             trap_summaries.append(f"- {t.get('trap_name')}{opt}: {t.get('misconception_explanation')}")
-        trap_name = "Các bẫy tư duy thường gặp trong dạng bài này"
+        trap_name = "CÃ¡c báº«y tÆ° duy thÆ°á»ng gáº·p trong dáº¡ng bÃ i nÃ y"
         misconception = "\n".join(trap_summaries)
-        socratic_hint = candidate_traps[0].get("socratic_hint", "Em hãy xem lại điều kiện ràng buộc của bài toán.")
+        socratic_hint = candidate_traps[0].get("socratic_hint", "Em hÃ£y xem láº¡i Ä‘iá»u kiá»‡n rÃ ng buá»™c cá»§a bÃ i toÃ¡n.")
     else:
-        trap_name = "Lỗi nhận thức phổ biến"
-        misconception = "Có thể em đang nhầm lẫn ở bước chuyển đổi đại lượng hoặc điều kiện biên."
-        socratic_hint = "Em hãy kiểm tra lại định nghĩa của các đại lượng trong đề bài nhé."
+        trap_name = "Lá»—i nháº­n thá»©c phá»• biáº¿n"
+        misconception = "CÃ³ thá»ƒ em Ä‘ang nháº§m láº«n á»Ÿ bÆ°á»›c chuyá»ƒn Ä‘á»•i Ä‘áº¡i lÆ°á»£ng hoáº·c Ä‘iá»u kiá»‡n biÃªn."
+        socratic_hint = "Em hÃ£y kiá»ƒm tra láº¡i Ä‘á»‹nh nghÄ©a cá»§a cÃ¡c Ä‘áº¡i lÆ°á»£ng trong Ä‘á» bÃ i nhÃ©."
 
     return {
         "pattern_name": pattern_name,
@@ -112,7 +112,7 @@ def build_socratic_prompts(
 
     options_formatted = ""
     if options:
-        options_formatted = "\nCác phương án của câu hỏi:\n" + "\n".join(
+        options_formatted = "\nCÃ¡c phÆ°Æ¡ng Ã¡n cá»§a cÃ¢u há»i:\n" + "\n".join(
             f"{k}. {v}" for k, v in sorted(options.items())
         )
 
@@ -120,67 +120,111 @@ def build_socratic_prompts(
     if student_selected_option_text:
         student_choice_desc += f" ({student_selected_option_text})"
 
-    system_prompt = f"""Bạn là Gia sư AI Socratic của Hệ thống Khảo thí V-Eval.
-Học sinh vừa chọn phương án SAI trong một câu hỏi trắc nghiệm ĐGNL.
-Nhiệm vụ tối thượng của bạn là DẪN DẮT GỢI MỞ THEO PHƯƠNG PHÁP SOCRATES. TUYỆT ĐỐI CẤM GIẢI THAY.
+    system_prompt = f"""Báº¡n lÃ  Gia sÆ° AI Socratic cá»§a Há»‡ thá»‘ng Kháº£o thÃ­ V-Eval.
+Há»c sinh vá»«a chá»n phÆ°Æ¡ng Ã¡n SAI trong má»™t cÃ¢u há»i tráº¯c nghiá»‡m ÄGNL.
+Nhiá»‡m vá»¥ tá»‘i thÆ°á»£ng cá»§a báº¡n lÃ  DáºªN Dáº®T Gá»¢I Má»ž THEO PHÆ¯Æ NG PHÃP SOCRATES. TUYá»†T Äá»I Cáº¤M GIáº¢I THAY.
 
-[NGUỒN CHÂN LÝ TỪ KNOWLEDGE GRAPH]:
-- Dạng bài: {pattern_name}
-- Định lý / Công thức chuẩn:
+[NGUá»’N CHÃ‚N LÃ Tá»ª KNOWLEDGE GRAPH]:
+- Dáº¡ng bÃ i: {pattern_name}
+- Äá»‹nh lÃ½ / CÃ´ng thá»©c chuáº©n:
 {core_theorems}
-- Phân tích bẫy nhận thức: {trap_name}
+- PhÃ¢n tÃ­ch báº«y nháº­n thá»©c: {trap_name}
 {misconception}
-- Gợi ý bản lề sư phạm: {socratic_hint}
+- Gá»£i Ã½ báº£n lá» sÆ° pháº¡m: {socratic_hint}
 
-[DỮ LIỆU ĐỀ BÀI VÀ HỌC SINH]:
-- Phương án học sinh đã chọn (SAI): {student_choice_desc}
-- Đáp án đúng của hệ thống: {correct_option} (BÍ MẬT TUYỆT ĐỐI — CẤM NÓI RA, CẤM BẢO HỌC SINH CHỌN {correct_option})
+[Dá»® LIá»†U Äá»€ BÃ€I VÃ€ Há»ŒC SINH]:
+- PhÆ°Æ¡ng Ã¡n há»c sinh Ä‘Ã£ chá»n (SAI): {student_choice_desc}
+- ÄÃ¡p Ã¡n Ä‘Ãºng cá»§a há»‡ thá»‘ng: {correct_option} (BÃ Máº¬T TUYá»†T Äá»I â€” Cáº¤M NÃ“I RA, Cáº¤M Báº¢O Há»ŒC SINH CHá»ŒN {correct_option})
 
-[NGUYÊN TẮC BẮT BUỘC (GUARDRAILS)]:
-1. BƯỚC 1 - GHI NHẬN THÂN THIỆN: Chỉ ra lỗi tư duy học sinh vừa vướng phải (ví dụ: "Có vẻ em đang tính nhầm tần số góc thành pi/T...").
-2. BƯỚC 2 - NHẮC LẠI ĐỊNH LÝ: Trích dẫn 1 công thức hoặc định lý bản lề từ giáo trình để học sinh làm mỏ neo.
-3. BƯỚC 3 - CÂU HỎI GỢI MỞ: Đặt DUY NHẤT 1 câu hỏi gợi mở then chốt để học sinh tự suy nghĩ và tính toán bước tiếp theo.
-4. QUY TẮC CẤM:
-   - TUYỆT ĐỐI KHÔNG tính ra kết quả số học cuối cùng.
-   - TUYỆT ĐỐI KHÔNG nói đáp án đúng là phương án nào (A, B, C, D).
-   - Ngắn gọn, súc tích (dưới 150 từ), giọng điệu ân cần, khích lệ.
+[NGUYÃŠN Táº®C Báº®T BUá»˜C (GUARDRAILS)]:
+1. BÆ¯á»šC 1 - GHI NHáº¬N THÃ‚N THIá»†N: Chá»‰ ra lá»—i tÆ° duy há»c sinh vá»«a vÆ°á»›ng pháº£i (vÃ­ dá»¥: "CÃ³ váº» em Ä‘ang tÃ­nh nháº§m táº§n sá»‘ gÃ³c thÃ nh pi/T...").
+2. BÆ¯á»šC 2 - NHáº®C Láº I Äá»ŠNH LÃ: TrÃ­ch dáº«n 1 cÃ´ng thá»©c hoáº·c Ä‘á»‹nh lÃ½ báº£n lá» tá»« giÃ¡o trÃ¬nh Ä‘á»ƒ há»c sinh lÃ m má» neo.
+3. BÆ¯á»šC 3 - CÃ‚U Há»ŽI Gá»¢I Má»ž: Äáº·t DUY NHáº¤T 1 cÃ¢u há»i gá»£i má»Ÿ then chá»‘t Ä‘á»ƒ há»c sinh tá»± suy nghÄ© vÃ  tÃ­nh toÃ¡n bÆ°á»›c tiáº¿p theo.
+4. QUY Táº®C Cáº¤M:
+   - TUYá»†T Äá»I KHÃ”NG tÃ­nh ra káº¿t quáº£ sá»‘ há»c cuá»‘i cÃ¹ng.
+   - TUYá»†T Äá»I KHÃ”NG nÃ³i Ä‘Ã¡p Ã¡n Ä‘Ãºng lÃ  phÆ°Æ¡ng Ã¡n nÃ o (A, B, C, D).
+   - Ngáº¯n gá»n, sÃºc tÃ­ch (dÆ°á»›i 150 tá»«), giá»ng Ä‘iá»‡u Ã¢n cáº§n, khÃ­ch lá»‡.
 """
 
     if student_query and student_query.strip():
-        user_message = f"""Đề bài câu hỏi trắc nghiệm:
+        user_message = f"""Äá» bÃ i cÃ¢u há»i tráº¯c nghiá»‡m:
 {question_latex}{options_formatted}
 
-- Phương án học sinh đã chọn (sai): {student_choice_desc}
-- Đáp án đúng của hệ thống: {correct_option}
+- PhÆ°Æ¡ng Ã¡n há»c sinh Ä‘Ã£ chá»n (sai): {student_choice_desc}
+- ÄÃ¡p Ã¡n Ä‘Ãºng cá»§a há»‡ thá»‘ng: {correct_option}
 
-Học sinh vừa hỏi / thắc mắc trong cuộc trò chuyện:
+Há»c sinh vá»«a há»i / tháº¯c máº¯c trong cuá»™c trÃ² chuyá»‡n:
 "{student_query.strip()}"
 
-Thầy/Cô hãy đóng vai Gia sư AI Socratic, phản hồi trực tiếp câu hỏi/thắc mắc trên của học sinh theo nguyên tắc gợi mở sư phạm:
-1. Giải thích tự nhiên, ngắn gọn điểm mấu chốt học sinh đang băn khoăn.
-2. TUYỆT ĐỐI KHÔNG giải thay trọn vẹn, không đưa ra đáp án cuối cùng.
-3. Đặt duy nhất 1 câu hỏi dẫn dắt để học sinh tự suy nghĩ và tìm ra lời giải."""
+Tháº§y/CÃ´ hÃ£y Ä‘Ã³ng vai Gia sÆ° AI Socratic, pháº£n há»“i trá»±c tiáº¿p cÃ¢u há»i/tháº¯c máº¯c trÃªn cá»§a há»c sinh theo nguyÃªn táº¯c gá»£i má»Ÿ sÆ° pháº¡m:
+1. Giáº£i thÃ­ch tá»± nhiÃªn, ngáº¯n gá»n Ä‘iá»ƒm máº¥u chá»‘t há»c sinh Ä‘ang bÄƒn khoÄƒn.
+2. TUYá»†T Äá»I KHÃ”NG giáº£i thay trá»n váº¹n, khÃ´ng Ä‘Æ°a ra Ä‘Ã¡p Ã¡n cuá»‘i cÃ¹ng.
+3. Äáº·t duy nháº¥t 1 cÃ¢u há»i dáº«n dáº¯t Ä‘á»ƒ há»c sinh tá»± suy nghÄ© vÃ  tÃ¬m ra lá»i giáº£i."""
     else:
-        user_message = f"""Câu hỏi em vừa làm sai là:
+        user_message = f"""CÃ¢u há»i em vá»«a lÃ m sai lÃ :
 {question_latex}{options_formatted}
 
-Em đã chọn đáp án {student_choice_desc}. Thầy/Cô có thể chỉ ra giúp em tại sao em suy luận sai và em nên kiểm tra lại điều gì không ạ?"""
+Em Ä‘Ã£ chá»n Ä‘Ã¡p Ã¡n {student_choice_desc}. Tháº§y/CÃ´ cÃ³ thá»ƒ chá»‰ ra giÃºp em táº¡i sao em suy luáº­n sai vÃ  em nÃªn kiá»ƒm tra láº¡i Ä‘iá»u gÃ¬ khÃ´ng áº¡?"""
 
     return system_prompt, user_message
 
 
-def build_fallback_guidance(subgraph_payload: dict[str, str]) -> str:
-    """Render grounded safe fallback text directly from Knowledge Graph."""
-    pattern_name = subgraph_payload["pattern_name"]
-    core_theorems = subgraph_payload["core_theorems"]
-    misconception = subgraph_payload["misconception"]
-    socratic_hint = subgraph_payload["socratic_hint"]
+def build_fallback_guidance(
+    subgraph_payload: dict[str, str],
+    question_latex: Optional[str] = None,
+    options: Optional[dict[str, str]] = None,
+    student_selected_option: Optional[str] = None,
+) -> str:
+    """Render grounded safe fallback text tailored by curriculum topic from Knowledge Graph."""
+    pattern_name = subgraph_payload.get("pattern_name", "Dáº¡ng bÃ i chuáº©n ÄGNL")
+    core_theorems = subgraph_payload.get("core_theorems", "")
+    misconception = subgraph_payload.get("misconception", "")
+    socratic_hint = subgraph_payload.get("socratic_hint", "")
+
+    q_lower = (question_latex or "").lower()
+    sel = (student_selected_option or "").strip().upper()
+    sel_text = (options or {}).get(sel) if options else None
+    choice_label = f"phÆ°Æ¡ng Ã¡n **{sel}**" + (f" ({sel_text})" if sel_text else "") if sel else "phÆ°Æ¡ng Ã¡n Ä‘Ã£ chá»n"
+
+    # Specific topic override if subgraph was generic
+    if r"p \Rightarrow q" in q_lower or "kÃ©o theo" in q_lower or "má»‡nh Ä‘á»" in q_lower:
+        return (
+            "ðŸ’¡ **Gá»£i Ã½ phÆ°Æ¡ng phÃ¡p giáº£i Socratic (ToÃ¡n logic má»‡nh Ä‘á» & suy luáº­n kÃ©o theo):**\n\n"
+            f"- **PhÃ¢n tÃ­ch lá»±a chá»n:** Em Ä‘ang chá»n {choice_label} cho má»‡nh Ä‘á» kÃ©o theo $P \Rightarrow Q$.\n"
+            "- **Kiáº¿n thá»©c trá»ng tÃ¢m:** Báº£ng chÃ¢n trá»‹ má»‡nh Ä‘á» kÃ©o theo $P \Rightarrow Q$ chá»‰ nháº­n giÃ¡ trá»‹ **Sai** duy nháº¥t khi $P$ ÄÃºng vÃ  $Q$ Sai ($1 \Rightarrow 0 = 0$). Trong má»i trÆ°á»ng há»£p khÃ¡c, má»‡nh Ä‘á» kÃ©o theo luÃ´n ÄÃºng.\n"
+            "- **LÆ°u Ã½ báº«y thÆ°á»ng gáº·p:** Nhiá»u báº¡n láº§m tÆ°á»Ÿng khi $Q$ sai thÃ¬ $P$ cÃ³ thá»ƒ nháº­n báº¥t ká»³ giÃ¡ trá»‹ nÃ o, quÃªn máº¥t ráº±ng náº¿u $P$ Ä‘Ãºng thÃ¬ $P \Rightarrow Q$ sáº½ bá»‹ sai mÃ¢u thuáº«n giáº£ thiáº¿t.\n\n"
+            "ðŸ‘‰ *CÃ¢u há»i gá»£i má»Ÿ:* Giáº£ thiáº¿t cho biáº¿t $P \Rightarrow Q$ lÃ  ÄÃºng vÃ  $Q$ lÃ  Sai. Náº¿u $P$ lÃ  ÄÃºng thÃ¬ má»‡nh Ä‘á» $P \Rightarrow Q$ sáº½ mang giÃ¡ trá»‹ ÄÃºng hay Sai?\n"
+        )
+    elif "cáº¥p sá»‘ cá»™ng" in q_lower or "cÃ´ng sai" in q_lower or "u_n" in q_lower:
+        return (
+            "ðŸ’¡ **Gá»£i Ã½ phÆ°Æ¡ng phÃ¡p giáº£i Socratic (DÃ£y sá»‘ & Cáº¥p sá»‘ cá»™ng):**\n\n"
+            f"- **PhÃ¢n tÃ­ch lá»±a chá»n:** Em Ä‘ang chá»n {choice_label}.\n"
+            "- **Kiáº¿n thá»©c trá»ng tÃ¢m:** Sá»‘ háº¡ng tá»•ng quÃ¡t cá»§a cáº¥p sá»‘ cá»™ng $(u_n)$ lÃ  $u_n = u_1 + (n - 1)d$.\n"
+            "- **LÆ°u Ã½ báº«y thÆ°á»ng gáº·p:** Sai láº§m phá»• biáº¿n lÃ  quÃªn trá»« 1 á»Ÿ chá»‰ sá»‘ (láº¥y $u_1 + n \times d$ thay vÃ¬ $(n-1)d$).\n\n"
+            "ðŸ‘‰ *CÃ¢u há»i gá»£i má»Ÿ:* Giá»¯a sá»‘ háº¡ng Ä‘áº§u $u_1$ vÃ  sá»‘ háº¡ng thá»© $n$, cÃ³ bao nhiÃªu khoáº£ng cÃ¡ch cÃ´ng sai $d$?\n"
+        )
+    elif r"log" in q_lower or "táº­p xÃ¡c Ä‘á»‹nh" in q_lower:
+        return (
+            "ðŸ’¡ **Gá»£i Ã½ phÆ°Æ¡ng phÃ¡p giáº£i Socratic (HÃ m sá»‘ LÅ©y thá»«a, MÅ© & Logarit):**\n\n"
+            f"- **PhÃ¢n tÃ­ch lá»±a chá»n:** Em Ä‘ang chá»n {choice_label}.\n"
+            "- **Kiáº¿n thá»©c trá»ng tÃ¢m:** Biá»ƒu thá»©c $\\log_a f(x)$ xÃ¡c Ä‘á»‹nh khi vÃ  chá»‰ khi $f(x) > 0$ nghiÃªm ngáº·t vÃ  cÆ¡ sá»‘ $0 < a \neq 1$.\n"
+            "- **LÆ°u Ã½ báº«y thÆ°á»ng gáº·p:** Nháº§m dáº¥u báº¥t phÆ°Æ¡ng trÃ¬nh hoáº·c láº¥y nháº§m khoáº£ng nghiá»‡m cá»§a tam thá»©c báº­c hai.\n\n"
+            "ðŸ‘‰ *CÃ¢u há»i gá»£i má»Ÿ:* Khi giáº£i báº¥t phÆ°Æ¡ng trÃ¬nh $f(x) > 0$, khoáº£ng nghiá»‡m cá»§a tam thá»©c báº­c hai náº±m á»Ÿ phÃ­a trong hay phÃ­a ngoÃ i hai nghiá»‡m?\n"
+        )
+    elif "chÃ­nh táº£" in q_lower or "xÃ¡n láº¡n" in q_lower or "sÃ¡ng láº¡ng" in q_lower:
+        return (
+            "ðŸ’¡ **Gá»£i Ã½ phÆ°Æ¡ng phÃ¡p giáº£i Socratic (ChÃ­nh táº£ Tiáº¿ng Viá»‡t):**\n\n"
+            f"- **PhÃ¢n tÃ­ch lá»±a chá»n:** Em Ä‘ang chá»n {choice_label}.\n"
+            "- **Kiáº¿n thá»©c trá»ng tÃ¢m:** Tá»« HÃ¡n Viá»‡t chuáº©n 'XÃ¡n láº¡n' (chá»¯ 'xÃ¡n' lÃ  rá»±c rá»¡, 'láº¡n' lÃ  sÃ¡ng sá»§a, viáº¿t x-l). Trong tá»« Ä‘iá»ƒn tiáº¿ng Viá»‡t chuáº©n khÃ´ng cÃ³ tá»« 'sÃ¡ng láº¡ng'.\n"
+            "- **LÆ°u Ã½ báº«y thÆ°á»ng gáº·p:** Lá»—i Ä‘á»“ng hÃ³a ngá»¯ Ã¢m vá»›i tá»« thuáº§n Viá»‡t 'sÃ¡ng sá»§a'.\n\n"
+            "ðŸ‘‰ *CÃ¢u há»i gá»£i má»Ÿ:* Trong tá»« Ä‘iá»ƒn chÃ­nh táº£ tiáº¿ng Viá»‡t, tá»« chá»‰ tÆ°Æ¡ng lai rá»±c rá»¡ báº¯t Ä‘áº§u báº±ng Ã¢m 'x' hay 's'?\n"
+        )
 
     return (
-        f"💡 **Gợi ý phương pháp giải chuẩn ({pattern_name}):**\n\n"
-        f"- **Kiến thức trọng tâm:**\n{core_theorems}\n\n"
-        f"- **Lưu ý bẫy thường gặp:**\n{misconception}\n\n"
-        f"👉 *Câu hỏi gợi mở:* {socratic_hint}\n"
+        f"ðŸ’¡ **Gá»£i Ã½ phÆ°Æ¡ng phÃ¡p giáº£i chuáº©n ({pattern_name}):**\n\n"
+        f"- **Kiáº¿n thá»©c trá»ng tÃ¢m:**\n{core_theorems}\n\n"
+        f"- **LÆ°u Ã½ báº«y thÆ°á»ng gáº·p:**\n{misconception}\n\n"
+        f"ðŸ‘‰ *CÃ¢u há»i gá»£i má»Ÿ:* {socratic_hint}\n"
     )
 
 
@@ -224,7 +268,7 @@ async def generate_socratic_guidance(
             draft_text = str(content_raw).strip()
     except Exception as exc:
         logger.error("Socratic draft generation failed: %s. Using fallback.", exc)
-        fallback = build_fallback_guidance(subgraph_payload)
+        fallback = build_fallback_guidance(subgraph_payload, question_latex, options, student_selected_option)
         dummy_judge = JudgeValidationResult(
             is_passed=False,
             revealed_direct_answer=False,
@@ -247,7 +291,7 @@ async def generate_socratic_guidance(
         return draft_text, judge_result, False
     else:
         logger.warning("Draft response REJECTED by judge (%s). Reverting to safe fallback.", judge_result.rejection_reason)
-        fallback = build_fallback_guidance(subgraph_payload)
+        fallback = build_fallback_guidance(subgraph_payload, question_latex, options, student_selected_option)
         return fallback, judge_result, True
 
 
@@ -279,3 +323,4 @@ async def generate_socratic_guidance_stream(
         chunk = word if idx == len(words) - 1 else word + " "
         yield chunk
         await asyncio.sleep(0.015)
+

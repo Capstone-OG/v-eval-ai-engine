@@ -22,7 +22,7 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from graph.graph_db import GRAPH_SCHEMA, graph_connection
-from graph.hybrid_retriever import HybridGraphRetriever
+from graph.hybrid_retriever import HybridGraphRetriever, SocraticSubgraph, STATUS_LOW_CONFIDENCE
 from socratic.socratic_engine import (
     generate_socratic_guidance,
     generate_socratic_guidance_stream,
@@ -188,8 +188,12 @@ async def ask_socratic_json(req: SocraticAskRequest) -> SocraticAskResponse:
             skill_id=str(req.skill_id) if req.skill_id else None,
         )
     except Exception as exc:
-        logger.exception("Retrieval failed in ask_socratic_json")
-        raise HTTPException(status_code=502, detail=f"Knowledge retrieval error: {exc}") from exc
+        logger.warning("Knowledge retrieval failed in ask_socratic_json (%s). Using resilient LOW_CONFIDENCE subgraph.", exc)
+        subgraph = SocraticSubgraph(
+            status=STATUS_LOW_CONFIDENCE,
+            student_selected_option=(req.student_selected_option or "").strip().upper() or None,
+            student_selected_option_text=req.options.get(req.student_selected_option.strip().upper()) if req.options else None,
+        )
 
     selected_text = req.options.get(req.student_selected_option.strip().upper())
     guidance_text, judge_result, is_fallback = await generate_socratic_guidance(
@@ -244,8 +248,12 @@ async def ask_socratic_stream(req: SocraticAskRequest) -> StreamingResponse:
             skill_id=str(req.skill_id) if req.skill_id else None,
         )
     except Exception as exc:
-        logger.exception("Retrieval failed in ask_socratic_stream")
-        raise HTTPException(status_code=502, detail=f"Knowledge retrieval error: {exc}") from exc
+        logger.warning("Knowledge retrieval failed in ask_socratic_stream (%s). Using resilient LOW_CONFIDENCE subgraph.", exc)
+        subgraph = SocraticSubgraph(
+            status=STATUS_LOW_CONFIDENCE,
+            student_selected_option=(req.student_selected_option or "").strip().upper() or None,
+            student_selected_option_text=req.options.get(req.student_selected_option.strip().upper()) if req.options else None,
+        )
 
     selected_text = req.options.get(req.student_selected_option.strip().upper())
     subgraph_dict = subgraph.to_dict()
