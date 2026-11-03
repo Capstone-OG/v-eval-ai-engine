@@ -1,5 +1,18 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [03/11/2026] - Nâng Cấp Socratic AI Engine: Hỗ Trợ Hội Thoại Đa Lượt (student_query), Bổ Sung Guard Kiểm Định Knowledge Grounding & Khắc Phục Gán Nhầm Dạng Bài
+
+- **Tích Hợp Trường Truy Vấn Hội Thoại Đa Lượt `student_query` ([`socratic_tutor.py`](../rag-service/routers/socratic_tutor.py), [`socratic_engine.py`](../rag-service/socratic/socratic_engine.py))**:
+  - Bổ sung trường `student_query` vào `SocraticAskRequest`, truyền trực tiếp câu hỏi/thắc mắc riêng biệt của học sinh (ví dụ: *"vì sao chọn câu đó vậy"*, *"em chưa hiểu vì sao mệnh đề này lại sai"*) vào System/User prompt của Gemini.
+  - Tách biệt 100% giữa nội dung đề bài gốc (`question_latex`) và thắc mắc hội thoại của học sinh (`student_query`), chấm dứt hoàn toàn tình trạng nhại lại văn bản thô `[Ngữ cảnh câu hỏi: ...]` trong lời đáp của gia sư AI.
+- **Khắc Phục Lỗi Gán Nhầm Anchor Cho Các Câu Hỏi Ngoài Knowledge Graph ([`socratic_engine.py`](../rag-service/socratic/socratic_engine.py))**:
+  - Bổ sung ràng buộc kiểm định `is_grounded = (status == "GROUNDED" or is_grounded == True)` trong `extract_subgraph_payload`.
+  - Khi câu hỏi có độ tương đồng thấp (`LOW_CONFIDENCE` do Knowledge Graph chưa có dạng bài tương ứng), hệ thống tuyệt đối không gán nhầm định lý của dạng bài khác (như tiệm cận hàm phân thức), cho phép LLM kích hoạt năng lực phân tích suy luận linh hoạt bám sát 100% đề bài và đáp án đúng.
+- **Kiểm Thử & Xác Thực**:
+  - Kiểm thử trực tiếp `generate_socratic_guidance` và endpoint `POST /api/v1/socratic/ask`: Đạt chuẩn Socratic (`PASSED: True`, `IS_FALLBACK: False`), phản hồi chuẩn xác bản chất bảng chân trị phép kéo theo $P \Rightarrow Q$ mà không tiết lộ đáp án hay giải thay.
+
+---
+
 ## [21/10/2026] - Chuẩn Hóa Chuỗi Bóc Tách Đáp Án Đúng (NormalizeCorrectOption), Tự Động Tái Tạo Bảng Biến Thiên ([VARIATION_TABLE]) Và Đồ Thị Hàm Số ([MATH_GRAPH]) Zero-Hardcode
 
 - **Bổ Sung Dual-Case Mapping & Khắc Phục Triệt Để Null TheoryRecap/SolutionMethod (`CurriculumAiService.cs`)**:

@@ -46,6 +46,7 @@ class SocraticAskRequest(BaseModel):
     student_selected_option: str = Field(..., min_length=1, max_length=10, description="Option letter picked by student (e.g. 'B')")
     correct_option: str = Field(..., min_length=1, max_length=10, description="Ground truth correct option (e.g. 'A')")
     skill_id: Optional[UUID] = Field(default=None, description="Optional taxonomy skill UUID for search scoping")
+    student_query: Optional[str] = Field(default=None, description="Optional conversational question/query sent by the student")
 
 
 class SocraticAskResponse(BaseModel):
@@ -198,6 +199,7 @@ async def ask_socratic_json(req: SocraticAskRequest) -> SocraticAskResponse:
         subgraph_context=subgraph.to_dict(),
         options=req.options,
         student_selected_option_text=selected_text,
+        student_query=req.student_query,
     )
 
     val_status = "PASSED" if judge_result.is_passed else "OVERRIDDEN"
@@ -268,6 +270,7 @@ async def ask_socratic_stream(req: SocraticAskRequest) -> StreamingResponse:
                 subgraph_context=subgraph_dict,
                 options=req.options,
                 student_selected_option_text=selected_text,
+                student_query=req.student_query,
             ):
                 full_text_parts.append(chunk)
                 payload = {"type": "token", "token": chunk}

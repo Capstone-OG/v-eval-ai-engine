@@ -644,3 +644,19 @@
        - Eliminates payload schema divergence and completely prevents HTTP 400 Bad Request deserialization exceptions when persisting into Content Service PostgreSQL.
   5. **Build Verification**:
      - .NET 9 compilation clean with **0 Error, 0 Warning**.
+
+### [03/11/2026] - Architecture Acceptance: Multi-Turn Socratic AI Engine & Grounded Knowledge Scoping
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - `rag-service/routers/socratic_tutor.py`
+  - `rag-service/socratic/socratic_engine.py`
+- **Key Architectural Deliverables**:
+  1. **Multi-Turn Conversational Intent Decoupling (`student_query`)**:
+     - Extended `SocraticAskRequest` and system prompt construction to ingest `student_query` separately from canonical `question_latex`.
+     - Completely eliminated raw prompt leakages (`[Ngữ cảnh câu hỏi]`), allowing the Gemini model to respond naturally to student questions without echoing template tags.
+  2. **Grounded Knowledge Scoping Guard (`is_grounded`)**:
+     - Restricted anchor theorem extraction strictly to subgraphs with `status == "GROUNDED"`.
+     - When a question exhibits low vector similarity (`LOW_CONFIDENCE`), the engine refrains from binding arbitrary archetype anchors (e.g. rational function asymptotes), liberating Gemini 3.8 Flash to reason from first principles (truth tables, logic rules, language conventions) without being disqualified by the LLM-as-a-Judge gating layer.
+  3. **Verification**:
+     - Live testing against Propositional Logic questions yielded `PASSED: True`, `IS_FALLBACK: False`, and zero direct answer leakage.

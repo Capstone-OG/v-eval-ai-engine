@@ -1,21 +1,10 @@
-# NHẬT KÝ CẬP NHẬT (UPDATE LOG) - AI ENGINE
+# NHẬT KÝ CẬP NHẬT (UPDATE LOG) - AI ENGINE SERVICE
 
-## [27/10/2026] - Khởi Tạo Bộ Unit Test Cho Socratic Tutor Session Domain Và Tích Hợp CI Test
+## [03/11/2026] - Nâng Cấp Socratic AI Engine: Hỗ Trợ Hội Thoại Đa Lượt (student_query) & Khắc Phục Gán Nhầm Anchor Tri Thức
 
-- **Khởi Tạo Dự Án Kiểm Thử `V-Eval-Ai_Engine.Tests` (3 Tests)**:
-  - Thiết lập dự án kiểm thử theo chuẩn xUnit và .NET 9, tham chiếu đến `V-Eval-Ai_Engine.Domain`.
-  - Triển khai bộ 3 unit test cho thực thể Gia sư ảo Socratic [`TutorSessionTests.cs`](./V-Eval-Ai_Engine.Tests/Domain/TutorSessionTests.cs):
-    - Kiểm thử khởi tạo session hợp lệ: Khởi tạo đầy đủ SessionId, StudentId, QuestionId, `IsActive == true` và danh sách tin nhắn ban đầu rỗng.
-    - Kiểm thử dữ liệu đầu vào rỗng (StudentId hoặc QuestionId null/whitespace) -> Ném `ArgumentException` đúng quy tắc nghiệp vụ.
-    - Kiểm thử thêm tin nhắn đối thoại Socratic (`AddMessage`) và đóng phiên gia sư (`EndSession`) chuyển trạng thái `IsActive = false`.
-  - Tích hợp project vào `V-Eval-Ai_Engine.sln`.
-- **Tích Hợp Tự Động Hóa CI/CD Workflow**:
-  - Bổ sung bước thực thi `dotnet test --no-build --configuration Release --verbosity normal` vào `.github/workflows/ci.yml`.
-- **Đồng Bộ Thực Thể Miền CSDL & Sơ Đồ ERD**:
-  - Đồng bộ ánh xạ 2 Domain Entities [`TheoreticalDocument.cs`](./V-Eval-Ai_Engine.Domain/Entities/TheoreticalDocument.cs) và [`TutorSession.cs`](./V-Eval-Ai_Engine.Domain/Entities/TutorSession.cs) vào CSDL chuẩn [`docs/SQL/SQL.sql`](../../docs/SQL/SQL.sql) (`v_eval_ai."TheoreticalDocuments"` và `v_eval_ai."TutorSessions"`) và sơ đồ thực thể [`docs/diagrams/erd.mmd`](../../docs/diagrams/erd.mmd).
-- **Chuẩn Hóa Kích Thước Vector Embedding 768 Chiều & Đồng Bộ Kịch Bản Migration DDL**:
-  - Chuẩn hóa thống nhất toàn hệ thống kích thước vector embedding về **768 chiều** (Google Gemini `text-embedding-004`) cho cả `KnowledgeVectorChunks` và `archetype_patterns`.
-  - Khắc phục giới hạn kích thước chỉ mục HNSW của pgvector (ngưỡng tối đa 2000 chiều), thiết lập chỉ mục `idx_archetype_patterns_hnsw` chạy mượt mà < 1ms.
-  - Cập nhật [`rag-service/database/graph_schema.sql`](./rag-service/database/graph_schema.sql) và [`rag-service/database/apply_graph_schema.py`](./rag-service/database/apply_graph_schema.py) đồng bộ đầy đủ 9 bảng của schema `v_eval_ai`.
-
-
+- **Hỗ Trợ Hội Thoại Đa Lượt `student_query` ([`socratic_tutor.py`](./rag-service/routers/socratic_tutor.py), [`socratic_engine.py`](./rag-service/socratic/socratic_engine.py))**:
+  - Mở rộng Pydantic `SocraticAskRequest` và prompt Socratic hỗ trợ câu hỏi trực tiếp của học sinh (`student_query`), chấm dứt tình trạng nhại lại chuỗi `[Ngữ cảnh câu hỏi: ...]`.
+- **Ràng Buộc Kiểm Định `is_grounded` Khắc Phục Gán Nhầm Dạng Bài ([`socratic_engine.py`](./rag-service/socratic/socratic_engine.py))**:
+  - Chỉ nạp anchor từ Knowledge Graph khi đạt trạng thái `GROUNDED`. Với câu hỏi `LOW_CONFIDENCE`, hệ thống không ép định lý của dạng bài khác, giúp LLM phản hồi chính xác bản chất từng môn học (như toán logic, ngữ văn, KHTN).
+- **Kiểm Thử & Xác Thực**:
+  - Xác thực trực tiếp qua Gemini API và endpoint `/api/v1/socratic/ask` đạt `PASSED: True`, `IS_FALLBACK: False`.
