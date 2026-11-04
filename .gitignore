@@ -16,3 +16,8 @@ obj/
 !**/wwwroot/uploads/.gitkeep
 **/wwwroot/extracted_images/*
 !**/wwwroot/extracted_images/.gitkeep
+
+# Test results and Coverage reports
+TestResults/
+[Tt]est[Rr]esults/
+*.cobertura.xml

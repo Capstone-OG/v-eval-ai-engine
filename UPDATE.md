@@ -8,5 +8,7 @@
 - **Prompt Sư Phạm Không Quy Chụp Cho Hội Thoại Mở ([`socratic_engine.py`](./rag-service/socratic/socratic_engine.py))**:
   - Khi học sinh không có phương án trắc nghiệm hoặc gửi `student_selected_option == "NONE"`, prompt hướng dẫn Gemini gợi mở bản chất tổng quát, không quy chụp học sinh chọn sai phương án A.
   - Phản hồi lời chào tự động vượt qua kiểm định LLM-as-a-Judge (`status = "PASSED"`).
+- **Hạ Tầng Kiểm Thử Chuẩn Hóa (.NET 9 SDK & xUnit / Moq / FluentAssertions)**:
+  - Tích hợp cấu trúc thư mục kiểm thử Unit Test và script kiểm thử `Scripts/test.bat` đồng bộ chuẩn kiến trúc OJT.
 - **Kiểm Thử Thực Tế**:
   - `POST /api/practice/ai-tutor/ask` với `questionLatex: "hi"` trả về HTTP 200, phản hồi chào mừng sư phạm tự nhiên, không nhắc đến tam thức bậc hai hay bẫy toán học.
