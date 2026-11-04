@@ -1,5 +1,18 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [04/11/2026] - Phân Định Chế Độ Chào Hỏi / Hội Thoại Tự Do & Khắc Phục Hiện Tượng Gán Nhầm Bẫy Bất Phương Trình
+
+- **Nhận Diện Lời Chào & Bỏ Qua Truy Vấn Vector Tri Thức Dạng Bài ([`socratic_tutor.py`](../rag-service/routers/socratic_tutor.py), [`socratic_engine.py`](../rag-service/socratic/socratic_engine.py))**:
+  - Tích hợp hàm tiện ích `is_greeting` nhận diện các từ khóa chào hỏi thông dụng (`hi`, `hello`, `chào`, `ê`, `xin chào`...).
+  - Trong cả 2 endpoint `ask_socratic_json` và `ask_socratic_stream`: khi phát hiện lời chào, hệ thống lập tức bỏ qua bước truy vấn pgvector để không vô tình ghép từ "hi" vào bài toán tam thức bậc hai (`ARCH_MATH_FUNCTION_MONOTONICITY_01`), trả về subgraph `status="GENERAL_CHAT"`.
+- **Thiết Kế Prompt Sư Phạm Linh Hoạt Cho Hội Thoại Mở ([`socratic_engine.py`](../rag-service/socratic/socratic_engine.py))**:
+  - Khi học sinh không cung cấp danh sách phương án trắc nghiệm hoặc gửi `student_selected_option == "NONE"`, hệ thống tự động chuyển sang chế độ hướng dẫn gợi mở bản chất câu hỏi, tuyệt đối không quy chụp học sinh chọn sai phương án A.
+  - Phản hồi lời chào được tự động miễn thẩm định LLM-as-a-Judge (`status = "PASSED"`), bảo đảm thời gian phản hồi dưới 300ms.
+- **Kiểm Thử Thực Tế**:
+  - Kiểm thử `POST /api/practice/ai-tutor/ask` với `questionLatex: "hi"` trả về HTTP 200, phản hồi chào mừng ấm áp và định danh `subgraph_status: "GENERAL_CHAT"`.
+
+---
+
 ## [03/11/2026] - Nâng Cấp Toàn Diện Socratic AI Engine: Nạp Tri Thức Curated Archetype & Khắc Phục Lỗi 502 Bằng Bộ Tìm Kiếm Từ Khóa Dự Phòng
 
 - **Nạp Tri Thức Dạng Bài Khảo Thí Chuẩn Vào Knowledge Graph ([`seed_curriculum_archetypes.py`](../rag-service/database/seed_archetypes.py))**:

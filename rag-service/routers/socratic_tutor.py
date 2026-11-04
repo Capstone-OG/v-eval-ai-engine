@@ -178,22 +178,26 @@ def log_interaction(
 @router.post("/ask", response_model=SocraticAskResponse, summary="Ask Socratic AI Tutor (JSON response)")
 async def ask_socratic_json(req: SocraticAskRequest) -> SocraticAskResponse:
     """Synchronous JSON Socratic tutor endpoint."""
-    try:
-        retriever = HybridGraphRetriever()
-        subgraph = retriever.retrieve(
-            question_latex=req.question_latex,
-            options=req.options,
-            student_selected_option=req.student_selected_option,
-            correct_option=req.correct_option,
-            skill_id=str(req.skill_id) if req.skill_id else None,
-        )
-    except Exception as exc:
-        logger.warning("Knowledge retrieval failed in ask_socratic_json (%s). Using resilient LOW_CONFIDENCE subgraph.", exc)
-        subgraph = SocraticSubgraph(
-            status=STATUS_LOW_CONFIDENCE,
-            student_selected_option=(req.student_selected_option or "").strip().upper() or None,
-            student_selected_option_text=req.options.get(req.student_selected_option.strip().upper()) if req.options else None,
-        )
+    from socratic.socratic_engine import is_greeting
+    if is_greeting(req.student_query, req.question_latex, req.options):
+        subgraph = SocraticSubgraph(status="GENERAL_CHAT")
+    else:
+        try:
+            retriever = HybridGraphRetriever()
+            subgraph = retriever.retrieve(
+                question_latex=req.question_latex,
+                options=req.options,
+                student_selected_option=req.student_selected_option,
+                correct_option=req.correct_option,
+                skill_id=str(req.skill_id) if req.skill_id else None,
+            )
+        except Exception as exc:
+            logger.warning("Knowledge retrieval failed in ask_socratic_json (%s). Using resilient LOW_CONFIDENCE subgraph.", exc)
+            subgraph = SocraticSubgraph(
+                status=STATUS_LOW_CONFIDENCE,
+                student_selected_option=(req.student_selected_option or "").strip().upper() or None,
+                student_selected_option_text=req.options.get(req.student_selected_option.strip().upper()) if req.options else None,
+            )
 
     selected_text = req.options.get(req.student_selected_option.strip().upper())
     guidance_text, judge_result, is_fallback = await generate_socratic_guidance(
@@ -238,22 +242,26 @@ async def ask_socratic_json(req: SocraticAskRequest) -> SocraticAskResponse:
 @router.post("/ask-stream", summary="Ask Socratic AI Tutor via real-time SSE stream")
 async def ask_socratic_stream(req: SocraticAskRequest) -> StreamingResponse:
     """Real-time SSE token stream (text/event-stream) with pedagogical validation."""
-    try:
-        retriever = HybridGraphRetriever()
-        subgraph = retriever.retrieve(
-            question_latex=req.question_latex,
-            options=req.options,
-            student_selected_option=req.student_selected_option,
-            correct_option=req.correct_option,
-            skill_id=str(req.skill_id) if req.skill_id else None,
-        )
-    except Exception as exc:
-        logger.warning("Knowledge retrieval failed in ask_socratic_stream (%s). Using resilient LOW_CONFIDENCE subgraph.", exc)
-        subgraph = SocraticSubgraph(
-            status=STATUS_LOW_CONFIDENCE,
-            student_selected_option=(req.student_selected_option or "").strip().upper() or None,
-            student_selected_option_text=req.options.get(req.student_selected_option.strip().upper()) if req.options else None,
-        )
+    from socratic.socratic_engine import is_greeting
+    if is_greeting(req.student_query, req.question_latex, req.options):
+        subgraph = SocraticSubgraph(status="GENERAL_CHAT")
+    else:
+        try:
+            retriever = HybridGraphRetriever()
+            subgraph = retriever.retrieve(
+                question_latex=req.question_latex,
+                options=req.options,
+                student_selected_option=req.student_selected_option,
+                correct_option=req.correct_option,
+                skill_id=str(req.skill_id) if req.skill_id else None,
+            )
+        except Exception as exc:
+            logger.warning("Knowledge retrieval failed in ask_socratic_stream (%s). Using resilient LOW_CONFIDENCE subgraph.", exc)
+            subgraph = SocraticSubgraph(
+                status=STATUS_LOW_CONFIDENCE,
+                student_selected_option=(req.student_selected_option or "").strip().upper() or None,
+                student_selected_option_text=req.options.get(req.student_selected_option.strip().upper()) if req.options else None,
+            )
 
     selected_text = req.options.get(req.student_selected_option.strip().upper())
     subgraph_dict = subgraph.to_dict()

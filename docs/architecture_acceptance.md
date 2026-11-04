@@ -660,3 +660,17 @@
      - When a question exhibits low vector similarity (`LOW_CONFIDENCE`), the engine refrains from binding arbitrary archetype anchors (e.g. rational function asymptotes), liberating Gemini 3.8 Flash to reason from first principles (truth tables, logic rules, language conventions) without being disqualified by the LLM-as-a-Judge gating layer.
   3. **Verification**:
      - Live testing against Propositional Logic questions yielded `PASSED: True`, `IS_FALLBACK: False`, and zero direct answer leakage.
+
+### [04/11/2026] - Architecture Acceptance: Freeform Socratic Dialogue Routing & Greeting Bypass
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - `rag-service/routers/socratic_tutor.py`
+  - `rag-service/socratic/socratic_engine.py`
+- **Key Architectural Deliverables**:
+  1. **Greeting & Freeform Inquiries Detection**:
+     - Embedded `is_greeting` in `socratic_tutor.py` and `socratic_engine.py`. When student greeting patterns are detected, vector database search is safely bypassed, avoiding false nearest-neighbor vector matches (e.g. mapping "hi" to quadratic inequality archetype).
+  2. **Non-Accusatory Socratic Prompting**:
+     - When `student_selected_option == "NONE"` or no real question options exist, prompt instructions instruct Gemini to provide warm pedagogical guidance rather than asserting that the student chose an incorrect choice.
+  3. **Verification**:
+     - Verified live with HTTP 200 responses, `subgraph_status: "GENERAL_CHAT"`, and `validation_status: "PASSED"`.
