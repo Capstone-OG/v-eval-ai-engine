@@ -1,4 +1,4 @@
-﻿"""
+"""
 hybrid_retriever.py â€” Hybrid GraphRAG Retriever (Core Flow 4 / Phase 3)
 ========================================================================
 When a student taps "Ask AI Tutor" on a wrong answer, this module extracts the
@@ -274,26 +274,26 @@ class HybridGraphRetriever:
         q_lower = question_text.lower()
         keywords_map = {
             "ARCH_LOGIC_PROPOSITION_01": [
-                "má»‡nh Ä‘á»", "kÃ©o theo", "logic", "suy luáº­n", "báº£ng chÃ¢n trá»‹", "phá»§ Ä‘á»‹nh", "tÆ°Æ¡ng Ä‘Æ°Æ¡ng",
-                "p \Rightarrow q", "p \land", "p \lor", "contrapositive", "pháº£n Ä‘áº£o"
+                "mệnh đề", "kéo theo", "logic", "suy luận", "bảng chân trị", "phủ định", "tương đương",
+                r"p \\Rightarrow q", r"p \\land", r"p \\lor", "contrapositive", "phản đảo", "p => q", "q => r", "phát biểu"
             ],
             "ARCH_MATH_PROGRESSION_01": [
-                "cáº¥p sá»‘ cá»™ng", "cáº¥p sá»‘ nhÃ¢n", "cÃ´ng sai", "cÃ´ng bá»™i", "dÃ£y sá»‘", "u_n", "u_1", "u_5"
+                "cấp số cộng", "cấp số nhân", "công sai", "công bội", "dãy số", "u_n", "u_1", "u_5"
             ],
             "ARCH_MATH_LOG_EXP_01": [
-                "logarit", "log_", "\log", "táº­p xÃ¡c Ä‘á»‹nh", "mÅ©", "lÅ©y thá»«a"
+                "logarit", "log_", r"\\log", "tập xác định", "mũ", "lũy thừa"
             ],
             "ARCH_MATH_FUNCTION_MONOTONICITY_01": [
-                "Ä‘á»“ng biáº¿n", "nghá»‹ch biáº¿n", "Ä‘áº¡o hÃ m", "báº£ng biáº¿n thiÃªn", "hÃ m sá»‘ báº­c", "Ä‘Æ¡n Ä‘iá»‡u"
+                "đồng biến", "nghịch biến", "đạo hàm", "bảng biến thiên", "hàm số bậc", "đơn điệu"
             ],
             "MATH_ASYMPTOTE_PARAM_01": [
-                "tiá»‡m cáº­n", "tiá»‡m cáº­n Ä‘á»©ng", "tiá»‡m cáº­n ngang", "tham sá»‘ m"
+                "tiệm cận", "tiệm cận đứng", "tiệm cận ngang", "tham số m"
             ],
             "ARCH_LANG_VIETNAMESE_01": [
-                "chÃ­nh táº£", "xÃ¡n láº¡n", "sÃ¡ng láº¡ng", "tá»« hÃ¡n viá»‡t", "viáº¿t Ä‘Ãºng"
+                "chính tả", "xán lạn", "sáng lạng", "từ hán việt", "viết đúng"
             ],
             "PHYS_SHM_MAX_SPEED_01": [
-                "dao Ä‘á»™ng", "Ä‘iá»u hÃ²a", "tá»‘c Ä‘á»™ cá»±c Ä‘áº¡i", "gia tá»‘c cá»±c Ä‘áº¡i", "v_max", "a_max"
+                "dao động", "điều hòa", "tốc độ cực đại", "gia tốc cực đại", "v_max", "a_max"
             ],
         }
 

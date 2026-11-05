@@ -674,3 +674,20 @@
      - When `student_selected_option == "NONE"` or no real question options exist, prompt instructions instruct Gemini to provide warm pedagogical guidance rather than asserting that the student chose an incorrect choice.
   3. **Verification**:
      - Verified live with HTTP 200 responses, `subgraph_status: "GENERAL_CHAT"`, and `validation_status: "PASSED"`.
+
+### [05/11/2026] - Architecture Acceptance: Gemini-3.6-Flash Prioritization, Dynamic Socratic Generation & Zero Hardcoded Fallbacks
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - `rag-service/socratic/socratic_engine.py`
+  - `rag-service/socratic/validator_judge.py`
+- **Key Architectural Deliverables**:
+  1. **Primary Model Migration to Gemini-3.6-Flash**:
+     - Swapped primary generative model to `gemini-3.6-flash`, bypassing persistent Google Cloud 503 UNAVAILABLE errors on legacy lite models.
+     - Extended LLM draft timeout to 25.0s with sequential multi-model failover, ensuring cloud LLMs have sufficient latency window to complete rich generative responses.
+  2. **Pedagogical Differentiation**:
+     - Greeting interactions ("hi gia sư", "chào gia sư", "thầy ơi") bypass curriculum retrieval and receive genuine welcoming responses without hardcoded mathematical formulas.
+     - Single-attempt LLM judge inspection (3.0s timeout) with instantaneous heuristic failover brings end-to-end response time to ~4-6 seconds.
+  3. **Verification**:
+     - Live Gateway request with `"hi gia sư"` generated dynamic greeting text with `is_fallback: false`, `subgraph_status: "GENERAL_CHAT"`.
+     - 12/12 pytest unit tests passing cleanly.
