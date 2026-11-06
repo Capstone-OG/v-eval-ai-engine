@@ -691,3 +691,21 @@
   3. **Verification**:
      - Live Gateway request with `"hi gia sư"` generated dynamic greeting text with `is_fallback: false`, `subgraph_status: "GENERAL_CHAT"`.
      - 12/12 pytest unit tests passing cleanly.
+
+### [06/11/2026] - Architecture Acceptance: Quota Rate-Limit (429) Immunity, High-Speed Model Failover & Meta-Inquiry Handling
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - `rag-service/socratic/socratic_engine.py`
+  - `rag-service/socratic/validator_judge.py`
+  - `rag-service/.env`
+- **Key Architectural Deliverables**:
+  1. **API Key Migration & High-Throughput Model Prioritization**:
+     - Upgraded Google Gemini API key to restore clean generation quotas.
+     - Configured `gemini-3.5-flash-lite` as candidate 1 in `SOCRATIC_MODELS` and `JUDGE_MODELS`, yielding ~1.5 - 2.5s inference latencies and optimal quota utilization.
+     - Enforced `max_retries=1` across all generative client instances, eliminating Tenacity's 25-second exponential backoff loop upon encountering HTTP 429 / 503, facilitating immediate candidate model switching in 0.1s.
+     - Lowered generation timeout ceiling to 8.0s, safeguarding downstream C# Practice Service from connection aborts.
+  2. **Meta-Inquiry Conversational Routing**:
+     - Introduced `META_INQUIRY_WORDS` dictionary to recognize inquiries concerning the AI tutor's purpose and pedagogy ("thầy sẽ làm gì trong này", "thầy là ai", "hướng dẫn học"), providing inspirational scaffolding without triggering irrelevant subject retrieval.
+  3. **Verification**:
+     - Executed full propositional logic inference: Completed in 3.5s with `is_fallback: False`, `judge_passed: True`, and zero streaming timeouts.

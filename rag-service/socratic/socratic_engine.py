@@ -38,9 +38,9 @@ logger = logging.getLogger(__name__)
 
 # Primary & fallback models for Socratic generation
 SOCRATIC_MODELS: Sequence[str] = (
+    "gemini-3.5-flash-lite",
     "gemini-3.6-flash",
     "gemini-3.5-flash",
-    "gemini-3.8-flash",
     "gemini-flash-lite-latest",
 )
 
@@ -54,6 +54,7 @@ def get_socratic_llm(model_name: Optional[str] = None) -> ChatGoogleGenerativeAI
         model=model,
         google_api_key=api_key,
         temperature=0.2,
+        max_retries=1,
     )
 
 
@@ -105,18 +106,24 @@ GREETING_WORDS = {
     "chào thầy ạ", "em chào thầy", "em chào thầy ạ", "hi thầy", "hi bot"
 }
 
+META_INQUIRY_WORDS = {
+    "thầy sẽ làm gì", "thầy làm gì", "thầy là ai", "thầy giúp gì",
+    "bạn là ai", "bạn làm gì", "hướng dẫn", "cách học", "giúp gì được em",
+    "socratic là gì", "quy tắc học", "vai trò của thầy"
+}
+
 
 def is_greeting(query: Optional[str], q_latex: Optional[str] = None, options: Optional[dict[str, str]] = None) -> bool:
     if query:
         clean_q = query.strip().lower().rstrip("!.,?~^:;")
-        if clean_q in GREETING_WORDS or (len(clean_q) <= 20 and any(clean_q == g or clean_q.startswith(g + " ") for g in GREETING_WORDS)):
+        if clean_q in GREETING_WORDS or any(m in clean_q for m in META_INQUIRY_WORDS) or (len(clean_q) <= 20 and any(clean_q == g or clean_q.startswith(g + " ") for g in GREETING_WORDS)):
             return True
     text = (q_latex or "").strip().lower().rstrip("!.,?~^:;")
     if not text:
         return False
     if options and len(options) > 2 and any(len(str(v)) > 15 for v in options.values()):
         return False
-    return text in GREETING_WORDS or (len(text) <= 20 and any(text == g or text.startswith(g + " ") for g in GREETING_WORDS))
+    return text in GREETING_WORDS or any(m in text for m in META_INQUIRY_WORDS) or (len(text) <= 20 and any(text == g or text.startswith(g + " ") for g in GREETING_WORDS))
 
 
 def build_socratic_prompts(
@@ -135,14 +142,14 @@ def build_socratic_prompts(
     misconception = subgraph_payload["misconception"]
     socratic_hint = subgraph_payload["socratic_hint"]
 
-    # 1. Standalone Greeting Check
+    # 1. Standalone Greeting or Role Check
     if is_greeting(student_query, question_latex, options):
         system_prompt = """Bạn là Gia sư AI Socratic của Hệ thống Khảo thí V-Eval ĐGNL ĐHQG TP.HCM.
-Học sinh vừa gửi lời chào hỏi hoặc bắt đầu cuộc trò chuyện.
+Học sinh vừa gửi lời chào hỏi hoặc hỏi về vai trò, chức năng của Gia sư AI Socratic.
 Hãy phản hồi với giọng điệu ân cần, ấm áp, truyền cảm hứng của một người thầy:
 1. Chào đón học sinh thân thiện.
-2. Giới thiệu ngắn gọn phương pháp gợi mở Socratic (thầy sẽ đồng hành đặt câu hỏi dẫn dắt từng bước để em tự tìm ra hướng giải đúng).
-3. Hỏi xem hôm nay học sinh muốn cùng thầy chinh phục bài tập nào, chuyên đề nào (Toán học, Tư duy Logic, Tiếng Việt, Khoa học Tự nhiên/Xã hội), và mời em gửi câu hỏi hoặc đề bài để cùng bắt đầu."""
+2. Giới thiệu rõ vai trò và phương pháp gợi mở Socratic (thầy sẽ đồng hành cùng em, không giải bài thay hay đưa sẵn đáp án, mà đặt các câu hỏi dẫn dắt từng bước để em tự tìm ra hướng giải đúng).
+3. Mời học sinh gửi câu hỏi, đề bài tập hoặc chuyên đề đang gặp khó khăn (Toán học, Logic, Tiếng Việt, KHTN/KHXH) để thầy trò mình cùng bắt đầu."""
         user_message = f'Học sinh nói: "{student_query or question_latex}".'
         return system_prompt, user_message
 
@@ -230,11 +237,12 @@ def build_fallback_guidance(
     student_query: Optional[str] = None,
 ) -> str:
     """Render grounded safe fallback text tailored by curriculum topic from Knowledge Graph."""
-    # 0. Check Greeting First!
-    if is_greeting(student_query, question_latex, options) or (not student_selected_option and len((student_query or question_latex or "").strip()) <= 20 and any(g in (student_query or question_latex or "").lower() for g in ("hi", "chào", "chao", "hello", "alo", "thầy ơi"))):
+    # 0. Check Greeting or Meta-Query First!
+    if is_greeting(student_query, question_latex, options) or (not student_selected_option and len((student_query or question_latex or "").strip()) <= 30 and any(g in (student_query or question_latex or "").lower() for g in ("hi", "chào", "chao", "hello", "alo", "thầy ơi", "thầy làm gì", "thầy là ai", "giúp"))):
         return (
             "Chào em! Thầy là **Gia Sư AI Socratic** của Hệ thống Khảo thí V-Eval ĐGNL. "
-            "Rất vui được đồng hành cùng em ôn luyện. Em đang gặp băn khoăn hay cần thầy gợi mở phương pháp ở bài tập nào, "
+            "Trong không gian học tập này, thầy sẽ đồng hành cùng em ôn luyện, hướng dẫn phương pháp tư duy phản biện từng bước mà không đưa sẵn đáp án. "
+            "Em đang gặp băn khoăn hay cần thầy gợi mở phương pháp ở bài tập nào, "
             "hoặc thuộc chuyên đề nào (Toán học, Tư duy Logic, Tiếng Việt, KHTN/KHXH)? Em hãy gửi đề bài hoặc câu hỏi cho thầy nhé!"
         )
 
@@ -334,7 +342,7 @@ async def generate_socratic_guidance(
                     SystemMessage(content=system_prompt),
                     HumanMessage(content=user_message),
                 ]),
-                timeout=25.0,
+                timeout=8.0,
             )
             content_raw = draft.content
             if isinstance(content_raw, list):

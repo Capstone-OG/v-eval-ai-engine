@@ -36,10 +36,9 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 JUDGE_MODELS: Sequence[str] = (
+    "gemini-3.5-flash-lite",
     "gemini-3.6-flash",
     "gemini-3.5-flash",
-    "gemini-3.8-flash",
-    "gemini-flash-lite-latest",
 )
 
 
