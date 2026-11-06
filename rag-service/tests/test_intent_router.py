@@ -118,3 +118,4 @@ def test_enforce_routing_constraints_repairs_taskless_intent():
     repaired = enforce_routing_constraints(invalid_decision, fallback)
     assert repaired.category == IntentCategory.C1
     assert repaired.target_focus == TargetFocus.PERSONA
+
