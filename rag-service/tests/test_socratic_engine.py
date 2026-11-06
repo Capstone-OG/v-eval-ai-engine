@@ -12,6 +12,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
 
+from socratic.intent_router import (
+    IntentCategory,
+    RoutingDecision,
+    StudentMood,
+    TargetFocus,
+    heuristic_route,
+)
 from socratic.socratic_engine import (
     build_fallback_guidance,
     build_socratic_prompts,
@@ -21,6 +28,7 @@ from socratic.validator_judge import (
     JudgeValidationResult,
     _fast_heuristic_guard,
     build_judge_prompt,
+    required_criteria,
 )
 
 
@@ -147,3 +155,147 @@ def test_judge_validation_result_strict_pass():
         rejection_reason="Leaked answer",
     )
     assert res_leak.is_passed is False
+
+
+def test_build_socratic_prompts_c1_persona():
+    payload = {
+        "pattern_name": "Dao động điều hòa",
+        "core_theorems": "v_max = omega * A",
+        "trap_name": "Lỗi",
+        "misconception": "Lỗi",
+        "socratic_hint": "Gợi ý",
+    }
+    decision = RoutingDecision(
+        category=IntentCategory.C1,
+        student_mood=StudentMood.CURIOUS,
+        target_focus=TargetFocus.PERSONA,
+        has_task_context=True,
+    )
+    sys_prompt, user_msg = build_socratic_prompts(
+        question_latex="Tính v_max",
+        student_selected_option="B",
+        correct_option="A",
+        subgraph_payload=payload,
+        student_query="Thầy có chức vụ gì trong trường?",
+        routing_decision=decision,
+    )
+    assert "TÌNH HUỐNG C1: XÃ GIAO / HỎI VỀ GIA SƯ" in sys_prompt
+    assert "TUYỆT ĐỐI KHÔNG nhồi nhét công thức toán" in sys_prompt
+    assert "Thầy có chức vụ gì trong trường?" in user_msg
+
+
+def test_build_socratic_prompts_c2_attitude_and_task():
+    payload = {
+        "pattern_name": "Dao động điều hòa",
+        "core_theorems": "v_max = omega * A",
+        "trap_name": "Quên omega",
+        "misconception": "Nhầm công thức",
+        "socratic_hint": "Xem lại omega",
+    }
+    decision = RoutingDecision(
+        category=IntentCategory.C2,
+        student_mood=StudentMood.SKEPTICAL,
+        target_focus=TargetFocus.CONCEPT_EXPLANATION,
+        has_task_context=True,
+    )
+    sys_prompt, user_msg = build_socratic_prompts(
+        question_latex="Tính v_max",
+        student_selected_option="B",
+        correct_option="A",
+        subgraph_payload=payload,
+        options={"A": "20pi", "B": "10pi"},
+        student_selected_option_text="10pi",
+        student_query="Thầy có bằng thạc sĩ chưa mà bảo câu B của em sai?",
+        routing_decision=decision,
+    )
+    assert "TÌNH HUỐNG C2: THÁI ĐỘ + THẮC MẮC BÀI TOÁN" in sys_prompt
+    assert "Tiếp nhận thái độ/sự hoài nghi của học sinh với sự khiêm tốn" in sys_prompt
+    assert "Thầy có bằng thạc sĩ chưa mà bảo câu B của em sai?" in user_msg
+
+
+def test_build_socratic_prompts_c3_meta_question():
+    payload = {
+        "pattern_name": "Cực trị hàm số",
+        "core_theorems": "f'(x) = 0 và đổi dấu",
+        "trap_name": "Nghiệm bội chẵn",
+        "misconception": "Bội chẵn không đổi dấu",
+        "socratic_hint": "Kiểm tra dấu qua nghiệm",
+    }
+    decision = RoutingDecision(
+        category=IntentCategory.C3,
+        student_mood=StudentMood.CURIOUS,
+        target_focus=TargetFocus.EXAM_VALIDITY,
+        has_task_context=True,
+    )
+    sys_prompt, user_msg = build_socratic_prompts(
+        question_latex="Tìm m để hàm có cực trị",
+        student_selected_option="C",
+        correct_option="A",
+        subgraph_payload=payload,
+        student_query="Đề này có cho thiếu điều kiện tham số m không thầy?",
+        routing_decision=decision,
+    )
+    assert "TÌNH HUỐNG C3: NGHI NGỜ ĐỀ BÀI / TÍNH HỢP LỆ" in sys_prompt
+    assert "Đánh giá cao tinh thần phản biện khoa học" in sys_prompt
+    assert "Đề này có cho thiếu điều kiện tham số m không thầy?" in user_msg
+
+
+def test_build_socratic_prompts_c5_external():
+    payload = {
+        "pattern_name": "Dạng bài chuẩn ĐGNL",
+        "core_theorems": "Định lý",
+        "trap_name": "Bẫy",
+        "misconception": "Sai lầm",
+        "socratic_hint": "Gợi ý",
+    }
+    decision = RoutingDecision(
+        category=IntentCategory.C5,
+        student_mood=StudentMood.NEUTRAL,
+        target_focus=TargetFocus.STEP_HINT,
+        has_task_context=False,
+    )
+    sys_prompt, user_msg = build_socratic_prompts(
+        question_latex="Tính tích phân từ 0 đến 1 của x^2 dx",
+        student_selected_option="",
+        correct_option="",
+        subgraph_payload=payload,
+        student_query="Giải giúp em bài tích phân này với: int_0^1 x^2 dx",
+        routing_decision=decision,
+    )
+    assert "TÌNH HUỐNG C5: CÂU HỎI MỞ / BÀI TOÁN NGOÀI HỆ THỐNG" in sys_prompt
+    assert "int_0^1 x^2 dx" in user_msg
+
+
+def test_adaptive_judge_criteria_by_category():
+    c1_criteria = required_criteria("C1")
+    assert "friendly_and_pedagogical" in c1_criteria
+    assert "redirect_to_learning" in c1_criteria
+    assert "grounded_in_theorems" not in c1_criteria
+
+    c4_criteria = required_criteria("C4", grounded=True)
+    assert "consistent_with_ground_truth" in c4_criteria
+    assert "grounded_in_theorems" in c4_criteria
+
+    c5_criteria = required_criteria("C5")
+    assert "logically_sound_hint" in c5_criteria
+
+
+def test_fallback_guidance_c1_c2_c3_c5():
+    payload = {
+        "pattern_name": "Dao động điều hòa",
+        "core_theorems": "v_max = omega * A",
+        "socratic_hint": "Xem lại omega",
+    }
+    fb_c1 = build_fallback_guidance(payload, category="C1")
+    assert "Gia Sư AI Socratic" in fb_c1
+    assert "v_max = omega * A" not in fb_c1  # C1 does NOT leak formulas
+
+    fb_c2 = build_fallback_guidance(payload, category="C2", student_selected_option="B")
+    assert "phương án **B**" in fb_c2
+    assert "v_max = omega * A" in fb_c2
+
+    fb_c3 = build_fallback_guidance(payload, category="C3")
+    assert "tinh thần phản biện khoa học" in fb_c3
+
+    fb_c5 = build_fallback_guidance(payload, category="C5")
+    assert "xác định rõ các đại lượng đã cho" in fb_c5

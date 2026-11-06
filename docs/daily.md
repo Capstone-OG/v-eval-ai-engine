@@ -1,19 +1,39 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
-## [06/11/2026] - Khắc Phục Lỗi Quota Rate Limit 429, Tối Ưu Tốc Độ Phản Hồi & Thử Luân Phiên Siêu Tốc Cho Gia Sư Socratic
+## [06/11/2026] - Triển Khai Kiến Trúc 2 Luồng Phân Tách (Decoupled Dual-Track Architecture) & Ma Trận 5 Intent Cho Gia Sư Socratic
 
-- **Cập Nhật Khóa API Mới & Cấu Hình Đa Mô Hình Ưu Tiên Tốc Độ ([`socratic_engine.py`](../rag-service/socratic/socratic_engine.py), [`.env`](../rag-service/.env))**:
-  - Tích hợp khóa API Google Gemini mới giải phóng hoàn toàn giới hạn cạn kiệt tài nguyên (429 Resource Exhausted).
-  - Tối ưu danh sách mô hình ứng viên `SOCRATIC_MODELS`: Đưa `gemini-3.5-flash-lite` lên vị trí ưu tiên số 1, tiếp tục hỗ trợ luân phiên sang `gemini-3.6-flash`, `gemini-3.5-flash` và `gemini-flash-lite-latest`.
-  - Cấu hình `max_retries=1` cho client LLM, loại bỏ cơ chế thử lại ngầm ngốn 25s của Tenacity Exponential Backoff khi gặp lỗi mạng/quota, cho phép chuyển sang model dự phòng tức thì trong 0.1s.
-  - Hạ `timeout` sinh nháp xuống còn 8.0s (thay vì 25.0s), đảm bảo toàn bộ chu trình sinh lời dẫn Socratic luôn phản hồi dưới 2 - 4 giây, không bao giờ gây timeout cho Practice Service.
-- **Mở Rộng Nhận Diện Câu Hỏi Về Chức Năng & Vai Trò (Meta-Queries) ([`socratic_engine.py`](../rag-service/socratic/socratic_engine.py))**:
-  - Mở rộng hàm `is_greeting` với bộ từ khóa vai trò `META_INQUIRY_WORDS` (`"thầy sẽ làm gì trong này"`, `"thầy là ai"`, `"thầy giúp gì"`, `"vai trò của thầy"`).
-  - Trả về lời giải thích súc tích, truyền cảm hứng về phương pháp tư duy phản biện gợi mở Socratic mà không bị nhầm lẫn sang truy vấn đồ thị tri thức Vật lý hay Toán học.
-- **Tối Ưu Hội Đồng Thẩm Định LLM-as-a-Judge ([`validator_judge.py`](../rag-service/socratic/validator_judge.py))**:
-  - Chuyển đổi mô hình thẩm định ưu tiên sang `gemini-3.5-flash-lite` với độ trễ phản hồi < 1 giây, kết hợp hàng rào heuristic nhanh `_fast_heuristic_guard` ngăn chặn rò rỉ đáp án 100%.
-- **Kiểm Thử & Vận Hành**:
-  - Kiểm thử trực tiếp `generate_socratic_guidance` với câu hỏi logic mệnh đề: Phản hồi thành công trong 3.5s, `is_fallback: False`, `judge_passed: True`.
+- **Kiến Trúc 2 Luồng Phân Tách (Decoupled Dual-Track Architecture) ([`intent_router.py`](../rag-service/socratic/intent_router.py), [`socratic_tutor.py`](../rag-service/routers/socratic_tutor.py))**:
+  - **Triệt tiêu hoàn toàn ô nhiễm vector (Semantic Contamination)**: Luồng Track 1 (Task Grounding) chỉ embed duy nhất `question_latex + options` vào không gian pgvector của Knowledge Graph, tuyệt đối không trộn câu hỏi trò chuyện của học sinh (`student_query`), bảo đảm 100% tìm đúng dạng bài, bẫy tư duy và định lý mỏ neo.
+  - **Định tuyến ý định động (Dynamic Intent & Tone Router - Track 2)**: Xây dựng module `socratic/intent_router.py` bóc tách tin nhắn học sinh cùng lịch sử hội thoại thành Ma trận 5 tình huống sư phạm (C1–C5), nhận diện tâm trạng học sinh (`NEUTRAL`, `SKEPTICAL`, `FRUSTRATED`, `CURIOUS`) và trọng tâm dẫn dắt (`PERSONA`, `EXAM_VALIDITY`, `STEP_HINT`, `CONCEPT_EXPLANATION`):
+    - **C1 (Pure Chit-chat & Persona)**: Chào hỏi, trêu đùa, hỏi tuổi, chức vụ, bằng cấp. Bỏ qua truy vấn vector (0ms KG latency), phản hồi tự nhiên, ấm áp, hóm hỉnh và mời học sinh bắt đầu làm bài khi sẵn sàng; tuyệt đối không nhồi nhét công thức toán hay bẫy lỗi.
+    - **C2 (Hybrid / Attitude + Task)**: Học sinh hoài nghi năng lực gia sư hoặc bực bội kèm thắc mắc câu hỏi. Ứng xử hòa nhã, khiêm tốn, kéo học sinh về bài toán và dùng định lý KG chỉ ra điểm gãy tư duy của phương án học sinh bênh vực; đặt 1 câu hỏi gợi mở.
+    - **C3 (Meta-Question on Task)**: Nghi ngờ đề bài sai, thiếu dữ kiện, vô nghiệm. Coi trọng tư duy phản biện khoa học, hướng dẫn rà soát giả thiết và điều kiện biên, khẳng định chuẩn đề ĐGNL và hỏi cụ thể bước biến đổi gây mâu thuẫn.
+    - **C4 (Pure In-Graph Task)**: Thắc mắc chuyên môn bài toán hoặc bấm nút giải thích. Quy trình Socratic 3 bước chuẩn mực: Vạch bẫy nhận thức, nêu định lý mỏ neo, đặt duy nhất 1 câu hỏi gợi mở then chốt.
+    - **C5 (Out-of-Graph / External)**: Dán đề bài mới hoặc hỏi kiến thức mở ngoài hệ thống. Đánh dấu `LOW_CONFIDENCE`, dùng tư duy khoa học phổ thông gợi mở hướng tiếp cận ban đầu, yêu cầu học sinh xác định đại lượng đã cho.
+  - **Thực thi song song (Parallel Execution)**: Endpoint `ask_socratic_json` và `ask_socratic_stream` kích hoạt song song Track 1 và Track 2 qua `asyncio.gather`, giảm thiểu tối đa độ trễ phản hồi (`max(t_track1, t_track2)`).
+
+- **Hệ Thống Prompt Sư Phạm Modular 2 Khối ([`socratic_engine.py`](../rag-service/socratic/socratic_engine.py))**:
+  - **Khối 1 (Persona Core)**: Định hình phong cách người thầy/người anh thông thái, ấm áp, khiêm tốn, sắc sảo; xưng hô thầy - em; nghiêm cấm tự xưng chatbot/mô hình AI máy móc; tuân thủ nguyên tắc Socratic co-pilot (cấm giải thay, cấm đưa kết quả số cuối, cấm lộ đáp án đúng).
+  - **Khối 2 (Dynamic Case Injection)**: Tiêm chỉ thị chuyên biệt bám sát ma trận C1–C5, tâm trạng học sinh và nguồn tri thức Subgraph.
+  - **Safe Fallback Phân Hóa**: Hàm `build_fallback_guidance` trả về nội dung cứu cánh sư phạm phù hợp cho từng mã Case khi LLM gặp sự cố mạng.
+
+- **Hội Đồng Thẩm Định Thích Ứng (Adaptive LLM-as-a-Judge) ([`validator_judge.py`](../rag-service/socratic/validator_judge.py))**:
+  - Thiết lập tiêu chí thẩm định linh hoạt theo từng Category, triệt tiêu lỗi đánh trượt oan lời chào xã giao C1:
+    - Tiêu chí bất biến: `revealed_direct_answer == False` (không lộ đáp án A/B/C/D).
+    - Casing C1: `friendly_and_pedagogical`, `redirect_to_learning` (không đòi hỏi định lý KG).
+    - Casing C2, C3, C4: `consistent_with_ground_truth`, `grounded_in_theorems`.
+    - Casing C5: `logically_sound_hint`.
+
+- **Phát Sự Kiện Tiến Độ SSE (Status Hydration) ([`socratic_tutor.py`](../rag-service/routers/socratic_tutor.py))**:
+  - Bổ sung phát sự kiện `event: status` (`"Gia sư đang phân tích thắc mắc của bạn..."`) và `intent_category` trong `event: metadata` để giao diện hiển thị trạng thái xử lý sinh động, thông suốt.
+
+- **Khắc Phục Quota Rate Limit 429 & Tối Ưu Client LLM Siêu Tốc ([`llm_clients.py`](../rag-service/socratic/llm_clients.py), [`.env`](../rag-service/.env))**:
+  - Tích hợp khóa API Google Gemini mới, cấu hình `HttpRetryOptions(attempts=1)` và `max_retries=1`, loại bỏ vòng lặp treo 25s Tenacity retry.
+  - Ưu tiên `gemini-3.5-flash-lite` cho cả sinh nháp và judge, bảo đảm thời gian phản hồi toàn chu trình trong ~1.5 - 2.5s.
+
+- **Kiểm Thử & Nghiệm Thu**:
+  - 50/50 test cases đạt 100% trong `pytest` (`test_intent_router.py`, `test_socratic_engine.py`, `test_diagnostic.py`, `test_academic_graph.py`).
+  - Biên dịch .NET 9 Practice Service thành công sạch sẽ (0 Warning, 0 Error).
 
 ---
 

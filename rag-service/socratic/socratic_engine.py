@@ -25,6 +25,15 @@ from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+from socratic.intent_router import (
+    IntentCategory,
+    RoutingDecision,
+    StudentMood,
+    TargetFocus,
+    classify_intent,
+    has_task_context,
+    heuristic_route,
+)
 from socratic.validator_judge import (
     JudgeValidationResult,
     validate_draft_response,
@@ -98,6 +107,14 @@ def extract_subgraph_payload(subgraph_context: dict[str, Any]) -> dict[str, str]
     }
 
 
+PERSONA_CORE = """Bạn là Gia sư AI Socratic của Hệ thống Khảo thí V-Eval ĐGNL ĐHQG TP.HCM.
+Phong cách & Tinh thần cốt lõi:
+- Đóng vai một người thầy/người anh thông thái, ấm áp, hóm hỉnh, khiêm tốn và sắc sảo.
+- Xưng hô chuẩn mực và thân thiện: "thầy" (hoặc "gia sư") và "em".
+- Tuyệt đối KHÔNG hành xử như một cỗ máy hay chatbot rập khuôn; KHÔNG tự xưng "Tôi là mô hình AI do Google phát triển...", "Tôi không có cảm xúc...".
+- Tinh thần sư phạm Socratic: Luôn là người đồng hành (co-pilot) gợi mở tư duy từng bước, không bao giờ giải bài thay, không làm hộ, không tính hộ kết quả cuối cùng, không tiết lộ đáp án đúng (A/B/C/D)."""
+
+
 GREETING_WORDS = {
     "hi", "hello", "chào", "chao", "chào bạn", "chào thầy", "chào cô",
     "chào em", "alo", "helo", "hey", "hế lô", "bắt đầu", "start",
@@ -114,6 +131,7 @@ META_INQUIRY_WORDS = {
 
 
 def is_greeting(query: Optional[str], q_latex: Optional[str] = None, options: Optional[dict[str, str]] = None) -> bool:
+    """Check if the user interaction is a greeting or persona inquiry."""
     if query:
         clean_q = query.strip().lower().rstrip("!.,?~^:;")
         if clean_q in GREETING_WORDS or any(m in clean_q for m in META_INQUIRY_WORDS) or (len(clean_q) <= 20 and any(clean_q == g or clean_q.startswith(g + " ") for g in GREETING_WORDS)):
@@ -123,7 +141,10 @@ def is_greeting(query: Optional[str], q_latex: Optional[str] = None, options: Op
         return False
     if options and len(options) > 2 and any(len(str(v)) > 15 for v in options.values()):
         return False
-    return text in GREETING_WORDS or any(m in text for m in META_INQUIRY_WORDS) or (len(text) <= 20 and any(text == g or text.startswith(g + " ") for g in GREETING_WORDS))
+    if text in GREETING_WORDS or any(m in text for m in META_INQUIRY_WORDS) or (len(text) <= 20 and any(text == g or text.startswith(g + " ") for g in GREETING_WORDS)):
+        return True
+    decision = heuristic_route(q_latex, query)
+    return decision.category == IntentCategory.C1
 
 
 def build_socratic_prompts(
@@ -134,55 +155,128 @@ def build_socratic_prompts(
     options: Optional[dict[str, str]] = None,
     student_selected_option_text: Optional[str] = None,
     student_query: Optional[str] = None,
+    routing_decision: Optional[RoutingDecision] = None,
 ) -> tuple[str, str]:
-    """Construct pedagogically strict system and user messages."""
+    """Construct pedagogically strict system and user messages based on the 5-Case routing matrix."""
     pattern_name = subgraph_payload["pattern_name"]
     core_theorems = subgraph_payload["core_theorems"]
     trap_name = subgraph_payload["trap_name"]
     misconception = subgraph_payload["misconception"]
     socratic_hint = subgraph_payload["socratic_hint"]
 
-    # 1. Standalone Greeting or Role Check
-    if is_greeting(student_query, question_latex, options):
-        system_prompt = """Bạn là Gia sư AI Socratic của Hệ thống Khảo thí V-Eval ĐGNL ĐHQG TP.HCM.
-Học sinh vừa gửi lời chào hỏi hoặc hỏi về vai trò, chức năng của Gia sư AI Socratic.
-Hãy phản hồi với giọng điệu ân cần, ấm áp, truyền cảm hứng của một người thầy:
-1. Chào đón học sinh thân thiện.
-2. Giới thiệu rõ vai trò và phương pháp gợi mở Socratic (thầy sẽ đồng hành cùng em, không giải bài thay hay đưa sẵn đáp án, mà đặt các câu hỏi dẫn dắt từng bước để em tự tìm ra hướng giải đúng).
-3. Mời học sinh gửi câu hỏi, đề bài tập hoặc chuyên đề đang gặp khó khăn (Toán học, Logic, Tiếng Việt, KHTN/KHXH) để thầy trò mình cùng bắt đầu."""
-        user_message = f'Học sinh nói: "{student_query or question_latex}".'
-        return system_prompt, user_message
+    if routing_decision is None:
+        routing_decision = heuristic_route(question_latex, student_query)
 
-    # 2. General Open Question Check (No multiple-choice options or no selected option)
-    has_real_options = bool(options and len(options) >= 2 and any(not str(v).startswith("Phương án ") for v in options.values()))
-    if not has_real_options or not student_selected_option or student_selected_option in ("NONE", "null"):
-        system_prompt = f"""Bạn là Gia sư AI Socratic của Hệ thống Khảo thí V-Eval ĐGNL ĐHQG TP.HCM.
-Nhiệm vụ của bạn là DẪN DẮT GỢI MỞ THEO PHƯƠNG PHÁP SOCRATES. TUYỆT ĐỐI CẤM GIẢI BÀI THAY HOẶC ĐƯA ĐÁP ÁN SẴN.
+    category = routing_decision.category
+    mood = routing_decision.student_mood.value
 
-[NGUỒN TRI THỨC]:
-- Chuyên đề: {pattern_name}
-- Định lý / Kiến thức nền tảng:
-{core_theorems}
-
-[NGUYÊN TẮC HƯỚNG DẪN]:
-1. Giải thích tự nhiên, ngắn gọn điểm mấu chốt học sinh đang băn khoăn.
-2. Nêu một công thức hoặc định lý làm mỏ neo nếu cần.
-3. Đặt duy nhất 1 câu hỏi dẫn dắt then chốt để học sinh tự suy nghĩ và tìm hướng giải quyết."""
-        user_message = f'Học sinh hỏi/thắc mắc: "{student_query or question_latex}".'
-        return system_prompt, user_message
-
-    # 3. Standard In-Exam Socratic Mode (with specific wrong choice)
+    # Options formatting
     options_formatted = ""
     if options:
         opt_lines = [f"{k}. {v}" for k, v in sorted(options.items())]
         options_formatted = "\nCác phương án của câu hỏi:\n" + "\n".join(opt_lines)
 
-    student_choice_desc = f"{student_selected_option}"
+    student_choice_desc = f"{student_selected_option}" if student_selected_option and student_selected_option not in ("NONE", "null") else "phương án đã chọn"
     if student_selected_option_text:
         student_choice_desc += f" ({student_selected_option_text})"
 
-    system_prompt = f"""Bạn là Gia sư AI Socratic của Hệ thống Khảo thí V-Eval.
-Học sinh vừa chọn phương án SAI trong một câu hỏi trắc nghiệm ĐGNL.
+    # --- Case C1: Pure Chit-chat & Persona ---
+    if category == IntentCategory.C1:
+        system_prompt = f"""{PERSONA_CORE}
+
+[TÌNH HUỐNG C1: XÃ GIAO / HỎI VỀ GIA SƯ]
+Học sinh đang chào hỏi, trêu đùa, hoặc hỏi về vai trò, chức vụ, bằng cấp, tuổi tác của thầy.
+Mục tiêu sư phạm:
+1. Trả lời một cách hóm hỉnh, ấm áp, khiêm tốn và tự nhiên về bản thân (người bạn đồng hành học tập AI chuyên sâu phương pháp Socratic cho kỳ thi ĐGNL).
+2. TUYỆT ĐỐI KHÔNG nhồi nhét công thức toán, bẫy lỗi hay phương án trắc nghiệm khi học sinh chưa hỏi bài.
+3. Kéo học sinh về việc học một cách tự nhiên, sẵn sàng cùng em chinh phục các chuyên đề ĐGNL, mời em gửi câu hỏi hoặc bắt đầu làm bài khi sẵn sàng."""
+        user_message = f'Học sinh nhắn: "{student_query or question_latex}".'
+        return system_prompt, user_message
+
+    # --- Case C2: Hybrid / Attitude + Task ---
+    if category == IntentCategory.C2:
+        system_prompt = f"""{PERSONA_CORE}
+
+[TÌNH HUỐNG C2: THÁI ĐỘ + THẮC MẮC BÀI TOÁN]
+Học sinh vừa có biểu hiện cảm xúc (hoài nghi năng lực thầy, trêu, hờn dỗi hoặc bực bội) VỪA thắc mắc về bài đang làm ({student_choice_desc}).
+Tâm trạng học sinh: {mood}.
+
+[NGUỒN TRI THỨC KNOWLEDGE GRAPH]:
+- Dạng bài: {pattern_name}
+- Định lý / Công thức chuẩn:
+{core_theorems}
+- Bẫy nhận thức: {trap_name}
+{misconception}
+- Gợi ý bản lề sư phạm: {socratic_hint}
+
+[DỮ LIỆU ĐỀ BÀI VÀ HỌC SINH]:
+- Phương án học sinh đã chọn (SAI): {student_choice_desc}
+- Đáp án đúng của hệ thống: {correct_option} (BÍ MẬT TUYỆT ĐỐI — CẤM NÓI RA, CẤM BẢO HỌC SINH CHỌN {correct_option})
+
+Mục tiêu sư phạm:
+1. Tiếp nhận thái độ/sự hoài nghi của học sinh với sự khiêm tốn, bình tĩnh, hòa nhã và hóm hỉnh. Tuyệt đối không cãi cọ, tự ái hay đối đầu.
+2. Khéo léo kéo học sinh quay lại trọng tâm câu hỏi: Chỉ ra điểm gãy tư duy trong phương án {student_choice_desc} mà học sinh đang bảo vệ.
+3. Trích dẫn 1 công thức hoặc định lý bản lề làm mỏ neo.
+4. Đặt DUY NHẤT 1 câu hỏi gợi mở sắc sảo để học sinh tự kiểm tra lại suy luận của mình.
+5. TUYỆT ĐỐI KHÔNG tính hộ kết quả cuối cùng, không tiết lộ đáp án đúng."""
+        user_message = f"""Đề bài đang làm:
+{question_latex}{options_formatted}
+
+- Phương án học sinh đã chọn (sai): {student_choice_desc}
+- Lời nhắn của học sinh: "{student_query}"
+
+Hãy giải tỏa thái độ của học sinh với giọng điệu khiêm tốn, đồng thời vận dụng phương pháp gợi mở Socratic để giúp học sinh tự nhận ra lỗ hổng trong phương án {student_choice_desc}."""
+        return system_prompt, user_message
+
+    # --- Case C3: Meta-Question on Task ---
+    if category == IntentCategory.C3:
+        system_prompt = f"""{PERSONA_CORE}
+
+[TÌNH HUỐNG C3: NGHI NGỜ ĐỀ BÀI / TÍNH HỢP LỆ]
+Học sinh đang nghi ngờ đề bài có vấn đề (cho thiếu dữ kiện, vô nghiệm, sai đáp án, lỗi hiển thị...).
+
+[NGUỒN TRI THỨC KNOWLEDGE GRAPH]:
+- Dạng bài: {pattern_name}
+- Định lý / Kiến thức nền tảng:
+{core_theorems}
+- Phương án học sinh đã chọn: {student_choice_desc}
+- Đáp án đúng của hệ thống: {correct_option} (BÍ MẬT TUYỆT ĐỐI)
+
+Mục tiêu sư phạm:
+1. Đánh giá cao tinh thần phản biện khoa học của học sinh: Tuyệt đối KHÔNG gạt phắt thô bạo.
+2. Nhẹ nhàng hướng dẫn học sinh rà soát lại các giả thiết đề bài, điều kiện biên và quy ước chuẩn trong kỳ thi ĐGNL.
+3. Khẳng định đề bài đã được chuẩn hóa đầy đủ dữ kiện cần thiết theo quy chuẩn ĐGNL.
+4. Nêu định lý hoặc công thức mỏ neo: {core_theorems}
+5. Đặt DUY NHẤT 1 câu hỏi dẫn dắt để học sinh chỉ ra cụ thể bước biến đổi nào hoặc dữ kiện nào khiến em thấy bị thiếu hay mâu thuẫn.
+6. TUYỆT ĐỐI KHÔNG giải thay trọn vẹn, không đưa ra đáp án cuối cùng."""
+        user_message = f"""Đề bài đang làm:
+{question_latex}{options_formatted}
+
+- Phương án học sinh đã chọn: {student_choice_desc}
+- Thắc mắc của học sinh về đề bài: "{student_query}"
+
+Hãy phản hồi sự nghi ngờ của học sinh một cách sư phạm và đặt câu hỏi gợi mở để học sinh tự kiểm tra lại giả thiết đề bài."""
+        return system_prompt, user_message
+
+    # --- Case C5: Out-of-Graph / External ---
+    if category == IntentCategory.C5:
+        system_prompt = f"""{PERSONA_CORE}
+
+[TÌNH HUỐNG C5: CÂU HỎI MỞ / BÀI TOÁN NGOÀI HỆ THỐNG]
+Học sinh hỏi một bài toán mới hoặc kiến thức mở nằm ngoài ngân hàng đề trắc nghiệm hiện tại.
+Mục tiêu sư phạm:
+1. Thân thiện đón nhận: Ghi nhận bài toán/câu hỏi mà học sinh đưa ra.
+2. Vận dụng kiến thức khoa học phổ thông để định hướng: Gợi ý công thức hoặc nguyên lý xuất phát điểm.
+3. Đặt 1 câu hỏi gợi mở để học sinh tự liệt kê các dữ kiện đã cho và đại lượng cần tìm.
+4. TUYỆT ĐỐI KHÔNG giải toàn bộ bài toán thay học sinh."""
+        user_message = f'Học sinh hỏi bài toán / kiến thức ngoài:\n"{student_query or question_latex}"\n\nHãy gợi ý phương pháp xuất phát điểm và đặt câu hỏi gợi mở cho học sinh.'
+        return system_prompt, user_message
+
+    # --- Case C4 (Default): Pure In-Graph Task Question ---
+    system_prompt = f"""{PERSONA_CORE}
+
+[TÌNH HUỐNG C4: DẪN DẮT BÀI TOÁN THEO PHƯƠNG PHÁP SOCRATES]
+Học sinh vừa chọn phương án SAI trong một câu hỏi trắc nghiệm ĐGNL và cần được dẫn dắt.
 Nhiệm vụ tối thượng của bạn là DẪN DẮT GỢI MỞ THEO PHƯƠNG PHÁP SOCRATES. TUYỆT ĐỐI CẤM GIẢI THAY.
 
 [NGUỒN CHÂN LÝ TỪ KNOWLEDGE GRAPH]:
@@ -198,7 +292,7 @@ Nhiệm vụ tối thượng của bạn là DẪN DẮT GỢI MỞ THEO PHƯƠN
 - Đáp án đúng của hệ thống: {correct_option} (BÍ MẬT TUYỆT ĐỐI — CẤM NÓI RA, CẤM BẢO HỌC SINH CHỌN {correct_option})
 
 [NGUYÊN TẮC BẮT BUỘC (GUARDRAILS)]:
-1. BƯỚC 1 - GHI NHẬN THÂN THIỆN: Chỉ ra lỗi tư duy học sinh vừa vướng phải.
+1. BƯỚC 1 - GHI NHẬN THÂN THIỆN: Chỉ ra lỗi tư duy học sinh vừa vướng phải khi chọn {student_choice_desc}.
 2. BƯỚC 2 - NHẮC LẠI ĐỊNH LÝ: Trích dẫn 1 công thức hoặc định lý bản lề từ giáo trình để học sinh làm mỏ neo.
 3. BƯỚC 3 - CÂU HỎI GỢI MỞ: Đặt DUY NHẤT 1 câu hỏi gợi mở then chốt để học sinh tự suy nghĩ và tính toán bước tiếp theo.
 4. QUY TẮC CẤM:
@@ -235,28 +329,64 @@ def build_fallback_guidance(
     options: Optional[dict[str, str]] = None,
     student_selected_option: Optional[str] = None,
     student_query: Optional[str] = None,
+    category: Optional[str] = None,
 ) -> str:
-    """Render grounded safe fallback text tailored by curriculum topic from Knowledge Graph."""
-    # 0. Check Greeting or Meta-Query First!
-    if is_greeting(student_query, question_latex, options) or (not student_selected_option and len((student_query or question_latex or "").strip()) <= 30 and any(g in (student_query or question_latex or "").lower() for g in ("hi", "chào", "chao", "hello", "alo", "thầy ơi", "thầy làm gì", "thầy là ai", "giúp"))):
+    """Render grounded safe fallback text tailored by category and curriculum topic."""
+    cat = (category or "").upper()
+    if not cat:
+        if is_greeting(student_query, question_latex, options):
+            cat = "C1"
+        elif question_latex or student_query:
+            cat = heuristic_route(question_latex, student_query).category.value
+        else:
+            cat = "C4"
+
+    # 1. Fallback for C1 (Pure Chit-chat & Persona)
+    if cat == "C1":
         return (
             "Chào em! Thầy là **Gia Sư AI Socratic** của Hệ thống Khảo thí V-Eval ĐGNL. "
             "Trong không gian học tập này, thầy sẽ đồng hành cùng em ôn luyện, hướng dẫn phương pháp tư duy phản biện từng bước mà không đưa sẵn đáp án. "
-            "Em đang gặp băn khoăn hay cần thầy gợi mở phương pháp ở bài tập nào, "
-            "hoặc thuộc chuyên đề nào (Toán học, Tư duy Logic, Tiếng Việt, KHTN/KHXH)? Em hãy gửi đề bài hoặc câu hỏi cho thầy nhé!"
+            "Thầy đã sẵn sàng cùng em chinh phục các chuyên đề ĐGNL (Toán học, Tư duy Logic, Tiếng Việt, KHTN/KHXH). "
+            "Em đang gặp băn khoăn hay cần thầy gợi mở phương pháp ở bài tập nào? Em hãy gửi câu hỏi cho thầy nhé!"
         )
 
     pattern_name = subgraph_payload.get("pattern_name", "Dạng bài chuẩn ĐGNL")
-    core_theorems = subgraph_payload.get("core_theorems", "")
+    core_theorems = subgraph_payload.get("core_theorems", "Vận dụng định lý và tính chất cơ bản.")
     misconception = subgraph_payload.get("misconception", "")
     socratic_hint = subgraph_payload.get("socratic_hint", "")
 
-    q_lower = (question_latex or "").lower()
     sel = (student_selected_option or "").strip().upper()
     sel_text = (options or {}).get(sel) if options else None
     choice_label = f"phương án **{sel}**" + (f" ({sel_text})" if sel_text else "") if sel else "phương án đã chọn"
 
-    # Specific topic override if subgraph was generic
+    # 2. Fallback for C2 (Hybrid / Attitude + Task)
+    if cat == "C2":
+        return (
+            f"Chào em! Thầy rất hiểu cảm giác băn khoăn khi em tin tưởng vào {choice_label} nhưng hệ thống lại báo chưa chính xác.\n\n"
+            f"- **Định lý bản lề:**\n{core_theorems}\n\n"
+            f"👉 *Câu hỏi gợi mở:* {socratic_hint or 'Em hãy thử thay ngược lại kết quả vào điều kiện ban đầu của đề bài xem có phát hiện điểm mâu thuẫn nào không?'}"
+        )
+
+    # 3. Fallback for C3 (Meta-Question / Question Soundness)
+    if cat == "C3":
+        return (
+            f"Thầy rất hoan nghênh tinh thần phản biện khoa học của em khi đặt nghi vấn về đề bài chuyên đề **{pattern_name}**.\n\n"
+            f"Theo quy chuẩn khảo thí ĐGNL, đề bài đã được chuẩn hóa với các giả thiết cần và đủ. "
+            f"Để kiểm tra xem bài toán có thực sự thiếu dữ kiện hay vô nghiệm hay không, em hãy dựa vào định lý nền tảng sau:\n\n"
+            f"- **Kiến thức trọng tâm:**\n{core_theorems}\n\n"
+            f"👉 *Câu hỏi gợi mở:* Trong các bước thiết lập phương trình từ dữ kiện đề bài, bước nào khiến em cảm thấy chưa đủ điều kiện để tìm ra nghiệm?"
+        )
+
+    # 4. Fallback for C5 (Out-of-Graph / External Question)
+    if cat == "C5":
+        return (
+            f"Chào em! Thầy đã ghi nhận câu hỏi của em.\n\n"
+            f"- **Định hướng xuất phát:** Đối với bài toán này, trước hết em hãy xác định rõ các đại lượng đã cho và đại lượng cần tìm kiếm.\n\n"
+            f"👉 *Câu hỏi gợi mở:* Giả thiết bài toán đang cho em những dữ kiện nào, và công thức nào liên hệ trực tiếp giữa các đại lượng đó?"
+        )
+
+    # 5. Fallback for C4: Check topic-specific overrides first
+    q_lower = (question_latex or "").lower()
     if r"p \Rightarrow q" in q_lower or "p => q" in q_lower or "q => r" in q_lower or "kéo theo" in q_lower or "mệnh đề" in q_lower or "bảng chân trị" in q_lower or "logic" in q_lower:
         return (
             "💡 **Gợi ý phương pháp giải Socratic (Toán logic mệnh đề & suy luận kéo theo):**\n\n"
@@ -315,8 +445,23 @@ async def generate_socratic_guidance(
     student_selected_option_text: Optional[str] = None,
     student_query: Optional[str] = None,
     llm: Optional[ChatGoogleGenerativeAI] = None,
+    routing_decision: Optional[RoutingDecision] = None,
+    conversation_history: Optional[Sequence[Any]] = None,
 ) -> tuple[str, JudgeValidationResult, bool]:
     """Non-streaming guidance generator returning (response_text, judge_result, is_fallback)."""
+    if routing_decision is None:
+        routing_decision = await classify_intent(
+            question_latex=question_latex,
+            student_query=student_query,
+            student_selected_option=student_selected_option,
+            conversation_history=conversation_history,
+        )
+
+    category = routing_decision.category.value
+    status = subgraph_context.get("status")
+    has_anchor = bool(subgraph_context.get("anchor"))
+    is_grounded = status == "GROUNDED" or subgraph_context.get("is_grounded", False) or (status is None and has_anchor)
+
     subgraph_payload = extract_subgraph_payload(subgraph_context)
     system_prompt, user_message = build_socratic_prompts(
         question_latex=question_latex,
@@ -326,6 +471,7 @@ async def generate_socratic_guidance(
         options=options,
         student_selected_option_text=student_selected_option_text,
         student_query=student_query,
+        routing_decision=routing_decision,
     )
 
     # 1. Generate draft response with dynamic model fallback and reasonable timeout
@@ -360,7 +506,9 @@ async def generate_socratic_guidance(
 
     if not draft_text:
         logger.warning("All Socratic draft generation attempts failed (%s). Using resilient fallback.", last_gen_error)
-        fallback = build_fallback_guidance(subgraph_payload, question_latex, options, student_selected_option, student_query)
+        fallback = build_fallback_guidance(
+            subgraph_payload, question_latex, options, student_selected_option, student_query, category=category
+        )
         dummy_judge = JudgeValidationResult(
             is_passed=True,
             revealed_direct_answer=False,
@@ -370,31 +518,24 @@ async def generate_socratic_guidance(
         )
         return fallback, dummy_judge, True
 
-    # 2. Skip LLM-as-a-Judge for greetings
-    if is_greeting(student_query, question_latex, options):
-        judge_result = JudgeValidationResult(
-            is_passed=True,
-            revealed_direct_answer=False,
-            consistent_with_ground_truth=True,
-            grounded_in_theorems=True,
-            rejection_reason="Greeting interaction passed directly",
-        )
-        return draft_text, judge_result, False
-
-    # 3. Inspect with LLM-as-a-Judge
+    # 2. Inspect with Adaptive LLM-as-a-Judge
     judge_result = await validate_draft_response(
         ai_draft_response=draft_text,
         correct_option=correct_option,
         core_theorems=subgraph_payload["core_theorems"],
         student_selected_option=student_selected_option,
+        category=category,
+        grounded=is_grounded,
     )
 
     if judge_result.is_passed:
-        logger.info("Draft response PASSED pedagogical validation.")
+        logger.info("Draft response PASSED pedagogical validation | category=%s", category)
         return draft_text, judge_result, False
     else:
-        logger.warning("Draft response REJECTED by judge (%s). Reverting to safe fallback.", judge_result.rejection_reason)
-        fallback = build_fallback_guidance(subgraph_payload, question_latex, options, student_selected_option, student_query)
+        logger.warning("Draft response REJECTED by judge (%s) | category=%s. Reverting to safe fallback.", judge_result.rejection_reason, category)
+        fallback = build_fallback_guidance(
+            subgraph_payload, question_latex, options, student_selected_option, student_query, category=category
+        )
         return fallback, judge_result, True
 
 
@@ -407,6 +548,8 @@ async def generate_socratic_guidance_stream(
     student_selected_option_text: Optional[str] = None,
     student_query: Optional[str] = None,
     llm: Optional[ChatGoogleGenerativeAI] = None,
+    routing_decision: Optional[RoutingDecision] = None,
+    conversation_history: Optional[Sequence[Any]] = None,
 ) -> AsyncIterator[str]:
     """Real-time SSE token generator with two-layer pedagogical gating."""
     text, judge_result, is_fallback = await generate_socratic_guidance(
@@ -418,6 +561,8 @@ async def generate_socratic_guidance_stream(
         student_selected_option_text=student_selected_option_text,
         student_query=student_query,
         llm=llm,
+        routing_decision=routing_decision,
+        conversation_history=conversation_history,
     )
 
     # Stream out chunks with slight pacing for natural conversational rendering

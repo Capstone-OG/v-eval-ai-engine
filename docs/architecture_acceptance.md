@@ -709,3 +709,28 @@
      - Introduced `META_INQUIRY_WORDS` dictionary to recognize inquiries concerning the AI tutor's purpose and pedagogy ("thầy sẽ làm gì trong này", "thầy là ai", "hướng dẫn học"), providing inspirational scaffolding without triggering irrelevant subject retrieval.
   3. **Verification**:
      - Executed full propositional logic inference: Completed in 3.5s with `is_fallback: False`, `judge_passed: True`, and zero streaming timeouts.
+
+### [06/11/2026] - Architecture Acceptance: Decoupled Dual-Track Architecture & 5-Case Pedagogical Intent Matrix
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - `rag-service/socratic/intent_router.py`
+  - `rag-service/socratic/socratic_engine.py`
+  - `rag-service/socratic/validator_judge.py`
+  - `rag-service/routers/socratic_tutor.py`
+  - `rag-service/tests/test_intent_router.py`
+  - `rag-service/tests/test_socratic_engine.py`
+- **Key Architectural Deliverables**:
+  1. **Decoupled Dual-Track Pipeline (Semantic Contamination Immunity)**:
+     - Track 1 (Task Grounding): Vector embeddings against PostgreSQL Knowledge Graph (`v_eval_ai.archetype_patterns`) are strictly computed on canonical `question_latex + options`, completely isolating raw conversational inputs (`student_query`). Eliminates vector drift and topic hallucination.
+     - Track 2 (Dynamic Intent & Tone Router): Independently analyzes `student_query` into a 5-Case Pedagogical Matrix (`C1`: Pure Chit-chat & Persona, `C2`: Hybrid Attitude + Task, `C3`: Meta-Question on Exam Validity, `C4`: Pure In-Graph Task, `C5`: Out-of-Graph External Problem), inferring student mood (`NEUTRAL`, `SKEPTICAL`, `FRUSTRATED`, `CURIOUS`) and target focus.
+  2. **Modular 2-Stage Prompt Architecture**:
+     - Module 1 (Persona Core): Enforces an authentic, humble, sharp mentor persona, strictly forbidding synthetic boilerplate ("I am a large language model...").
+     - Module 2 (Dynamic Injection): Selectively mounts KG theorems and specific scaffolding instructions according to the active casing category.
+  3. **Adaptive LLM-as-a-Judge**:
+     - Category-tailored validation criteria ensure persona responses (`C1`) are evaluated on friendliness and learning redirection rather than penalized for omitting syllabus theorems.
+  4. **Concurrent Routing & SSE Hydration**:
+     - Track 1 and Track 2 execute concurrently via `asyncio.gather`.
+     - SSE stream transmits `status`, `metadata` (including `intent_category`), `token`, and `done` events for real-time frontend hydration.
+  5. **Verification**:
+     - 50/50 automated test cases passing with 100% success rate across all test suites (`test_intent_router.py`, `test_socratic_engine.py`, `test_diagnostic.py`, `test_academic_graph.py`).

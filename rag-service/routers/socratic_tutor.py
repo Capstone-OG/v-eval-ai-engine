@@ -11,6 +11,7 @@ Provides student-facing conversational endpoints for real-time Socratic learning
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -23,9 +24,17 @@ from pydantic import BaseModel, Field
 
 from graph.graph_db import GRAPH_SCHEMA, graph_connection
 from graph.hybrid_retriever import HybridGraphRetriever, SocraticSubgraph, STATUS_LOW_CONFIDENCE
+from socratic.intent_router import (
+    IntentCategory,
+    RoutingDecision,
+    classify_intent,
+    has_task_context,
+    heuristic_route,
+)
 from socratic.socratic_engine import (
     generate_socratic_guidance,
     generate_socratic_guidance_stream,
+    is_greeting,
 )
 
 logger = logging.getLogger(__name__)
@@ -58,6 +67,7 @@ class SocraticAskResponse(BaseModel):
     archetype_code: Optional[str] = None
     matched_trap_code: Optional[str] = None
     subgraph_status: str
+    intent_category: Optional[str] = None
 
 
 class ReportInteractionRequest(BaseModel):
@@ -171,20 +181,40 @@ def log_interaction(
 
 
 # ---------------------------------------------------------------------------
-# Endpoints
+# Decoupled Dual-Track Resolver (Track 1: Task Grounding | Track 2: Intent Router)
 # ---------------------------------------------------------------------------
 
 
-@router.post("/ask", response_model=SocraticAskResponse, summary="Ask Socratic AI Tutor (JSON response)")
-async def ask_socratic_json(req: SocraticAskRequest) -> SocraticAskResponse:
-    """Synchronous JSON Socratic tutor endpoint."""
-    from socratic.socratic_engine import is_greeting
-    if is_greeting(req.student_query, req.question_latex, req.options):
+async def _resolve_dual_track(
+    req: SocraticAskRequest,
+) -> tuple[RoutingDecision, SocraticSubgraph]:
+    """Execute Track 1 (KG Anchor) and Track 2 (Dynamic Intent & Tone Router) concurrently."""
+    has_task = has_task_context(req.question_latex, req.student_query)
+    intent_task = classify_intent(
+        question_latex=req.question_latex,
+        student_query=req.student_query,
+        student_selected_option=req.student_selected_option,
+    )
+
+    if not has_task:
+        decision = await intent_task
         subgraph = SocraticSubgraph(status="GENERAL_CHAT")
-    else:
+        return decision, subgraph
+
+    # Fast heuristic check: If student query is an obvious standalone greeting/persona check,
+    # skip expensive vector retrieval immediately (0ms KG latency).
+    fast_decision = heuristic_route(req.question_latex, req.student_query)
+    if fast_decision.category == IntentCategory.C1:
+        decision = fast_decision
+        subgraph = SocraticSubgraph(status="GENERAL_CHAT")
+        return decision, subgraph
+
+    async def _retrieve_kg() -> SocraticSubgraph:
         try:
+            from starlette.concurrency import run_in_threadpool
             retriever = HybridGraphRetriever()
-            subgraph = retriever.retrieve(
+            return await run_in_threadpool(
+                retriever.retrieve,
                 question_latex=req.question_latex,
                 options=req.options,
                 student_selected_option=req.student_selected_option,
@@ -192,14 +222,31 @@ async def ask_socratic_json(req: SocraticAskRequest) -> SocraticAskResponse:
                 skill_id=str(req.skill_id) if req.skill_id else None,
             )
         except Exception as exc:
-            logger.warning("Knowledge retrieval failed in ask_socratic_json (%s). Using resilient LOW_CONFIDENCE subgraph.", exc)
-            subgraph = SocraticSubgraph(
+            logger.warning("Knowledge retrieval failed (%s). Using resilient LOW_CONFIDENCE subgraph.", exc)
+            return SocraticSubgraph(
                 status=STATUS_LOW_CONFIDENCE,
                 student_selected_option=(req.student_selected_option or "").strip().upper() or None,
                 student_selected_option_text=req.options.get(req.student_selected_option.strip().upper()) if req.options else None,
             )
 
-    selected_text = req.options.get(req.student_selected_option.strip().upper())
+    decision, subgraph = await asyncio.gather(intent_task, _retrieve_kg())
+    # If LLM classified it as C1 (pure persona inquiry), suppress KG usage
+    if decision.category == IntentCategory.C1:
+        subgraph = SocraticSubgraph(status="GENERAL_CHAT")
+    return decision, subgraph
+
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.post("/ask", response_model=SocraticAskResponse, summary="Ask Socratic AI Tutor (JSON response)")
+async def ask_socratic_json(req: SocraticAskRequest) -> SocraticAskResponse:
+    """Synchronous JSON Socratic tutor endpoint using decoupled dual-track architecture."""
+    decision, subgraph = await _resolve_dual_track(req)
+    selected_text = req.options.get(req.student_selected_option.strip().upper()) if req.options else None
+
     guidance_text, judge_result, is_fallback = await generate_socratic_guidance(
         question_latex=req.question_latex,
         student_selected_option=req.student_selected_option,
@@ -208,12 +255,13 @@ async def ask_socratic_json(req: SocraticAskRequest) -> SocraticAskResponse:
         options=req.options,
         student_selected_option_text=selected_text,
         student_query=req.student_query,
+        routing_decision=decision,
     )
 
     val_status = "PASSED" if judge_result.is_passed else "OVERRIDDEN"
     transcript = [
-        {"role": "student", "option": req.student_selected_option, "option_text": selected_text},
-        {"role": "tutor", "text": guidance_text, "is_fallback": is_fallback},
+        {"role": "student", "option": req.student_selected_option, "option_text": selected_text, "query": req.student_query},
+        {"role": "tutor", "text": guidance_text, "is_fallback": is_fallback, "category": decision.category.value},
     ]
 
     interaction_id = log_interaction(
@@ -236,43 +284,33 @@ async def ask_socratic_json(req: SocraticAskRequest) -> SocraticAskResponse:
         archetype_code=subgraph.anchor.pattern_code if subgraph.anchor else None,
         matched_trap_code=subgraph.matched_trap.trap_code if subgraph.matched_trap else None,
         subgraph_status=subgraph.status,
+        intent_category=decision.category.value,
     )
 
 
 @router.post("/ask-stream", summary="Ask Socratic AI Tutor via real-time SSE stream")
 async def ask_socratic_stream(req: SocraticAskRequest) -> StreamingResponse:
-    """Real-time SSE token stream (text/event-stream) with pedagogical validation."""
-    from socratic.socratic_engine import is_greeting
-    if is_greeting(req.student_query, req.question_latex, req.options):
-        subgraph = SocraticSubgraph(status="GENERAL_CHAT")
-    else:
-        try:
-            retriever = HybridGraphRetriever()
-            subgraph = retriever.retrieve(
-                question_latex=req.question_latex,
-                options=req.options,
-                student_selected_option=req.student_selected_option,
-                correct_option=req.correct_option,
-                skill_id=str(req.skill_id) if req.skill_id else None,
-            )
-        except Exception as exc:
-            logger.warning("Knowledge retrieval failed in ask_socratic_stream (%s). Using resilient LOW_CONFIDENCE subgraph.", exc)
-            subgraph = SocraticSubgraph(
-                status=STATUS_LOW_CONFIDENCE,
-                student_selected_option=(req.student_selected_option or "").strip().upper() or None,
-                student_selected_option_text=req.options.get(req.student_selected_option.strip().upper()) if req.options else None,
-            )
-
-    selected_text = req.options.get(req.student_selected_option.strip().upper())
+    """Real-time SSE token stream (text/event-stream) with decoupled dual-track routing & pedagogical validation."""
+    decision, subgraph = await _resolve_dual_track(req)
+    selected_text = req.options.get(req.student_selected_option.strip().upper()) if req.options else None
     subgraph_dict = subgraph.to_dict()
 
     async def event_generator():
+        # 0. Emit status event
+        status_msg = {
+            "type": "status",
+            "message": "Gia sư đang phân tích thắc mắc của bạn...",
+            "category": decision.category.value,
+        }
+        yield f"event: status\ndata: {json.dumps(status_msg, ensure_ascii=False)}\n\n"
+
         # 1. Emit metadata event
         meta_event = {
             "type": "metadata",
             "archetype_code": subgraph.anchor.pattern_code if subgraph.anchor else None,
             "matched_trap_code": subgraph.matched_trap.trap_code if subgraph.matched_trap else None,
             "subgraph_status": subgraph.status,
+            "intent_category": decision.category.value,
         }
         yield f"event: metadata\ndata: {json.dumps(meta_event, ensure_ascii=False)}\n\n"
 
@@ -287,6 +325,7 @@ async def ask_socratic_stream(req: SocraticAskRequest) -> StreamingResponse:
                 options=req.options,
                 student_selected_option_text=selected_text,
                 student_query=req.student_query,
+                routing_decision=decision,
             ):
                 full_text_parts.append(chunk)
                 payload = {"type": "token", "token": chunk}
@@ -299,8 +338,8 @@ async def ask_socratic_stream(req: SocraticAskRequest) -> StreamingResponse:
         # 3. Save log and emit completion event
         full_text = "".join(full_text_parts)
         transcript = [
-            {"role": "student", "option": req.student_selected_option, "option_text": selected_text},
-            {"role": "tutor", "text": full_text},
+            {"role": "student", "option": req.student_selected_option, "option_text": selected_text, "query": req.student_query},
+            {"role": "tutor", "text": full_text, "category": decision.category.value},
         ]
         interaction_id = log_interaction(
             student_id=str(req.student_id),
