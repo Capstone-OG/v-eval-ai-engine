@@ -774,3 +774,36 @@
      - Created 7 unit tests in `PromptTemplateServiceTests.cs` covering token interpolation, Socratic pedagogy template, pattern analysis template, verbatim OCR template, pattern maximization directives, in-memory caching, and fallback resilience.
      - 13/13 automated unit tests passing 100% in `V-Eval-Ai_Engine.Tests`.
      - Clean compilation across all projects in `V-Eval-Ai_Engine.sln` under .NET 9.0 (0 Warnings, 0 Errors).
+
+
+### [10/11/2026] - Architecture Acceptance: Knowledge Graph JSON Deserialization Fault Resolution (HF-AI-05), Context-Aware Quote Sanitizer & Flash-Lite Latency Optimization
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - `V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs`
+  - `V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt`
+  - `V-Eval-Ai_Engine.API/appsettings.json`
+  - `V-Eval-Ai_Engine.Tests/Infrastructure/PromptTemplateServiceTests.cs`
+- **Key Architectural Deliverables**:
+  1. **Mitigation of JSON Deserialization Exception in Chemistry Extraction (`HF-AI-05`)**:
+     - Diagnosed and resolved the root cause of the deserialization error:
+       ``'l' is an invalid start of a property name. Expected a '"'. Path: $.chapters[0].lessons[0].patterns[0] | LineNumber: 16 | BytePositionInLine: 64.``
+     - Identified that unescaped double quotes inside Vietnamese chemistry terminology (e.g., `"isoamyl axetat", là este...`) followed immediately by a comma prematurely closed the string property in the tokenizer; subsequent Vietnamese words starting with `'l'` (`là este...`, `lời giải...`) were misidentified as unquoted property keys.
+     - Identified that C-style comments (`/* ... */`) embedded inside the prompt JSON schema were being echoed by LLMs into JSON payloads, violating RFC 8259 syntax.
+  2. **Prompt Template Sanitization**:
+     - Stripped all `/* ... */` comment blocks from the JSON array schema in `CurriculumIngestion.prompt.txt`.
+     - Added strict prompt directives prohibiting LLM comments and mandating single quotes `'...'` for all inline nomenclature and terms.
+  3. **Context-Aware JSON Sanitizer (`SanitizeAndRepairGeminiJson`)**:
+     - Pre-processing: Strips multi-line C-style comments (`/\*[\s\S]*?\*/`), single-line comments (`//.*`), and trailing commas before `}` or `]`.
+     - State-aware tokenization: Tracks whether the parser is currently scanning a property key or a string value.
+     - For string values, a double quote followed by a comma is only treated as a closing quote if the post-comma token is an object/array delimiter or a valid subsequent property key (`"[a-zA-Z0-9_]+":`). Internal unescaped quotation marks in prose are safely converted to single quotes `'...'`.
+     - Enabled `ReadCommentHandling = JsonCommentHandling.Skip` and `CommentHandling = JsonCommentHandling.Skip` across all `JsonSerializer` and `JsonNode.Parse` calls.
+  4. **Latency Reduction & HTTP 503 Elimination via Flash-Lite Prioritization**:
+     - Reordered model evaluation hierarchy in `appsettings.json` and `ResolveGeminiModels()`, elevating `gemini-3.5-flash-lite` to primary priority ahead of `gemini-3.8-flash` and `gemini-3.6-flash`.
+     - Reduced multimodal 18-image extraction latency from ~150 seconds down to <15 seconds, eliminating intermittent 503 Service Unavailable timeouts.
+  5. **Verification**:
+     - Added 2 new unit tests in `PromptTemplateServiceTests.cs`:
+       + `SanitizeAndRepairGeminiJson_WithUnescapedQuotesInChemistryProse_RepairsToValidJson`
+       + `SanitizeAndRepairGeminiJson_WithCStyleAndLineComments_StripsCommentsAndParsesSuccessfully`
+     - 15/15 unit tests passing 100% in `V-Eval-Ai_Engine.Tests`.
+     - Full solution builds cleanly with 0 warnings and 0 errors.

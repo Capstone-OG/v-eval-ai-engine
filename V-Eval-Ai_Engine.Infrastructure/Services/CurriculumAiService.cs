@@ -563,7 +563,8 @@ public class CurriculumAiService : ICurriculumAiService
                                     parsed = JsonSerializer.Deserialize<ImportCurriculumRequestDto>(contentText, new JsonSerializerOptions 
                                     { 
                                         PropertyNameCaseInsensitive = true,
-                                        AllowTrailingCommas = true
+                                        AllowTrailingCommas = true,
+                                        ReadCommentHandling = JsonCommentHandling.Skip
                                     });
                                 }
                                 catch (Exception jsonEx)
@@ -642,7 +643,8 @@ public class CurriculumAiService : ICurriculumAiService
                             parsed = JsonSerializer.Deserialize<ImportCurriculumRequestDto>(contentText, new JsonSerializerOptions 
                             { 
                                 PropertyNameCaseInsensitive = true,
-                                AllowTrailingCommas = true
+                                AllowTrailingCommas = true,
+                                ReadCommentHandling = JsonCommentHandling.Skip
                             });
                         }
                         catch (Exception jsonEx)
@@ -774,7 +776,8 @@ public class CurriculumAiService : ICurriculumAiService
                                     parsed = JsonSerializer.Deserialize<AnalyzePatternResponseDto>(contentText, new JsonSerializerOptions 
                                     { 
                                         PropertyNameCaseInsensitive = true,
-                                        AllowTrailingCommas = true
+                                        AllowTrailingCommas = true,
+                                        ReadCommentHandling = JsonCommentHandling.Skip
                                     });
                                 }
                                 catch (Exception jsonEx)
@@ -841,7 +844,8 @@ public class CurriculumAiService : ICurriculumAiService
                             parsed = JsonSerializer.Deserialize<AnalyzePatternResponseDto>(contentText, new JsonSerializerOptions 
                             { 
                                 PropertyNameCaseInsensitive = true,
-                                AllowTrailingCommas = true
+                                AllowTrailingCommas = true,
+                                ReadCommentHandling = JsonCommentHandling.Skip
                             });
                         }
                         catch (Exception jsonEx)
@@ -973,7 +977,7 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
                                 JsonNode? parsedNode = null;
                                 try
                                 {
-                                    parsedNode = JsonNode.Parse(contentText);
+                                    parsedNode = JsonNode.Parse(contentText, new JsonNodeOptions(), new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
                                 }
                                 catch (Exception parseEx)
                                 {
@@ -1063,7 +1067,7 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
 
                         try
                         {
-                            var docNode = JsonNode.Parse(contentText);
+                            var docNode = JsonNode.Parse(contentText, new JsonNodeOptions(), new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
                             var questionsArray = docNode?["questions"]?.AsArray();
                             if (questionsArray != null && questionsArray.Count > 0)
                             {
@@ -1131,7 +1135,7 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
         return SanitizeAndRepairGeminiJson(json);
     }
 
-    private static string SanitizeAndRepairGeminiJson(string rawJson)
+    public static string SanitizeAndRepairGeminiJson(string rawJson)
     {
         if (string.IsNullOrWhiteSpace(rawJson)) return "{}";
 
@@ -1145,6 +1149,14 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
             cleaned = cleaned.Substring(0, cleaned.Length - 3);
 
         cleaned = cleaned.Trim();
+
+        // -0.1 Xóa sạch chú thích kiểu C-style (/* ... */) và C++ line comments (// ...) nếu AI sinh vào JSON
+        cleaned = Regex.Replace(cleaned, @"/\*[\s\S]*?\*/", "");
+        cleaned = Regex.Replace(cleaned, @"(?m)^\s*//.*$", "");
+        cleaned = Regex.Replace(cleaned, @"(?m)(?<=[,\{\}\[\]])\s*//.*$", "");
+
+        // -0.2 Xóa trailing commas trước dấu đóng ngoặc
+        cleaned = Regex.Replace(cleaned, @",\s*([\}\]])", "$1");
 
         // 0. Chuẩn hóa các dấu ngoặc kép trích dẫn dạng typographic
         cleaned = cleaned.Replace('“', '\'')
@@ -1189,6 +1201,8 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
         var sb = new StringBuilder(cleaned.Length + 1024);
         bool inString = false;
         bool isEscaped = false;
+        char lastNonWsOutside = '\0';
+        bool isPropertyKey = false;
 
         for (int i = 0; i < cleaned.Length; i++)
         {
@@ -1199,6 +1213,11 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
                 if (c == '"')
                 {
                     inString = true;
+                    isPropertyKey = (lastNonWsOutside == '{' || lastNonWsOutside == ',');
+                }
+                else if (!char.IsWhiteSpace(c))
+                {
+                    lastNonWsOutside = c;
                 }
                 sb.Append(c);
                 continue;
@@ -1267,24 +1286,64 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
 
                 char nextChar = nextIdx < cleaned.Length ? cleaned[nextIdx] : '\0';
 
-                // Trong JSON chuẩn, dấu ngoặc kép đóng chuỗi BẮT BUỘC phải đi liền trước một trong các ký tự:
-                // ',' (phần tử hoặc thuộc tính tiếp theo)
-                // '}' (kết thúc object)
-                // ']' (kết thúc array)
-                // ':' (kết thúc key/tên thuộc tính)
-                // '\0' (cuối văn bản)
-                bool isClosingQuote = (nextChar == ',' || nextChar == '}' || nextChar == ']' || nextChar == ':' || nextChar == '\0');
+                bool isClosingQuote = false;
 
-                if (!isClosingQuote && nextChar == '"')
+                if (isPropertyKey)
                 {
-                    // Trường hợp AI quên dấu phẩy giữa 2 thuộc tính: "prop1": "val1" \n "prop2": "val2"
-                    string sub = cleaned.Substring(nextIdx);
-                    if (Regex.IsMatch(sub, @"^""[a-zA-Z0-9_]{2,40}""\s*:"))
+                    // Tên thuộc tính BẮT BUỘC kết thúc bằng dấu hai chấm ':'
+                    if (nextChar == ':')
                     {
-                        inString = false;
-                        sb.Append("\",");
-                        i = nextIdx - 1;
-                        continue;
+                        isClosingQuote = true;
+                    }
+                }
+                else
+                {
+                    // Giá trị thuộc tính chuỗi
+                    if (nextChar == '}' || nextChar == ']' || nextChar == '\0')
+                    {
+                        isClosingQuote = true;
+                    }
+                    else if (nextChar == ',')
+                    {
+                        // Kiểm tra xem sau dấu phẩy có phải là phần tử hoặc thuộc tính tiếp theo không
+                        int afterCommaIdx = nextIdx + 1;
+                        while (afterCommaIdx < cleaned.Length && char.IsWhiteSpace(cleaned[afterCommaIdx]))
+                        {
+                            afterCommaIdx++;
+                        }
+
+                        if (afterCommaIdx < cleaned.Length)
+                        {
+                            char ac = cleaned[afterCommaIdx];
+                            if (ac == '}' || ac == ']' || ac == '{' || ac == '[')
+                            {
+                                isClosingQuote = true;
+                            }
+                            else if (ac == '"')
+                            {
+                                string remainder = cleaned.Substring(afterCommaIdx);
+                                if (Regex.IsMatch(remainder, @"^""[a-zA-Z0-9_]{1,50}""\s*:"))
+                                {
+                                    isClosingQuote = true;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            isClosingQuote = true;
+                        }
+                    }
+                    else if (nextChar == '"')
+                    {
+                        // Trường hợp AI quên dấu phẩy giữa 2 thuộc tính: "prop1": "val1" \n "prop2": "val2"
+                        string sub = cleaned.Substring(nextIdx);
+                        if (Regex.IsMatch(sub, @"^""[a-zA-Z0-9_]{1,50}""\s*:"))
+                        {
+                            inString = false;
+                            sb.Append("\",");
+                            i = nextIdx - 1;
+                            continue;
+                        }
                     }
                 }
 
@@ -1295,7 +1354,7 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
                 }
                 else
                 {
-                    // Dấu ngoặc kép không escape ở giữa nội dung tiếng Việt (ví dụ: "Đoạn thẳng", "M", "N"...)
+                    // Dấu ngoặc kép không escape ở giữa nội dung tiếng Việt / danh pháp hóa học (ví dụ: "Aspirin", "Xà phòng hóa", "Đoạn thẳng"...)
                     // Thay thế bằng nháy đơn để bảo vệ cấu trúc cú pháp JSON 100%
                     sb.Append('\'');
                 }
@@ -1425,7 +1484,7 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
     {
         try
         {
-            var node = JsonNode.Parse(rawJson, new JsonNodeOptions(), new JsonDocumentOptions { AllowTrailingCommas = true });
+            var node = JsonNode.Parse(rawJson, new JsonNodeOptions(), new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
             if (node == null) return null;
 
             var result = new ImportCurriculumRequestDto

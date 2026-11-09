@@ -159,4 +159,63 @@ public class PromptTemplateServiceTests
         rendered.Should().Contain("TỐI ĐA HÓA CÁC DẠNG BÀI");
         rendered.Should().Contain("Dạng 3:");
     }
+
+    [Fact]
+    public void SanitizeAndRepairGeminiJson_WithUnescapedQuotesInChemistryProse_RepairsToValidJson()
+    {
+        string input = """
+        {
+          "domainId": "dom_chem",
+          "domainName": "Hóa học",
+          "chapters": [
+            {
+              "chapterName": "Chương 1: Este - Lipit",
+              "weight": 0.35,
+              "lessons": [
+                {
+                  "lessonName": "Bài 1: Este",
+                  "weight": 0.1,
+                  "patterns": [
+                    {
+                      "patternName": "Dạng 1: Đồng phân danh pháp",
+                      "weight": 0.05,
+                      "theoryRecap": "Este có mùi thơm như "isoamyl axetat", là este có mùi chuối chín. "Aspirin", là thuốc giảm đau.",
+                      "solutionMethod": "Bước 1: Viết đồng phân\nBước 2: Gọi tên theo quy tắc",
+                      "questions": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+        """;
+
+        string cleaned = CurriculumAiService.SanitizeAndRepairGeminiJson(input);
+        var doc = System.Text.Json.JsonDocument.Parse(cleaned);
+        doc.Should().NotBeNull();
+        cleaned.Should().Contain("'isoamyl axetat'");
+        cleaned.Should().Contain("'Aspirin'");
+    }
+
+    [Fact]
+    public void SanitizeAndRepairGeminiJson_WithCStyleAndLineComments_StripsCommentsAndParsesSuccessfully()
+    {
+        string input = """
+        {
+          "domainId": "dom_chem",
+          /* LƯU Ý BẮT BUỘC VỀ SỐ LƯỢNG DẠNG BÀI:
+             Trích xuất từ 6 đến 12 dạng bài */
+          "domainName": "Hóa học",
+          // Chú thích dòng
+          "chapters": []
+        }
+        """;
+
+        string cleaned = CurriculumAiService.SanitizeAndRepairGeminiJson(input);
+        var doc = System.Text.Json.JsonDocument.Parse(cleaned);
+        doc.Should().NotBeNull();
+        cleaned.Should().NotContain("/*");
+        cleaned.Should().NotContain("*/");
+    }
 }

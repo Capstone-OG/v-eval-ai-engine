@@ -210,10 +210,6 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
                 }
               ]
             }
-            /* LƯU Ý BẮT BUỘC VỀ SỐ LƯỢNG DẠNG BÀI:
-               Tiếp tục trích xuất đầy đủ Dạng 4, Dạng 5, Dạng 6, Dạng 7, Dạng 8, Dạng 9... 
-               cho đến khi bao quát 100% tất cả các phần lý thuyết, bài toán định lượng và bài tập trong tài liệu!
-               Với tài liệu từ 10 đến 50+ trang, BẮT BUỘC có tối thiểu từ 6 đến 12+ dạng bài! */
           ]
         }
       ]
@@ -225,7 +221,8 @@ TÀI LIỆU CẦN BÓC TÁCH:
 {{textSnippet}}
 
 LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX (CRITICAL JSON RULES):
-1. TRÍCH XUẤT 100% DỮ LIỆU THẬT & TỰ ĐỘNG DỰNG HÌNH 3D/2D/BẢNG BIẾN THIÊN TỪ CHỮ: Toàn bộ Chương, Bài học, Dạng bài, Ví dụ và Câu hỏi trắc nghiệm phải được trích xuất THỰC TẾ từ tài liệu được cung cấp ở trên (TUYỆT ĐỐI KHÔNG HARDCODE MẪU CỐ ĐỊNH). ĐẶC BIỆT: Đối với các bài toán hình học không gian (chóp, tứ diện, lăng trụ, hộp), đồ thị hàm số hoặc bảng biến thiên được mô tả bằng chữ trong tài liệu (kể cả khi file PDF gốc không có hình vẽ in sẵn), BẮT BUỘC đóng vai trò máy dựng hình, tự động tính toán tọa độ và nhúng thẻ [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào ví dụ SGK (Khối 1), bài toán mẫu (Khối 2) và câu hỏi trắc nghiệm (Khối 4)!
+0. TUYỆT ĐỐI KHÔNG SINH CHÚ THÍCH (COMMENTS): Tuyệt đối không sinh bất kỳ dấu chú thích /*...*/ hay //... bên trong hoặc bên ngoài JSON. JSON phải tuân thủ nghiêm ngặt chuẩn RFC 8259.
+1. TRÍCH XUẤT 100% DỮ LIỆU THẬT & TỐI ĐA HÓA DẠNG BÀI: Tiếp tục trích xuất đầy đủ Dạng 4, Dạng 5, Dạng 6, Dạng 7, Dạng 8, Dạng 9... cho đến khi bao quát 100% tất cả các phần lý thuyết, bài toán định lượng và bài tập trong tài liệu! Với tài liệu toàn diện từ 10 đến 50+ trang, BẮT BUỘC có tối thiểu từ 6 đến 12+ dạng bài! TUYỆT ĐỐI KHÔNG HARDCODE MẪU CỐ ĐỊNH. ĐẶC BIỆT: Đối với các bài toán hình học không gian (chóp, tứ diện, lăng trụ, hộp), đồ thị hàm số hoặc bảng biến thiên được mô tả bằng chữ trong tài liệu (kể cả khi file PDF gốc không có hình vẽ in sẵn), BẮT BUỘC đóng vai trò máy dựng hình, tự động tính toán tọa độ và nhúng thẻ [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào ví dụ SGK (Khối 1), bài toán mẫu (Khối 2) và câu hỏi trắc nghiệm (Khối 4)!
 2. ESCAPE LATEX TRONG JSON: Mọi ký tự gạch chéo ngược LaTeX BẮT BUỘC phải dùng hai gạch chéo ngược (double backslash): \\frac, \\sqrt, \\Delta, \\{, \\}, \\%, \\$, \\alpha, \\beta, \\times, \\text... Tuyệt đối không dùng 1 gạch chéo ngược đơn độc.
-3. QUY TẮC DẤU NGOẶC KÉP TRÍCH DẪN: TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng " bên trong nội dung văn bản (đề bài, lý thuyết, giải thích, phương án A-D). Nếu cần trích dẫn thuật ngữ, tên chất hay công thức, BẮT BUỘC dùng dấu nháy đơn '...' (ví dụ: 'chất khử', 'Fe').
+3. QUY TẮC DẤU NGOẶC KÉP TRÍCH DẪN: TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng " bên trong nội dung văn bản (đề bài, lý thuyết, giải thích, phương án A-D). Nếu cần trích dẫn thuật ngữ, tên chất hay công thức (ví dụ: 'Aspirin', 'Xà phòng hóa', 'Fe', 'Cu'), BẮT BUỘC dùng dấu nháy đơn '...' thay vì ngoặc kép.
 4. ĐẦU RA HOÀN CHỈNH: Đảm bảo đóng đầy đủ các dấu ngoặc nhọn } và ngoặc vuông ] để JSON hợp lệ 100%. Không sinh bất kỳ đoạn chat giải thích nào ngoài khối JSON.
