@@ -5,7 +5,10 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using PDFtoImage;
+using SkiaSharp;
 using UglyToad.PdfPig;
+using UglyToad.PdfPig.Content;
 using V_Eval_Ai_Engine.Application.DTOs;
 using V_Eval_Ai_Engine.Application.Interfaces;
 
@@ -86,11 +89,11 @@ public class CurriculumAiService : ICurriculumAiService
         }
 
         return new List<string> { 
-            "gemini-3.6-flash",
             "gemini-3.5-flash-lite",
+            "gemini-3.8-flash",
+            "gemini-3.6-flash",
             "gemini-3.1-flash-lite",
-            "gemini-flash-lite-latest",
-            "gemini-3.8-flash"
+            "gemini-flash-lite-latest"
         };
     }
 
@@ -127,8 +130,39 @@ public class CurriculumAiService : ICurriculumAiService
         string modelName,
         string apiKey,
         string prompt,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        List<string>? base64Images = null)
     {
+        JsonNode userContentNode;
+        if (base64Images != null && base64Images.Count > 0)
+        {
+            var userArray = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["type"] = "text",
+                    ["text"] = prompt
+                }
+            };
+            foreach (var b64 in base64Images)
+            {
+                userArray.Add(new JsonObject
+                {
+                    ["type"] = "image_url",
+                    ["image_url"] = new JsonObject
+                    {
+                        ["url"] = $"data:image/jpeg;base64,{b64}",
+                        ["detail"] = "low"
+                    }
+                });
+            }
+            userContentNode = userArray;
+        }
+        else
+        {
+            userContentNode = prompt;
+        }
+
         var requestBody = new JsonObject
         {
             ["model"] = modelName,
@@ -142,7 +176,7 @@ public class CurriculumAiService : ICurriculumAiService
                 new JsonObject
                 {
                     ["role"] = "user",
-                    ["content"] = prompt
+                    ["content"] = userContentNode
                 }
             },
             ["response_format"] = new JsonObject { ["type"] = "json_object" }
@@ -191,6 +225,116 @@ public class CurriculumAiService : ICurriculumAiService
         return null;
     }
 
+    /// <summary>
+    /// Trích xuất và nén tối ưu hóa hình ảnh các trang PDF đại diện cho các tài liệu dạng scan/ảnh (không có lớp text số hóa)
+    /// Đảm bảo phân bổ đều từ trang đầu tới trang cuối để Multimodal Vision AI nắm bắt 100% cấu trúc toàn tài liệu.
+    /// </summary>
+    private List<string> ExtractDownscaledPageImages(
+        byte[] pdfBytes,
+        int targetStart,
+        int targetEnd,
+        int maxImages = 18)
+    {
+        var result = new List<string>();
+        try
+        {
+            using var pdf = PdfDocument.Open(pdfBytes);
+            var matchingPages = pdf.GetPages()
+                .Where(p => p.Number >= targetStart && p.Number <= targetEnd)
+                .ToList();
+
+            if (matchingPages.Count == 0) return result;
+
+            List<Page> selectedPages;
+            if (matchingPages.Count <= maxImages)
+            {
+                selectedPages = matchingPages;
+            }
+            else
+            {
+                selectedPages = new List<Page>();
+                // Luôn chọn trang đầu tiên và trang thứ hai
+                selectedPages.Add(matchingPages[0]);
+                if (matchingPages.Count > 1) selectedPages.Add(matchingPages[1]);
+
+                // Các trang trung gian phân bổ đều
+                int middleSlots = maxImages - 3;
+                if (middleSlots > 0)
+                {
+                    double step = (double)(matchingPages.Count - 2) / (middleSlots + 1);
+                    for (int i = 1; i <= middleSlots; i++)
+                    {
+                        int index = (int)Math.Round(i * step);
+                        if (index >= 0 && index < matchingPages.Count && !selectedPages.Contains(matchingPages[index]))
+                        {
+                            selectedPages.Add(matchingPages[index]);
+                        }
+                    }
+                }
+
+                // Luôn chọn trang cuối cùng
+                if (!selectedPages.Contains(matchingPages[^1]))
+                {
+                    selectedPages.Add(matchingPages[^1]);
+                }
+                selectedPages = selectedPages.OrderBy(p => p.Number).ToList();
+            }
+
+            foreach (var page in selectedPages)
+            {
+                byte[]? jpegBytes = null;
+
+                // 1. Thử lấy ảnh gốc nhúng trong trang qua PdfPig (dành cho file PDF scan toàn trang)
+                var rawImages = page.GetImages().ToList();
+                if (rawImages.Count > 0)
+                {
+                    var primaryImg = rawImages.OrderByDescending(i => i.WidthInSamples * i.HeightInSamples).FirstOrDefault();
+                    if (primaryImg != null)
+                    {
+                        var rawBytes = primaryImg.RawBytes.ToArray();
+                        using var originalBitmap = SKBitmap.Decode(rawBytes);
+                        if (originalBitmap != null)
+                        {
+                            int maxDim = Math.Max(originalBitmap.Width, originalBitmap.Height);
+                            float scale = maxDim > 960 ? 960f / maxDim : 1.0f;
+                            int targetW = (int)(originalBitmap.Width * scale);
+                            int targetH = (int)(originalBitmap.Height * scale);
+
+                            using var resized = originalBitmap.Resize(new SKImageInfo(targetW, targetH), SKSamplingOptions.Default);
+                            using var skImage = SKImage.FromBitmap(resized);
+                            using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, 65);
+                            jpegBytes = encoded.ToArray();
+                        }
+                    }
+                }
+
+                // 2. Nếu trang dạng vector không có ảnh nhúng, dùng PDFtoImage kết xuất sang bitmap
+                if (jpegBytes == null)
+                {
+                    using var ms = new MemoryStream(pdfBytes);
+                    using var renderedBitmap = Conversion.ToImage(ms, page: page.Number - 1, options: new RenderOptions { Dpi = 96 });
+                    if (renderedBitmap != null)
+                    {
+                        using var skImage = SKImage.FromBitmap(renderedBitmap);
+                        using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, 65);
+                        jpegBytes = encoded.ToArray();
+                    }
+                }
+
+                if (jpegBytes != null && jpegBytes.Length > 0)
+                {
+                    result.Add(Convert.ToBase64String(jpegBytes));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Lỗi trích xuất hình ảnh trang PDF sang multimodal.");
+        }
+
+        return result;
+    }
+
     public async Task<ImportCurriculumRequestDto> ExtractCurriculumAsync(
         Stream? fileStream,
         string? fileName,
@@ -205,6 +349,8 @@ public class CurriculumAiService : ICurriculumAiService
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         int totalPagesProcessed = 0;
         string extractedText = string.Empty;
+        var pageImagesBase64 = new List<string>();
+        byte[]? pdfBytes = null;
 
         // 1. Đọc văn bản từ tệp nếu có
         if (fileStream != null && !string.IsNullOrEmpty(fileName))
@@ -214,29 +360,42 @@ public class CurriculumAiService : ICurriculumAiService
             {
                 using var memoryStream = new MemoryStream();
                 await fileStream.CopyToAsync(memoryStream, cancellationToken);
-                memoryStream.Position = 0;
+                pdfBytes = memoryStream.ToArray();
+
+                int actualTextChars = 0;
+                int targetStart = startPage.HasValue && startPage.Value > 0 ? startPage.Value : 1;
+                int targetEnd = endPage.HasValue && endPage.Value >= targetStart ? endPage.Value : int.MaxValue;
 
                 try
                 {
-                    using var pdf = PdfDocument.Open(memoryStream);
+                    using var pdf = PdfDocument.Open(pdfBytes);
                     var sb = new StringBuilder();
-                    int targetStart = startPage.HasValue && startPage.Value > 0 ? startPage.Value : 1;
-                    int targetEnd = endPage.HasValue && endPage.Value >= targetStart ? endPage.Value : int.MaxValue;
 
                     foreach (var page in pdf.GetPages())
                     {
                         if (page.Number < targetStart) continue;
                         if (page.Number > targetEnd) break;
                         totalPagesProcessed++;
+                        string pText = page.Text ?? string.Empty;
+                        actualTextChars += pText.Trim().Length;
                         sb.AppendLine($"--- Trang {page.Number} ---");
-                        sb.AppendLine(page.Text);
-                        if (sb.Length > 120000) break; // Hỗ trợ tài liệu dày tới 120.000 ký tự
+                        sb.AppendLine(pText);
+                        if (sb.Length > 250000) break;
                     }
                     extractedText = sb.ToString();
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "PdfPig không đọc được chữ số hóa, chuyển sang trích xuất thô.");
+                }
+
+                // Phát hiện PDF dạng ảnh scan / OCR không có text số hóa
+                if (actualTextChars < 300 && pdfBytes != null)
+                {
+                    _logger.LogInformation("Phát hiện tài liệu PDF dạng ảnh scan / không có lớp text số hóa ({Chars} ký tự). Kích hoạt động cơ trích xuất Multimodal Vision AI...", actualTextChars);
+                    pageImagesBase64 = ExtractDownscaledPageImages(pdfBytes, targetStart, targetEnd, maxImages: 18);
+                    _logger.LogInformation("Đã trích xuất và tối ưu hóa {Count} trang ảnh scan chất lượng cao cho Multimodal Vision.", pageImagesBase64.Count);
+                    extractedText = $"[Tài liệu PDF ảnh scan gồm {totalPagesProcessed} trang. Dữ liệu các trang đã được trích xuất tối ưu hóa hình ảnh và truyền trực tiếp qua kênh Multimodal Vision AI.]";
                 }
             }
             else if (ext == ".docx")
@@ -282,14 +441,16 @@ public class CurriculumAiService : ICurriculumAiService
             extractedText = "Chuyên đề phân tích cấu trúc tri thức và các dạng bài trọng tâm chuẩn SGK GDPT 2018.";
         }
 
-        string textSnippet = extractedText.Length > 100000 ? extractedText[..100000] : extractedText;
+        string textSnippet = extractedText.Length > 200000 ? extractedText[..200000] : extractedText;
 
-        string depthDirective = $@"YÊU CẦU BÓC TÁCH CẤU TRÚC TRI THỨC VÀ CÁC DẠNG BÀI TRỌNG TÂM (CURRICULUM INGESTION DIRECTIVE):
-- Phân tích bám sát 100% nội dung thực tế từ tài liệu thuộc lĩnh vực: {domainName}.
-- Cấu trúc bóc tách gồm:
-  + Từ 2 đến 4 Bài học (`lessons`) bao quát trọn vẹn chủ đề/chuyên đề trong tài liệu.
-  + Mỗi Bài học nhận diện từ 2 đến 3 Dạng bài (`patterns`) cốt lõi (tổng cộng 4 đến 8 dạng bài cho toàn chuyên đề).
-  + Mỗi Dạng bài có từ 2 đến 3 Câu hỏi bài mẫu (`questions`) đại diện các cấp độ Bloom (Nhận biết/Thông hiểu và Vận dụng/Vận dụng cao), có KaTeX chuẩn xác, đáp án và lời giải chi tiết.";
+        string depthDirective = $@"YÊU CẦU BÓC TÁCH CẤU TRÚC TRI THỨC VÀ TỐI ĐA HÓA CÁC DẠNG BÀI (MAXIMIZE PEDAGOGICAL PATTERNS DIRECTIVE):
+- Phân tích quét TOÀN BỘ nội dung thực tế từ tài liệu thuộc lĩnh vực: {domainName} (Bao gồm cả các môn Khoa học tự nhiên như Hóa học, Vật lý, Sinh học và Toán học).
+- NGUYÊN TẮC TỐI ĐA HÓA SỐ LƯỢNG DẠNG BÀI (PATTERNS) - TUYỆT ĐỐI KHÔNG BỎ SÓT NỘI DUNG:
+  + Quét từ trang đầu đến trang cuối để nhận diện ĐẦY ĐỦ TẤT CẢ các dạng bài xuất hiện trong tài liệu.
+  + TUYỆT ĐỐI KHÔNG được tóm tắt gộp hoặc chỉ tạo 2-3 dạng bài sơ sài.
+  + Đối với tài liệu chuyên đề toàn diện / tài liệu dày (từ 10 đến 50+ trang như chuyên đề Ester - Lipid, Hàm số...), BẮT BUỘC nhận diện và bóc tách từ 6 đến 12+ Dạng bài (`patterns`) chuyên biệt.
+  + Phân bổ logic vào từ 2 đến 4 Bài học (`lessons`) tương ứng với các chủ đề lớn của tài liệu (Ví dụ chuyên đề Ester - Lipid: Bài 1 - Ester: 4-5 dạng bài; Bài 2 - Lipid & Chất béo: 4-5 dạng bài; Bài 3 - Bài tập thực hành & tổng hợp: 2-3 dạng bài).
+  + Mỗi Dạng bài BẮT BUỘC có đủ 4 khối nội dung: `theoryRecap`, `solutionMethod`, `durationSeconds: 600`, và từ 2 đến 3 câu hỏi bài mẫu `questions` (L1/L2 -> L3/L4) kèm KaTeX chuẩn, đáp án và giải chi tiết.";
 
         // 2. Thử gọi Google Gemini qua C# HttpClient
         var apiKeys = ResolveApiKeys();
@@ -301,7 +462,7 @@ public class CurriculumAiService : ICurriculumAiService
         string sampleHeading = isStem ? "### 📄 Bài toán mẫu áp dụng phương pháp:" : "### 📄 Bài mẫu áp dụng phương pháp:";
         string tipHeading = isStem ? "### 💡 Kỹ thuật Casio & Mẹo tư duy nhanh:" : "### 💡 Mẹo tư duy & Chiến thuật làm bài:";
         string tipGuideline = isStem 
-            ? "Mẹo nhẩm hoặc kỹ thuật bấm máy Casio (fx-580VN X, fx-880BTG)" 
+            ? "Mẹo nhẩm, kỹ thuật tính nhanh số đồng phân/hiệu suất/khối lượng, phương pháp quy đổi/đồng đẳng hóa hoặc bấm máy giải hệ phương trình Casio (fx-580VN X, fx-880BTG)" 
             : "Mẹo gạch chân từ khóa, phân bổ thời gian, chiến thuật hành văn ghi điểm tuyệt đối (TUYỆT ĐỐI KHÔNG sinh mẹo bấm máy Casio cho môn Ngữ văn/Khoa học xã hội)";
         string sampleKey = isStem ? "Bài toán mẫu:" : "Bài mẫu:";
 
@@ -340,16 +501,33 @@ public class CurriculumAiService : ICurriculumAiService
                     try
                     {
                         string url = $"{geminiBaseUrl.TrimEnd('/')}/models/{modelName}:generateContent?key={key}";
+                        var partsArray = new JsonArray
+                        {
+                            new JsonObject { ["text"] = prompt }
+                        };
+
+                        if (pageImagesBase64.Count > 0)
+                        {
+                            foreach (var b64 in pageImagesBase64)
+                            {
+                                partsArray.Add(new JsonObject
+                                {
+                                    ["inlineData"] = new JsonObject
+                                    {
+                                        ["mimeType"] = "image/jpeg",
+                                        ["data"] = b64
+                                    }
+                                });
+                            }
+                        }
+
                         var payload = new JsonObject
                         {
                             ["contents"] = new JsonArray
                             {
                                 new JsonObject
                                 {
-                                    ["parts"] = new JsonArray
-                                    {
-                                        new JsonObject { ["text"] = prompt }
-                                    }
+                                    ["parts"] = partsArray
                                 }
                             },
                             ["generationConfig"] = new JsonObject
@@ -453,7 +631,7 @@ public class CurriculumAiService : ICurriculumAiService
                 try
                 {
                     _logger.LogInformation("[Fallback Curriculum lần {Attempt}/{MaxAttempts}] Đang gửi yêu cầu bóc tách tới OpenAI '{ModelName}'...", attempt, maxAttempts, gptModel);
-                    string? gptResult = await TryCallOpenAiCurriculumAsync(gptModel, openAiKey, prompt, cancellationToken);
+                    string? gptResult = await TryCallOpenAiCurriculumAsync(gptModel, openAiKey, prompt, cancellationToken, pageImagesBase64);
                     if (!string.IsNullOrWhiteSpace(gptResult))
                     {
                         string contentText = SanitizeAndRepairGeminiJson(gptResult);

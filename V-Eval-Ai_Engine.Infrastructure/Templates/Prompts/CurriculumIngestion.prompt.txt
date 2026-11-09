@@ -5,7 +5,7 @@ Miền ({{domainName}}) -> Các Chương -> Các Bài học -> {{domainScope}}.
 {{depthDirective}}
 
 QUY TẮC BẮT BUỘC VỀ VÍ DỤ MINH HỌA, BÀI MẪU & NGÂN HÀNG CÂU HỎI (MANDATORY EXAMPLES & SAMPLE PROBLEMS):
-1. PHÂN BIỆT RÕ CÁC DẠNG BÀI: Đặt tên dạng bài rõ ràng: 'Dạng [Số]: [Tên dạng bài chi tiết]'.
+1. PHÂN BIỆT RÕ VÀ TỐI ĐA HÓA CÁC DẠNG BÀI (MAXIMIZE PATTERNS): Quét toàn bộ tài liệu để bóc tách TOÀN BỘ các dạng bài xuất hiện (từ Dạng 1 đến Dạng N). Đặt tên dạng bài rõ ràng: 'Dạng [Số]: [Tên dạng bài chi tiết]'. TUYỆT ĐỐI KHÔNG tóm tắt gộp chỉ 2-3 dạng bài sơ sài. Đối với tài liệu chuyên đề toàn diện (từ 10 đến 50+ trang như chuyên đề Hóa học Ester - Lipid, Hàm số...), BẮT BUỘC trích xuất từ 6 đến 12+ dạng bài cốt lõi bao quát trọn vẹn mọi phần lý thuyết, phản ứng, bài toán định lượng và trắc nghiệm.
 2. BẮT BUỘC ĐỦ 4 KHỐI NỘI DUNG SƯ PHẠM KÈM VÍ DỤ VÀ BÀI TOÁN MẪU:
    - `theoryRecap`: Lý thuyết nền tảng SGK, định lý/khái niệm cốt lõi, công thức KaTeX đặt trong $...$ (nếu có). Kèm theo '### 📌 Ví dụ minh họa SGK:' (Trích xuất ví dụ/ngữ liệu từ tài liệu có phân tích và lời giải ngắn gọn).
    - `solutionMethod`: Quy trình 3-4 bước giải / làm bài: 'Bước 1: ...', 'Bước 2: ...', 'Bước 3: ...'. Kèm theo:
@@ -17,11 +17,11 @@ QUY TẮC BẮT BUỘC VỀ VÍ DỤ MINH HỌA, BÀI MẪU & NGÂN HÀNG CÂU H
      * Câu 1: [L1 - Nhận biết / L2 - Thông hiểu] Câu hỏi lý thuyết, khái niệm hoặc ví dụ áp dụng trực tiếp.
      * Câu 2: [L3 - Vận dụng / L4 - Vận dụng cao] Bài toán vận dụng tổng hợp, thực tế hoặc phân loại học sinh (kèm hình 3D/2D nếu là hình học/hàm số).
      Mỗi câu gồm: difficultyLevel (1-4), contentLatex, optionA, optionB, optionC, optionD, correctOption ('A'|'B'|'C'|'D'), explanation (giải súc tích).
-3. BẮT BUỘC DỰNG MÔ HÌNH HÌNH HỌC 3D, BẢNG BIẾN THIÊN & ĐỒ THỊ 2D TƯƠNG TÁC (TEXT-TO-MATHLAB RECONSTRUCTION):
-   - ĐẶC BIỆT QUAN TRỌNG: KỂ CẢ KHI TÀI LIỆU/ĐỀ BÀI CHỈ MÔ TẢ HÌNH HỌC, HÀM SỐ HOẶC BẢNG BIẾN THIÊN BẰNG CHỮ THUẦN TÚY (hoàn toàn không có hình ảnh sẵn trong file gốc):
-     BẠN BẮT BUỘC ĐÓNG VAI TRÒ MÁY DỰNG TOÁN HỌC, tự động tính toán và nhúng các khối thẻ cấu trúc [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào CẢ 2 NƠI:
-     + Ở PHẦN BÀI GIẢNG: Nhúng trực tiếp bên dưới Ví dụ minh họa SGK (Khối 1 `theoryRecap`) và Bài toán mẫu áp dụng (Khối 2 `solutionMethod`).
-     + Ở PHẦN CÂU HỎI: Nhúng trực tiếp ở cuối nội dung câu hỏi `contentLatex` (để học sinh quan sát xoay 360 độ hoặc đọc đồ thị giải bài) và trong Lời giải chi tiết `explanation`.
+3. QUY TẮC MINH HỌA TOÁN HỌC & CÔNG THỨC KHOA HỌC:
+   - ĐỐI VỚI MÔN TOÁN HỌC (Hình học không gian, Khảo sát hàm số):
+     KỂ CẢ KHI TÀI LIỆU/ĐỀ BÀI CHỈ MÔ TẢ HÌNH HỌC, HÀM SỐ BẰNG CHỮ: Tự động tính toán và nhúng các khối thẻ cấu trúc [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào ví dụ SGK (Khối 1), bài toán mẫu (Khối 2) và câu hỏi trắc nghiệm (Khối 4).
+   - ĐỐI VỚI CÁC MÔN KHOA HỌC TỰ NHIÊN (Hóa học, Vật lý, Sinh học) VÀ CÁC MÔN KHÁC:
+     Biểu diễn phương trình phản ứng hóa học hoặc công thức bằng LaTeX chuẩn (ví dụ: `\text{CH}_3\text{COOH} + \text{C}_2\text{H}_5\text{OH} \rightleftharpoons \text{CH}_3\text{COOC}_2\text{H}_5 + \text{H}_2\text{O}`, `\text{CO}_2`, `\text{H}_2\text{O}`). TUYỆT ĐỐI KHÔNG chèn mô hình hình học không gian (chóp, tứ diện...) vào các bài học Hóa học/Sinh học/Văn học.
    
    - [A] ĐỐI VỚI HÌNH HỌC KHÔNG GIAN 3D [MATH_GRAPH_3D]:
      [MATH_GRAPH_3D]
@@ -178,7 +178,42 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
                   "explanation": "..."
                 }
               ]
+            },
+            {
+              "patternName": "Dạng 3: [Tên dạng bài 3 chi tiết]",
+              "weight": 0.05,
+              "classification": "...",
+              "coreSkill": "...",
+              "theoryRecap": "...",
+              "solutionMethod": "...",
+              "durationSeconds": 600,
+              "questions": [
+                {
+                  "difficultyLevel": 1,
+                  "contentLatex": "...",
+                  "optionA": "...",
+                  "optionB": "...",
+                  "optionC": "...",
+                  "optionD": "...",
+                  "correctOption": "A",
+                  "explanation": "..."
+                },
+                {
+                  "difficultyLevel": 3,
+                  "contentLatex": "...",
+                  "optionA": "...",
+                  "optionB": "...",
+                  "optionC": "...",
+                  "optionD": "...",
+                  "correctOption": "B",
+                  "explanation": "..."
+                }
+              ]
             }
+            /* LƯU Ý BẮT BUỘC VỀ SỐ LƯỢNG DẠNG BÀI:
+               Tiếp tục trích xuất đầy đủ Dạng 4, Dạng 5, Dạng 6, Dạng 7, Dạng 8, Dạng 9... 
+               cho đến khi bao quát 100% tất cả các phần lý thuyết, bài toán định lượng và bài tập trong tài liệu!
+               Với tài liệu từ 10 đến 50+ trang, BẮT BUỘC có tối thiểu từ 6 đến 12+ dạng bài! */
           ]
         }
       ]

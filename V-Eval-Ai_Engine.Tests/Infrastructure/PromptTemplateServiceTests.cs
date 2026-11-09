@@ -133,4 +133,30 @@ public class PromptTemplateServiceTests
         // Assert
         firstCall.Should().Be(secondCall);
     }
+
+    [Fact]
+    public async Task RenderPromptAsync_WithCurriculumTemplate_IncludesMaximizingPatternsRule()
+    {
+        // Arrange
+        var service = new PromptTemplateService(_loggerMock.Object);
+        var variables = new Dictionary<string, string>
+        {
+            ["domainName"] = "Hóa học",
+            ["domainScope"] = "TỪNG DẠNG BÀI TOÁN CỤ THỂ (PATTERNS)",
+            ["depthDirective"] = "Tối đa hóa các dạng bài",
+            ["sampleHeading"] = "### 📄 Bài toán mẫu:",
+            ["tipHeading"] = "### 💡 Mẹo:",
+            ["tipGuideline"] = "Mẹo giải nhanh",
+            ["sampleKey"] = "Bài toán mẫu:",
+            ["domainId"] = "dom_chem",
+            ["textSnippet"] = "Chuyên đề Ester - Lipid"
+        };
+
+        // Act
+        string rendered = await service.RenderPromptAsync("CurriculumIngestion.prompt.txt", variables);
+
+        // Assert
+        rendered.Should().Contain("TỐI ĐA HÓA CÁC DẠNG BÀI");
+        rendered.Should().Contain("Dạng 3:");
+    }
 }

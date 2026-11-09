@@ -2,6 +2,17 @@
 
 ## [09/11/2026] - Tinh Gọn AI Engine: Tách Template Prompt Độc Lập, Refactor MultiCloudExamParserService Chuẩn Hóa Kiến Trúc & Triển Khai Failover Đa Đám Mây Kèm Ngưỡng An Toàn
 
+- **Nâng Cấp Multimodal Vision Ingestion Cho PDF Scan & Tối Đa Hóa Số Lượng Dạng Bài (6 - 12+ Patterns) ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`CurriculumIngestion.prompt.txt`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt))**:
+  - **Khắc phục triệt để hiện tượng PDF ảnh scan bị thiếu dạng bài**: Phân tích file tài liệu Hóa học mẫu 55 trang (`Bài 1 - ĐA.pdf`), phát hiện toàn bộ 55 trang là ảnh scan độ phân giải cao (`4260x6021`), không chứa text số hóa khiến `PdfPig.page.Text` trả về 0 ký tự và AI trước đây chỉ nhận câu fallback mẫu nên sinh ra vỏn vẹn 2 dạng bài sơ sài.
+  - **Tự động nhận diện & kích hoạt Multimodal Vision Ingestion**:
+    - Khi phát hiện `actualTextChars < 300`, hệ thống tự động nhận diện đây là tài liệu ảnh scan và kích hoạt hàm `ExtractDownscaledPageImages`.
+    - Trích xuất ảnh scan hoặc kết xuất bitmap qua `PDFtoImage`/`SkiaSharp`, nén kích thước tối ưu (chiều dài tối đa 960px, JPEG quality 65, ~80-100 KB/trang) và lấy mẫu phân bổ đều từ trang 1 đến trang cuối.
+    - Truyền trực tiếp danh sách ảnh trang tài liệu dưới dạng Multimodal `inlineData` (MIME `image/jpeg`) sang Google Gemini và `image_url` (detail `low`) sang OpenAI GPT-4o Vision.
+  - **Tối đa hóa số lượng Dạng bài (Maximize Pedagogical Patterns)**:
+    - Nâng cấp `depthDirective` và template `CurriculumIngestion.prompt.txt`: Yêu cầu AI quét toàn bộ tài liệu từ đầu đến cuối, trích xuất đầy đủ từ 6 đến 12+ Dạng bài (`patterns`) chuyên biệt cho các tài liệu chuyên đề lớn (10 đến 50+ trang), tuyệt đối không tóm tắt gộp 2 dạng bài.
+    - Mở rộng cấu trúc mảng mẫu trong JSON schema (`Dạng 1`, `Dạng 2`, `Dạng 3`, `Dạng 4` kèm ghi chú tiếp tục trích xuất) để AI không bị neo vào số lượng mẫu cố định.
+    - Tinh chỉnh quy tắc minh họa: phân định rõ thẻ hình học MathLab 3D cho môn Toán và công thức phản ứng LaTeX chuẩn cho môn Hóa học/Khoa học tự nhiên.
+
 - **Tinh Gọn AI Engine & Tách File Prompt Template Độc Lập ([`IPromptTemplateService.cs`](./V-Eval-Ai_Engine.Application/Interfaces/IPromptTemplateService.cs), [`PromptTemplateService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/PromptTemplateService.cs), [`Templates/Prompts/`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/))**:
   - **Triệt tiêu hoàn toàn mùi mã nguồn Hardcoded Prompt trong C#**: Tách toàn bộ các chuỗi System Prompt dài hàng nghìn ký tự (đặc tả thẻ hình học 3D `[MATH_GRAPH_3D]`, bảng biến thiên `[VARIATION_TABLE]`, đồ thị `[MATH_GRAPH]`, chuẩn sư phạm Bloom L1-L4, phân định STEM vs Khoa học xã hội, và OCR đề thi nguyên văn) ra 5 tệp template độc lập trong thư mục `Templates/Prompts/`:
     - `CurriculumIngestion.prompt.txt`: Prompt bóc tách chuyên đề, bài học và dạng bài chuẩn SGK GDPT 2018.

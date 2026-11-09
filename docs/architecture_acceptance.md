@@ -765,7 +765,12 @@
      - Implemented `TryCallOpenAiCurriculumAsync` with JSON response formatting (`response_format: { "type": "json_object" }`).
      - Constructed a 2-tier dual-cloud cascade: Primary (Google Gemini multi-model/multi-key rotation) -> Secondary (OpenAI Chat Completions) -> Tertiary (Regex Real-Data Parser).
      - Enforced `minChaptersThreshold` (default `>= 1`) and `maxAttempts = 5`. Responses under the safety threshold automatically trigger downstream fallback models instead of propagating truncated payloads.
-  4. **Verification**:
-     - Created 6 unit tests in `PromptTemplateServiceTests.cs` covering token interpolation, Socratic pedagogy template, pattern analysis template, verbatim OCR template, in-memory caching, and fallback resilience.
-     - 12/12 automated unit tests passing 100% in `V-Eval-Ai_Engine.Tests` in 0.56s.
+  4. **Multimodal Vision Ingestion for Scanned PDFs & Pedagogical Pattern Maximization (6 - 12+ Patterns)**:
+     - Diagnosed and resolved the root cause of 50+ page documents yielding only 2 generic patterns: Scanned image-based PDFs (e.g. 55-page Chemistry `Bài 1 - ĐA.pdf`) lack a digital text layer, returning 0 characters from `PdfPig.page.Text` and forcing fallback to a generic placeholder sentence.
+     - Developed `ExtractDownscaledPageImages` in `CurriculumAiService.cs`: Automatically detects image-only PDFs (`actualTextChars < 300`), extracts representative pages distributed across the document, resizes to <= 960px with 65 JPEG quality using `SkiaSharp`/`PDFtoImage` (~80KB/page), and streams directly as Multimodal `inlineData` to Google Gemini and `image_url` to OpenAI GPT-4o.
+     - Upgraded `depthDirective` and `CurriculumIngestion.prompt.txt` to enforce exhaustive pattern extraction (6 to 12+ specialized patterns for comprehensive syllabi), preventing premature LLM short-circuiting.
+     - Differentiated STEM math rendering: Reserved MathLab 3D graphs for Geometry, while preserving rigorous KaTeX chemical reaction equations for Chemistry and Natural Sciences.
+  5. **Verification**:
+     - Created 7 unit tests in `PromptTemplateServiceTests.cs` covering token interpolation, Socratic pedagogy template, pattern analysis template, verbatim OCR template, pattern maximization directives, in-memory caching, and fallback resilience.
+     - 13/13 automated unit tests passing 100% in `V-Eval-Ai_Engine.Tests`.
      - Clean compilation across all projects in `V-Eval-Ai_Engine.sln` under .NET 9.0 (0 Warnings, 0 Errors).
