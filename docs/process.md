@@ -14,7 +14,9 @@
 
 ### 2. Thành Phần Hạ Tầng AI & API Endpoints
 - Python Ingestion Engine (`document_parser.py`, `parse_single_pdf.py`).
-- C# Backend Parser (`GeminiExamParserService.cs`, `SanitizeJsonForLatex`, `CleanExamDto`).
+- C# Backend Parser (`MultiCloudExamParserService.cs`, `SanitizeJsonForLatex`, `CleanExamDto`).
+- Dynamic Prompt Template Engine (`IPromptTemplateService.cs`, `PromptTemplateService.cs`, `Templates/Prompts/`).
+- Dual-Cloud Cascade Failover (Google Gemini Multi-Models/Multi-Keys <-> OpenAI Vision & Chat Completions).
 - Frontend Viewer (`wwwroot/view-exam.html`).
 - Vector DB: Qdrant (`ports 6333 / 6334`).
 
@@ -26,7 +28,7 @@
 | :---: | :--- | :--- | :---: | :---: | :--- |
 | 1 | **Python Ingestion Core** | `document_parser.py` | 🟢 Hoàn thành | 100% | Đọc PDF, DOCX, DOC cũ, Image metadata |
 | 2 | **API Upload & Parse PDF** | `POST /api/ai-engine/upload-pdf` | 🟢 Hoàn thành | 100% | Upload PDF trực tiếp từ UI/Swagger |
-| 3 | **Gemini Vision OCR Cloud** | `GeminiExamParserService.cs` | 🟢 Hoàn thành | 100% | Ingestion trực tiếp Raw PDF Base64 (<15s) |
+| 3 | **Multi-Cloud Vision OCR (GPT-4o & Gemini)** | `MultiCloudExamParserService.cs` | 🟢 Hoàn thành | 100% | Ingestion trực tiếp Raw PDF Base64 qua OpenAI GPT-4o Vision & Gemini (<15s) |
 | 4 | **Làm Sạch LaTeX & Delta (\Delta)**| `SanitizeJsonForLatex()` | 🟢 Hoàn thành | 100% | Khôi phục `\\frac`, `\\times`, `\Delta`, `H` formula |
 | 5 | **Bảng HTML 2 Tầng (`Colspan`)** | `convertMarkdownTableToHtml` | 🟢 Hoàn thành | 100% | Tái tạo `<thead>` 2 tầng chuẩn mực |
 | 6 | **Web Exam Viewer UI** | `wwwroot/view-exam.html` | 🟢 Hoàn thành | 100% | Trang UI hiển thị đề thi kèm KaTeX & nút Lưu |
@@ -76,3 +78,6 @@
 | 50 | **Ưu Tiên Gemini-3.6-Flash, Loại Bỏ Phản Hồi Rập Khuôn & Tối Ưu Phản Hồi Tự Nhiên Socratic** | `rag-service/socratic/socratic_engine.py`, `rag-service/socratic/validator_judge.py` | 🟢 Hoàn thành | 100% | Đưa Gemini-3.6-Flash lên đầu, timeout 25s đa mô hình tránh rớt vào văn mẫu, tối ưu judge 1 lượt 3s + heuristic failover, bóc tách hoàn toàn lời chào hỏi hội thoại khỏi đề bài thi |
 | 51 | **Khắc Phục Lỗi Quota Rate Limit 429, Tối Ưu Tốc Độ Phản Hồi & Thử Luân Phiên Siêu Tốc Cho Gia Sư Socratic** | `rag-service/socratic/socratic_engine.py`, `rag-service/socratic/validator_judge.py`, `rag-service/.env` | 🟢 Hoàn thành | 100% | Tích hợp API key mới, đưa `gemini-3.5-flash-lite` lên ưu tiên số 1, `max_retries=1` loại bỏ treo 25s Tenacity retry, rút timeout sinh nháp xuống 8.0s, mở rộng nhận diện meta-query vai trò gia sư |
 | 52 | **Kiến Trúc 2 Luồng Phân Tách (Decoupled Dual-Track) & Ma Trận 5 Intent Cho Gia Sư Socratic** | `rag-service/socratic/intent_router.py`, `rag-service/socratic/socratic_engine.py`, `rag-service/socratic/validator_judge.py`, `rag-service/routers/socratic_tutor.py` | 🟢 Hoàn thành | 100% | Phân tách Track 1 (Task Grounding) & Track 2 (Dynamic Intent C1-C5), chống nhiễm bẩn vector, prompt modular 2 khối, thẩm định adaptive judge, song song hóa qua `asyncio.gather`, SSE status hydration, 50/50 unit tests |
+| 53 | **Prompt Template Extraction (Prompt-in-Code Smell Refactoring)** | `Templates/Prompts/`, `IPromptTemplateService.cs`, `PromptTemplateService.cs`, `CurriculumAiService.cs`, `SocraticTutorService.cs` | 🟢 Hoàn thành | 100% | Tách toàn bộ prompt bóc tách chuyên đề, phân tích dạng bài, sinh câu hỏi và gia sư Socratic ra file template độc lập; In-Memory caching RAM; token substitution `{{var}}`; safe defense-in-depth fallback; 11/11 unit tests |
+| 54 | **Dual-Cloud Cascade Failover (Gemini <-> OpenAI) & Safety Thresholds** | `CurriculumAiService.cs`, `appsettings.json` | 🟢 Hoàn thành | 100% | Triển khai Failover 2 tầng: Tầng 1 Gemini (đa model, đa keys) -> Tầng 2 OpenAI Chat Completions (`gpt-4o-mini`, `gpt-4o`, `o3-mini`); kiểm soát ngưỡng an toàn `MinChaptersThreshold = 1` và `MaxAttempts = 5` |
+| 55 | **Refactor MultiCloudExamParserService & Zero-Hardcode OCR Prompt** | `MultiCloudExamParserService.cs`, `ExamIngestionVerbatimOcr.prompt.txt` | 🟢 Hoàn thành | 100% | Đổi tên `GeminiExamParserService` thành `MultiCloudExamParserService` (loại bỏ Naming Smell); tách 80 dòng prompt OCR ra `ExamIngestionVerbatimOcr.prompt.txt`; 12/12 unit tests |

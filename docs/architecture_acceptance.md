@@ -734,3 +734,38 @@
      - SSE stream transmits `status`, `metadata` (including `intent_category`), `token`, and `done` events for real-time frontend hydration.
   5. **Verification**:
      - 50/50 automated test cases passing with 100% success rate across all test suites (`test_intent_router.py`, `test_socratic_engine.py`, `test_diagnostic.py`, `test_academic_graph.py`).
+
+### [09/11/2026] - Architecture Acceptance: Prompt Template Decoupling & Dual-Cloud Cascade Failover (Gemini <-> OpenAI)
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - `V-Eval-Ai_Engine.Application/Interfaces/IPromptTemplateService.cs`
+  - `V-Eval-Ai_Engine.Infrastructure/Services/PromptTemplateService.cs`
+  - `V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt`
+  - `V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/PatternAnalysis.prompt.txt`
+  - `V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/PracticeQuestionGenerator.prompt.txt`
+  - `V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/SocraticTutor.prompt.txt`
+  - `V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/ExamIngestionVerbatimOcr.prompt.txt`
+  - `V-Eval-Ai_Engine.Infrastructure/Services/MultiCloudExamParserService.cs`
+  - `V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs`
+  - `V-Eval-Ai_Engine.Infrastructure/Services/SocraticTutorService.cs`
+  - `V-Eval-Ai_Engine.Tests/Infrastructure/PromptTemplateServiceTests.cs`
+- **Key Architectural Deliverables**:
+  1. **Prompt-in-Code Smell Decoupling (Separation of Concerns)**:
+     - Eliminated multi-thousand-character prompt string literals embedded directly inside C# service files.
+     - Extracted prompts into isolated template files in `Templates/Prompts/` (`CurriculumIngestion`, `PatternAnalysis`, `PracticeQuestionGenerator`, `SocraticTutor`, and `ExamIngestionVerbatimOcr`) with automatic MSBuild copy on build.
+     - Created `IPromptTemplateService` and `PromptTemplateService` utilizing `ConcurrentDictionary<string, string>` in-memory caching for zero disk I/O latency after initial load.
+     - Implemented dynamic token substitution via `{{variableName}}` syntax and defense-in-depth safe string fallback.
+  2. **MultiCloudExamParserService Architecture Refactoring (Naming Smell Elimination)**:
+     - Refactored legacy `GeminiExamParserService` to `MultiCloudExamParserService`, eliminating technical naming debt and aligning the class name with its dual-engine architecture (OpenAI GPT-4o Vision priority + Google Gemini fallback).
+     - Injected `IPromptTemplateService` and decoupled the 80-line verbatim OCR system prompt into `ExamIngestionVerbatimOcr.prompt.txt`.
+     - Updated DI registrations in `DependencyInjection.cs` without breaking `IExamParserService` contract.
+  3. **Dual-Cloud Cascade Failover & Safety Threshold Verification**:
+     - Upgraded `CurriculumAiService.cs` with `ResolveOpenAiKey()` and `ResolveOpenAiModels()`, discovering `gpt-4o-mini`, `gpt-4o`, and `o3-mini` fallback candidates.
+     - Implemented `TryCallOpenAiCurriculumAsync` with JSON response formatting (`response_format: { "type": "json_object" }`).
+     - Constructed a 2-tier dual-cloud cascade: Primary (Google Gemini multi-model/multi-key rotation) -> Secondary (OpenAI Chat Completions) -> Tertiary (Regex Real-Data Parser).
+     - Enforced `minChaptersThreshold` (default `>= 1`) and `maxAttempts = 5`. Responses under the safety threshold automatically trigger downstream fallback models instead of propagating truncated payloads.
+  4. **Verification**:
+     - Created 6 unit tests in `PromptTemplateServiceTests.cs` covering token interpolation, Socratic pedagogy template, pattern analysis template, verbatim OCR template, in-memory caching, and fallback resilience.
+     - 12/12 automated unit tests passing 100% in `V-Eval-Ai_Engine.Tests` in 0.56s.
+     - Clean compilation across all projects in `V-Eval-Ai_Engine.sln` under .NET 9.0 (0 Warnings, 0 Errors).

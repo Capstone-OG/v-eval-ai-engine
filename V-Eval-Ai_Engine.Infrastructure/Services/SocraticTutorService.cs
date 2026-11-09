@@ -13,15 +13,18 @@ public class SocraticTutorService : ISocraticTutorService
     private readonly IVectorDbService _vectorDbService;
     private readonly IConfiguration _configuration;
     private readonly ILogger<SocraticTutorService> _logger;
+    private readonly IPromptTemplateService _promptTemplateService;
 
     public SocraticTutorService(
         IVectorDbService vectorDbService,
         IConfiguration configuration,
-        ILogger<SocraticTutorService> logger)
+        ILogger<SocraticTutorService> logger,
+        IPromptTemplateService promptTemplateService)
     {
         _vectorDbService = vectorDbService;
         _configuration = configuration;
         _logger = logger;
+        _promptTemplateService = promptTemplateService;
     }
 
     public async IAsyncEnumerable<string> StreamSocraticDialogueAsync(
@@ -37,17 +40,14 @@ public class SocraticTutorService : ISocraticTutorService
         var contextChunks = await _vectorDbService.SearchSimilarChunksAsync(currentDialogue, limit: 2, cancellationToken: cancellationToken);
         string retrievedKnowledge = string.Join("\n---\n", contextChunks.Select(c => c.Content));
 
-        // 2. Chuẩn bị System Prompt Socratic theo quy định nghiệp vụ V-Eval
-        string socraticPrompt = $@"Bạn là một Gia sư trí tuệ nhân tạo (AI Tutor) hỗ trợ học sinh ôn thi Đánh giá năng lực ĐHQG-HCM theo phương pháp gợi mở (Socratic Method).
-Tài liệu lý thuyết tham khảo:
-{retrievedKnowledge}
-
-Nhiệm vụ của bạn:
-1. KHÔNG BAO GIỜ được cho học sinh biết đáp án đúng hay lời giải đầy đủ ngay lập tức.
-2. Hãy chỉ ra điểm chưa hợp lý trong cách tư duy hoặc phương án học sinh đưa ra.
-3. Giải thích ngắn gọn khái niệm lý thuyết cốt lõi cần dùng.
-4. Đặt 1-2 câu hỏi nhỏ dẫn dắt gợi ý để học sinh tự suy nghĩ và tự tìm ra câu trả lời đúng.
-5. Luôn phản hồi bằng tiếng Việt lịch sự, định dạng Markdown gọn gàng.";
+        // 2. Nạp System Prompt Socratic từ File Template độc lập qua IPromptTemplateService
+        string socraticPrompt = await _promptTemplateService.RenderPromptAsync(
+            "SocraticTutor.prompt.txt",
+            new Dictionary<string, string>
+            {
+                ["retrievedKnowledge"] = retrievedKnowledge
+            },
+            cancellationToken);
 
         // 3. Phản hồi luồng (Streaming generator)
         // Khi kết nối mô hình LLM chính thức, sẽ stream token trực tiếp từ response stream.

@@ -27,6 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\V-Eval-Ai_Engine.Domain\V-Eval-Ai_Engine.Domain.csproj" />
     <ProjectReference Include="..\V-Eval-Ai_Engine.Application\V-Eval-Ai_Engine.Application.csproj" />
+    <ProjectReference Include="..\V-Eval-Ai_Engine.Infrastructure\V-Eval-Ai_Engine.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

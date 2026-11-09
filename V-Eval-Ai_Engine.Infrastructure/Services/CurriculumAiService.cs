@@ -21,15 +21,18 @@ public class CurriculumAiService : ICurriculumAiService
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<CurriculumAiService> _logger;
+    private readonly IPromptTemplateService _promptTemplateService;
 
     public CurriculumAiService(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<CurriculumAiService> logger)
+        ILogger<CurriculumAiService> logger,
+        IPromptTemplateService promptTemplateService)
     {
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
+        _promptTemplateService = promptTemplateService;
     }
 
     private List<string> ResolveApiKeys()
@@ -89,6 +92,103 @@ public class CurriculumAiService : ICurriculumAiService
             "gemini-flash-lite-latest",
             "gemini-3.8-flash"
         };
+    }
+
+    private string? ResolveOpenAiKey()
+    {
+        var key = _configuration["AiSettings:ApiKey"] 
+                  ?? _configuration["AiSettings:OpenAiApiKey"]
+                  ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+
+        if (string.IsNullOrWhiteSpace(key)) return null;
+
+        key = key.Trim();
+        if (key.StartsWith("YOUR_", StringComparison.OrdinalIgnoreCase)) return null;
+
+        return key;
+    }
+
+    private List<string> ResolveOpenAiModels()
+    {
+        var models = _configuration.GetSection("AiSettings:OpenAiModels").Get<string[]>();
+        if (models != null && models.Length > 0)
+        {
+            return models
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Select(m => m.Trim())
+                .Distinct()
+                .ToList();
+        }
+
+        return new List<string> { "gpt-4o-mini", "gpt-4o", "o3-mini", "chatgpt-4o-latest" };
+    }
+
+    private async Task<string?> TryCallOpenAiCurriculumAsync(
+        string modelName,
+        string apiKey,
+        string prompt,
+        CancellationToken cancellationToken)
+    {
+        var requestBody = new JsonObject
+        {
+            ["model"] = modelName,
+            ["messages"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["role"] = "system",
+                    ["content"] = "BẠN LÀ HỆ THỐNG TRÍ TUỆ NHÂN TẠO HỌC THUẬT & TRÍ THỨC SƯ PHẠM V-EVAL. Luôn phản hồi duy nhất 1 chuỗi JSON hợp lệ 100% theo đúng cấu trúc yêu cầu, không sinh text giải thích ngoài JSON."
+                },
+                new JsonObject
+                {
+                    ["role"] = "user",
+                    ["content"] = prompt
+                }
+            },
+            ["response_format"] = new JsonObject { ["type"] = "json_object" }
+        };
+
+        if (modelName.StartsWith("o", StringComparison.OrdinalIgnoreCase))
+        {
+            requestBody["max_completion_tokens"] = 32768;
+        }
+        else
+        {
+            requestBody["temperature"] = 0.1;
+            requestBody["max_tokens"] = 16384;
+        }
+
+        string openAiUrl = _configuration["AiSettings:OpenAiBaseUrl"] ?? "https://api.openai.com/v1/chat/completions";
+        using var request = new HttpRequestMessage(HttpMethod.Post, openAiUrl)
+        {
+            Content = new StringContent(requestBody.ToJsonString(), Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(4));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
+
+        var response = await _httpClient.SendAsync(request, linkedCts.Token);
+        if (!response.IsSuccessStatusCode)
+        {
+            string errBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogWarning("OpenAI Model '{Model}' thất bại với HTTP {Status}: {Body}", 
+                modelName, (int)response.StatusCode, errBody.Length > 250 ? errBody[..250] : errBody);
+            return null;
+        }
+
+        string respJson = await response.Content.ReadAsStringAsync(cancellationToken);
+        using var doc = JsonDocument.Parse(respJson);
+        if (doc.RootElement.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
+        {
+            var firstChoice = choices[0];
+            if (firstChoice.TryGetProperty("message", out var message) && message.TryGetProperty("content", out var content))
+            {
+                return content.GetString();
+            }
+        }
+
+        return null;
     }
 
     public async Task<ImportCurriculumRequestDto> ExtractCurriculumAsync(
@@ -196,215 +296,35 @@ public class CurriculumAiService : ICurriculumAiService
         var geminiModels = ResolveGeminiModels();
         string geminiBaseUrl = _configuration["AiSettings:GeminiBaseUrl"] ?? "https://generativelanguage.googleapis.com/v1beta";
 
+        bool isStem = IsStemDomain(domainName);
+        string domainScope = isStem ? "TỪNG DẠNG BÀI TOÁN CỤ THỂ (PATTERNS)" : "TỪNG DẠNG BÀI ĐỌC HIỂU / LÀM VĂN / BÀI HỌC CỤ THỂ (PATTERNS)";
+        string sampleHeading = isStem ? "### 📄 Bài toán mẫu áp dụng phương pháp:" : "### 📄 Bài mẫu áp dụng phương pháp:";
+        string tipHeading = isStem ? "### 💡 Kỹ thuật Casio & Mẹo tư duy nhanh:" : "### 💡 Mẹo tư duy & Chiến thuật làm bài:";
+        string tipGuideline = isStem 
+            ? "Mẹo nhẩm hoặc kỹ thuật bấm máy Casio (fx-580VN X, fx-880BTG)" 
+            : "Mẹo gạch chân từ khóa, phân bổ thời gian, chiến thuật hành văn ghi điểm tuyệt đối (TUYỆT ĐỐI KHÔNG sinh mẹo bấm máy Casio cho môn Ngữ văn/Khoa học xã hội)";
+        string sampleKey = isStem ? "Bài toán mẫu:" : "Bài mẫu:";
+
+        var promptVariables = new Dictionary<string, string>
+        {
+            ["domainName"] = domainName,
+            ["domainScope"] = domainScope,
+            ["depthDirective"] = depthDirective,
+            ["sampleHeading"] = sampleHeading,
+            ["tipHeading"] = tipHeading,
+            ["tipGuideline"] = tipGuideline,
+            ["sampleKey"] = sampleKey,
+            ["domainId"] = domainId,
+            ["textSnippet"] = textSnippet
+        };
+
+        string prompt = await _promptTemplateService.RenderPromptAsync("CurriculumIngestion.prompt.txt", promptVariables, cancellationToken);
+
+        int minChaptersThreshold = _configuration.GetValue<int>("AiSettings:MinChaptersThreshold", 1);
+        if (minChaptersThreshold <= 0) minChaptersThreshold = 1;
+
         if (apiKeys.Count > 0)
         {
-            bool isStem = IsStemDomain(domainName);
-            string domainScope = isStem ? "TỪNG DẠNG BÀI TOÁN CỤ THỂ (PATTERNS)" : "TỪNG DẠNG BÀI ĐỌC HIỂU / LÀM VĂN / BÀI HỌC CỤ THỂ (PATTERNS)";
-            string sampleHeading = isStem ? "### 📄 Bài toán mẫu áp dụng phương pháp:" : "### 📄 Bài mẫu áp dụng phương pháp:";
-            string tipHeading = isStem ? "### 💡 Kỹ thuật Casio & Mẹo tư duy nhanh:" : "### 💡 Mẹo tư duy & Chiến thuật làm bài:";
-            string tipGuideline = isStem 
-                ? "Mẹo nhẩm hoặc kỹ thuật bấm máy Casio (fx-580VN X, fx-880BTG)" 
-                : "Mẹo gạch chân từ khóa, phân bổ thời gian, chiến thuật hành văn ghi điểm tuyệt đối (TUYỆT ĐỐI KHÔNG sinh mẹo bấm máy Casio cho môn Ngữ văn/Khoa học xã hội)";
-            string sampleKey = isStem ? "Bài toán mẫu:" : "Bài mẫu:";
-
-            string prompt = $@"BẠN LÀ HỆ THỐNG TRÍ TUỆ NHÂN TẠO HỌC THUẬT & TRÍ THỨC SƯ PHẠM ĐÁNH GIÁ NĂNG LỰC (CURRICULUM PATTERN REASONING ENGINE).
-Nhiệm vụ: Phân tích sâu tài liệu giáo khoa/chuyên đề và trích xuất cấu trúc phân cấp tri thức chuẩn SGK GDPT 2018:
-Miền ({domainName}) -> Các Chương -> Các Bài học -> {domainScope}.
-
-{depthDirective}
-
-QUY TẮC BẮT BUỘC VỀ VÍ DỤ MINH HỌA, BÀI MẪU & NGÂN HÀNG CÂU HỎI (MANDATORY EXAMPLES & SAMPLE PROBLEMS):
-1. PHÂN BIỆT RÕ CÁC DẠNG BÀI: Đặt tên dạng bài rõ ràng: 'Dạng [Số]: [Tên dạng bài chi tiết]'.
-2. BẮT BUỘC ĐỦ 4 KHỐI NỘI DUNG SƯ PHẠM KÈM VÍ DỤ VÀ BÀI TOÁN MẪU:
-   - `theoryRecap`: Lý thuyết nền tảng SGK, định lý/khái niệm cốt lõi, công thức KaTeX đặt trong $...$ (nếu có). Kèm theo '### 📌 Ví dụ minh họa SGK:' (Trích xuất ví dụ/ngữ liệu từ tài liệu có phân tích và lời giải ngắn gọn).
-   - `solutionMethod`: Quy trình 3-4 bước giải / làm bài: 'Bước 1: ...', 'Bước 2: ...', 'Bước 3: ...'. Kèm theo:
-     * '{sampleHeading}' (Bài mẫu có phân tích/giải từng bước).
-     * '### ⚠️ Các bẫy đề thi ĐGNL thường gặp:' (1-2 bẫy đề thi hay gặp).
-     * '{tipHeading}' ({tipGuideline}).
-   - `videoUrl`: null, `durationSeconds`: 600.
-   - `questions`: MỖI DẠNG BÀI CÓ TỪ 2 ĐẾN 3 CÂU HỎI TRẮC NGHIỆM ĐẠI DIỆN CÁC CẤP ĐỘ BLOOM (L1/L2 -> L3/L4):
-     * Câu 1: [L1 - Nhận biết / L2 - Thông hiểu] Câu hỏi lý thuyết, khái niệm hoặc ví dụ áp dụng trực tiếp.
-     * Câu 2: [L3 - Vận dụng / L4 - Vận dụng cao] Bài toán vận dụng tổng hợp, thực tế hoặc phân loại học sinh (kèm hình 3D/2D nếu là hình học/hàm số).
-     Mỗi câu gồm: difficultyLevel (1-4), contentLatex, optionA, optionB, optionC, optionD, correctOption ('A'|'B'|'C'|'D'), explanation (giải súc tích).
-3. BẮT BUỘC DỰNG MÔ HÌNH HÌNH HỌC 3D, BẢNG BIẾN THIÊN & ĐỒ THỊ 2D TƯƠNG TÁC (TEXT-TO-MATHLAB RECONSTRUCTION):
-   - ĐẶC BIỆT QUAN TRỌNG: KỂ CẢ KHI TÀI LIỆU/ĐỀ BÀI CHỈ MÔ TẢ HÌNH HỌC, HÀM SỐ HOẶC BẢNG BIẾN THIÊN BẰNG CHỮ THUẦN TÚY (hoàn toàn không có hình ảnh sẵn trong file gốc):
-     BẠN BẮT BUỘC ĐÓNG VAI TRÒ MÁY DỰNG TOÁN HỌC, tự động tính toán và nhúng các khối thẻ cấu trúc [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào CẢ 2 NƠI:
-     + Ở PHẦN BÀI GIẢNG: Nhúng trực tiếp bên dưới Ví dụ minh họa SGK (Khối 1 `theoryRecap`) và Bài toán mẫu áp dụng (Khối 2 `solutionMethod`).
-     + Ở PHẦN CÂU HỎI: Nhúng trực tiếp ở cuối nội dung câu hỏi `contentLatex` (để học sinh quan sát xoay 360 độ hoặc đọc đồ thị giải bài) và trong Lời giải chi tiết `explanation`.
-   
-   - [A] ĐỐI VỚI HÌNH HỌC KHÔNG GIAN 3D [MATH_GRAPH_3D]:
-     [MATH_GRAPH_3D]
-     title: Cho tứ diện ABCD
-     shapeType: tetrahedron
-     dimensions: h=4,w=4,d=3.5,r=3,planeD=1.8
-     vertices: A:A(1.3,1.2,4);B:B(0,0,0);C:C(4,0,0);D:D(2,3.5,0)
-     extraPoints: M:name=M:edge=A,B:ratio=0.5:color=#ec4899;N:name=N:edge=A,C:ratio=0.5:color=#ec4899
-     auxLines: M-N:dash=0:color=#ef4444;B-C:dash=0:color=#0f172a
-     [/MATH_GRAPH_3D]
-     (Các shapeType: tetrahedron [tứ diện ABCD], pyramid_rect_sa [chóp SA vuông góc đáy], pyramid_tri_sa [chóp đáy tam giác SA vuông góc], pyramid_regular_quad [chóp tứ giác đều], pyramid_regular_tri [chóp tam giác đều], prism_tri [lăng trụ tam giác], box_cube [khối hộp/lập phương]).
-
-   - [B] ĐỐI VỚI BẢNG BIẾN THIÊN [VARIATION_TABLE] (Chuẩn SGK GDPT 2018):
-     Khi đề bài hoặc bài giảng nói về Bảng biến thiên (tính đơn điệu, cực trị, GTLN/GTNN, tiệm cận):
-     (LƯU Ý: Nếu đã dùng [VARIATION_TABLE] thì TUYỆT ĐỐI KHÔNG sinh thêm [MATH_GRAPH]! Mỗi thuộc tính BẮT BUỘC xuống dòng rõ ràng):
-     * Hàm đa thức liên tục (bậc ba, trùng phương bậc bốn, bậc hai):
-     [VARIATION_TABLE]
-     title: Bảng biến thiên hàm số y = f(x)
-     x: -\infty | x_1 | x_2 | +\infty
-     y': + | 0 | - | 0 | +
-     y: -\infty | y_max | y_min | +\infty
-     dir: up | down | up
-     [/VARIATION_TABLE]
-     * Hàm phân thức hữu tỉ có tiệm cận đứng / vạch kép (||):
-     [VARIATION_TABLE]
-     title: Bảng biến thiên hàm số phân thức y = \\frac{{ax+b}}{{cx+d}}
-     x: -\infty | x_0 | +\infty
-     y': - | || | -
-     y: y_asymp | -\infty || +\infty | y_asymp
-     dir: down || down
-     [/VARIATION_TABLE]
-
-   - [C] ĐỐI VỚI ĐỒ THỊ HÀM SỐ 2D [MATH_GRAPH]:
-     (Chỉ dùng khi đề bài yêu cầu vẽ hoặc nhận dạng ĐỒ THỊ hình vẽ cụ thể, KHÔNG dùng chung với [VARIATION_TABLE]):
-     [MATH_GRAPH]
-     title: Đồ thị hàm số y = f(x)
-     formula: y = x^3 - 3*x + 1
-     type: cubic
-     params: a=1,b=0,c=-3,d=1
-     [/MATH_GRAPH]
-     (Các type hợp lệ: cubic [bậc ba y=ax^3+bx^2+cx+d, params: a,b,c,d], quartic [bậc bốn trùng phương y=ax^4+bx^2+c, params: a,b,c], rational [phân thức bậc 1/1 y=(ax+b)/(cx+d), params: a,b,c,d], rational_21 [phân thức bậc 2/1 y=(ax^2+bx+c)/(dx+e), params: a,b,c,d,e], quadratic [parabol y=ax^2+bx+c, params: a,b,c], custom [biểu thức tùy ý expr=...]).
-4. ĐẦU RA JSON BẮT BUỘC:
-Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
-{{
-  ""domainId"": ""{domainId}"",
-  ""domainName"": ""{domainName}"",
-  ""chapters"": [
-    {{
-      ""chapterName"": ""Chương: [Tên chương / Tên chuyên đề]"",
-      ""weight"": 0.35,
-      ""lessons"": [
-        {{
-          ""lessonName"": ""Bài 1: [Tên bài học 1]"",
-          ""weight"": 0.1,
-          ""patterns"": [
-            {{
-              ""patternName"": ""Dạng 1: [Tên dạng bài 1]"",
-              ""weight"": 0.05,
-              ""classification"": ""..."",
-              ""coreSkill"": ""..."",
-              ""theoryRecap"": ""[Định lý & Công thức SGK]\n\n### 📌 Ví dụ minh họa SGK:\n**Ví dụ:** Cho hình chóp S.ABCD có đáy là hình vuông, SA vuông góc đáy...\n**Phân tích & Lời giải:** ...\n\n[MATH_GRAPH_3D]\ntitle: Cho hình chóp S.ABCD\nshapeType: pyramid_rect_sa\ndimensions: h=4,w=4,d=3.5,r=3,planeD=1.8\nvertices: S:S(0,0,4);A:A(0,0,0);B:B(4,0,0);C:C(4,3.5,0);D:D(0,3.5,0)\nextraPoints: M:name=M:edge=S,C:ratio=0.5:color=#ec4899\nauxLines: M-A:dash=2:color=#ef4444\n[/MATH_GRAPH_3D]"",
-              ""solutionMethod"": ""Bước 1: ...\nBước 2: ...\n\n{sampleHeading}\n**{sampleKey}** Cho tứ diện ABCD...\n**Hướng dẫn giải:** ...\n\n[MATH_GRAPH_3D]\ntitle: Cho tứ diện ABCD\nshapeType: tetrahedron\ndimensions: h=4,w=4,d=3.5,r=3,planeD=1.8\nvertices: A:A(1.3,1.2,4);B:B(0,0,0);C:C(4,0,0);D:D(2,3.5,0)\nextraPoints: M:name=M:edge=A,B:ratio=0.5:color=#ec4899\nauxLines: M-C:dash=0:color=#ef4444\n[/MATH_GRAPH_3D]\n\n### ⚠️ Các bẫy đề thi:\n...\n\n{tipHeading}\n..."",
-              ""durationSeconds"": 600,
-              ""questions"": [
-                {{
-                  ""difficultyLevel"": 1,
-                  ""contentLatex"": ""[Câu 1 - Nhận biết] Cho hình chóp S.ABCD..."",
-                  ""optionA"": ""..."",
-                  ""optionB"": ""..."",
-                  ""optionC"": ""..."",
-                  ""optionD"": ""..."",
-                  ""correctOption"": ""A"",
-                  ""explanation"": ""...""
-                }},
-                {{
-                  ""difficultyLevel"": 2,
-                  ""contentLatex"": ""[Câu 2 - Thông hiểu]..."",
-                  ""optionA"": ""..."",
-                  ""optionB"": ""..."",
-                  ""optionC"": ""..."",
-                  ""optionD"": ""..."",
-                  ""correctOption"": ""B"",
-                  ""explanation"": ""...""
-                }},
-                {{
-                  ""difficultyLevel"": 3,
-                  ""contentLatex"": ""[Câu 3 - Vận dụng] Cho hình chóp S.ABCD có đáy là hình thang...\n\n[MATH_GRAPH_3D]\ntitle: Cho hình chóp S.ABCD\nshapeType: pyramid_rect_sa\ndimensions: h=4,w=4,d=3.5,r=3,planeD=1.8\nvertices: S:S(0,0,4);A:A(0,0,0);B:B(4,0,0);C:C(4,3.5,0);D:D(0,3.5,0)\nextraPoints: M:name=M:edge=C,D:ratio=0.5:color=#ec4899\nauxLines: B-M:dash=2:color=#ef4444;A-C:dash=2:color=#0f172a\n[/MATH_GRAPH_3D]"",
-                  ""optionA"": ""..."",
-                  ""optionB"": ""..."",
-                  ""optionC"": ""..."",
-                  ""optionD"": ""..."",
-                  ""correctOption"": ""C"",
-                  ""explanation"": ""Lời giải chi tiết từng bước: Giao tuyến là SI.\n\n[MATH_GRAPH_3D]\ntitle: Thiết diện S.ABCD\nshapeType: pyramid_rect_sa\ndimensions: h=4,w=4,d=3.5,r=3,planeD=1.8\nvertices: S:S(0,0,4);A:A(0,0,0);B:B(4,0,0);C:C(4,3.5,0);D:D(0,3.5,0)\nextraPoints: M:name=M:edge=C,D:ratio=0.5:color=#ec4899;I:name=I:edge=A,C:ratio=0.5:color=#ef4444\nauxLines: S-I:dash=0:color=#ef4444;B-M:dash=2:color=#0f172a\n[/MATH_GRAPH_3D]""
-                }},
-                {{
-                  ""difficultyLevel"": 4,
-                  ""contentLatex"": ""[Câu 4 - Vận dụng cao]..."",
-                  ""optionA"": ""..."",
-                  ""optionB"": ""..."",
-                  ""optionC"": ""..."",
-                  ""optionD"": ""..."",
-                  ""correctOption"": ""D"",
-                  ""explanation"": ""...""
-                }}
-              ]
-            }},
-            {{
-              ""patternName"": ""Dạng 2: [Tên dạng bài 2 chi tiết]"",
-              ""weight"": 0.05,
-              ""classification"": ""..."",
-              ""coreSkill"": ""..."",
-              ""theoryRecap"": ""..."",
-              ""solutionMethod"": ""..."",
-              ""durationSeconds"": 600,
-              ""questions"": [
-                {{
-                  ""difficultyLevel"": 1,
-                  ""contentLatex"": ""..."",
-                  ""optionA"": ""..."",
-                  ""optionB"": ""..."",
-                  ""optionC"": ""..."",
-                  ""optionD"": ""..."",
-                  ""correctOption"": ""A"",
-                  ""explanation"": ""...""
-                }},
-                {{
-                  ""difficultyLevel"": 2,
-                  ""contentLatex"": ""..."",
-                  ""optionA"": ""..."",
-                  ""optionB"": ""..."",
-                  ""optionC"": ""..."",
-                  ""optionD"": ""..."",
-                  ""correctOption"": ""B"",
-                  ""explanation"": ""...""
-                }},
-                {{
-                  ""difficultyLevel"": 3,
-                  ""contentLatex"": ""..."",
-                  ""optionA"": ""..."",
-                  ""optionB"": ""..."",
-                  ""optionC"": ""..."",
-                  ""optionD"": ""..."",
-                  ""correctOption"": ""C"",
-                  ""explanation"": ""...""
-                }},
-                {{
-                  ""difficultyLevel"": 4,
-                  ""contentLatex"": ""..."",
-                  ""optionA"": ""..."",
-                  ""optionB"": ""..."",
-                  ""optionC"": ""..."",
-                  ""optionD"": ""..."",
-                  ""correctOption"": ""D"",
-                  ""explanation"": ""...""
-                }}
-              ]
-            }}
-          ]
-        }}
-      ]
-    }}
-  ]
-}}
-
-
-TÀI LIỆU CẦN BÓC TÁCH:
-{textSnippet}
-
-LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX (CRITICAL JSON RULES):
-1. TRÍCH XUẤT 100% DỮ LIỆU THẬT & TỰ ĐỘNG DỰNG HÌNH 3D/2D/BẢNG BIẾN THIÊN TỪ CHỮ: Toàn bộ Chương, Bài học, Dạng bài, Ví dụ và Câu hỏi trắc nghiệm phải được trích xuất THỰC TẾ từ tài liệu được cung cấp ở trên (TUYỆT ĐỐI KHÔNG HARDCODE MẪU CỐ ĐỊNH). ĐẶC BIỆT: Đối với các bài toán hình học không gian (chóp, tứ diện, lăng trụ, hộp), đồ thị hàm số hoặc bảng biến thiên được mô tả bằng chữ trong tài liệu (kể cả khi file PDF gốc không có hình vẽ in sẵn), BẮT BUỘC đóng vai trò máy dựng hình, tự động tính toán tọa độ và nhúng thẻ [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào ví dụ SGK (Khối 1), bài toán mẫu (Khối 2) và câu hỏi trắc nghiệm (Khối 4)!
-2. ESCAPE LATEX TRONG JSON: Mọi ký tự gạch chéo ngược LaTeX BẮT BUỘC phải dùng hai gạch chéo ngược (double backslash): \\frac, \\sqrt, \\Delta, \\{{, \\}}, \\%, \\$, \\alpha, \\beta, \\times, \\text... Tuyệt đối không dùng 1 gạch chéo ngược đơn độc.
-3. QUY TẮC DẤU NGOẶC KÉP TRÍCH DẪN: TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng "" bên trong nội dung văn bản (đề bài, lý thuyết, giải thích, phương án A-D). Nếu cần trích dẫn thuật ngữ, tên chất hay công thức, BẮT BUỘC dùng dấu nháy đơn '...' (ví dụ: 'chất khử', 'Fe').
-4. ĐẦU RA HOÀN CHỈNH: Đảm bảo đóng đầy đủ các dấu ngoặc nhọn }} và ngoặc vuông ]] để JSON hợp lệ 100%. Không sinh bất kỳ đoạn chat giải thích nào ngoài khối JSON.";
-
             foreach (var modelName in geminiModels)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -514,8 +434,78 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX (CRITICAL JSO
             }
         }
 
+        // 3. TẦNG 2: FAILOVER SANG MÔ HÌNH OPENAI (GPT-4o-mini / GPT-4o / o3-mini) CHO BÓC TÁCH KHUNG CHƯƠNG TRÌNH
+        var openAiKey = ResolveOpenAiKey();
+        if (!string.IsNullOrWhiteSpace(openAiKey))
+        {
+            var openAiModels = ResolveOpenAiModels();
+            int maxAttempts = _configuration.GetValue<int>("AiSettings:MaxAttempts", 5);
+            if (maxAttempts <= 0) maxAttempts = 5;
+
+            _logger.LogInformation("Kích hoạt cơ chế Failover sang OpenAI cho bóc tách khung chương trình (Phát hiện {Count} mô hình GPT dự phòng)...", openAiModels.Count);
+
+            int attempt = 0;
+            foreach (var gptModel in openAiModels)
+            {
+                if (cancellationToken.IsCancellationRequested || attempt >= maxAttempts) break;
+                attempt++;
+
+                try
+                {
+                    _logger.LogInformation("[Fallback Curriculum lần {Attempt}/{MaxAttempts}] Đang gửi yêu cầu bóc tách tới OpenAI '{ModelName}'...", attempt, maxAttempts, gptModel);
+                    string? gptResult = await TryCallOpenAiCurriculumAsync(gptModel, openAiKey, prompt, cancellationToken);
+                    if (!string.IsNullOrWhiteSpace(gptResult))
+                    {
+                        string contentText = SanitizeAndRepairGeminiJson(gptResult);
+                        ImportCurriculumRequestDto? parsed = null;
+
+                        try
+                        {
+                            parsed = JsonSerializer.Deserialize<ImportCurriculumRequestDto>(contentText, new JsonSerializerOptions 
+                            { 
+                                PropertyNameCaseInsensitive = true,
+                                AllowTrailingCommas = true
+                            });
+                        }
+                        catch (Exception jsonEx)
+                        {
+                            _logger.LogWarning("OpenAI '{Model}' Strict JSON deserialize gặp lỗi ({Msg}), chuyển sang bộ phân tích JsonNode mềm dẻo...", gptModel, jsonEx.Message);
+                            parsed = TryParseCurriculumFromLooseJson(contentText, domainId, domainName);
+                        }
+
+                        if (parsed == null || parsed.Chapters.Count < minChaptersThreshold)
+                        {
+                            _logger.LogWarning("OpenAI '{Model}' JsonNode phân tích dưới ngưỡng an toàn ({Count} < {Threshold}), kích hoạt bộ bóc tách Regex Real-Data Engine...", 
+                                gptModel, parsed?.Chapters.Count ?? 0, minChaptersThreshold);
+                            parsed = ExtractCurriculumViaRegex(contentText, domainId, domainName);
+                        }
+
+                        if (parsed != null && parsed.Chapters.Count >= minChaptersThreshold)
+                        {
+                            stopwatch.Stop();
+                            parsed.ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2);
+                            parsed.IsRealExtraction = true;
+                            parsed.SourceFileName = fileName ?? "Direct_Text_Input";
+                            parsed.TotalPagesProcessed = totalPagesProcessed > 0 ? totalPagesProcessed : 1;
+                            parsed.TotalCharactersExtracted = extractedText.Length;
+
+                            _logger.LogInformation("OpenAI Failover '{Model}' trích xuất thành công {Count} chương DỮ LIỆU THẬT trong {Elapsed:F2}s từ tệp '{FileName}'.", 
+                                gptModel, parsed.Chapters.Count, parsed.ProcessingTimeSeconds, parsed.SourceFileName);
+                            return parsed;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Lỗi gọi OpenAI '{Model}' trong luồng bóc tách khung chương trình. Thử model tiếp theo...", gptModel);
+                }
+            }
+        }
+
         stopwatch.Stop();
-        string errDetail = apiKeys.Count == 0 ? "Chưa cấu hình GEMINI_API_KEY trong hệ thống." : "Gemini AI không thể bóc tách cấu trúc tri thức hoặc kết nối mạng bị gián đoạn.";
+        string errDetail = apiKeys.Count == 0 && string.IsNullOrWhiteSpace(openAiKey)
+            ? "Chưa cấu hình GEMINI_API_KEY hoặc OPENAI_API_KEY trong hệ thống."
+            : "Các mô hình AI (Gemini / OpenAI) không thể bóc tách cấu trúc tri thức hoặc kết nối mạng bị gián đoạn.";
         throw new InvalidOperationException($"Không thể trích xuất cấu trúc tri thức thực tế từ tài liệu: {errDetail}. Vui lòng kiểm tra lại API key hoặc nội dung tệp.");
     }
 
@@ -532,52 +522,25 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX (CRITICAL JSO
         var geminiModels = ResolveGeminiModels();
         string geminiBaseUrl = _configuration["AiSettings:GeminiBaseUrl"] ?? "https://generativelanguage.googleapis.com/v1beta";
 
+        bool isStem = IsStemDomain(domainName);
+        string subjectType = isStem ? "toán" : "đọc hiểu / làm văn / bài học";
+        string casioGuideline = isStem 
+            ? "Kỹ thuật bấm máy Casio (fx-580VN X, fx-880BTG) hoặc mẹo tư duy nhanh." 
+            : "Mẹo tư duy nhanh, chiến thuật đọc hiểu/hành văn, kỹ thuật phân bổ thời gian và mẹo ghi điểm tối đa ĐGNL (TUYỆT ĐỐI KHÔNG đề cập máy tính Casio vì đây là môn Ngữ văn / Khoa học xã hội).";
+
+        var promptVariables = new Dictionary<string, string>
+        {
+            ["subjectType"] = subjectType,
+            ["patternName"] = patternName,
+            ["lessonName"] = lessonName,
+            ["domainName"] = domainName,
+            ["casioGuideline"] = casioGuideline
+        };
+
+        string prompt = await _promptTemplateService.RenderPromptAsync("PatternAnalysis.prompt.txt", promptVariables, cancellationToken);
+
         if (apiKeys.Count > 0)
         {
-            bool isStem = IsStemDomain(domainName);
-            string prompt = $@"BẠN LÀ CHUYÊN GIA TRÍ THỨC SƯ PHẠM V-EVAL & ĐÁNH GIÁ NĂNG LỰC ĐHQG (CURRICULUM PATTERN REASONING ENGINE).
-Nhiệm vụ: Phân tích chuyên sâu dạng bài {(isStem ? "toán" : "đọc hiểu / làm văn / bài học")} sau để nhận diện rõ ràng bản chất dạng và chuẩn hóa 4 khối nội dung sư phạm:
-- Dạng bài: ""{patternName}""
-- Bài học trực thuộc: ""{lessonName}""
-- Miền năng lực: ""{domainName}""
-
-QUY TẮC BẮT BUỘC:
-1. `classification`: Phân loại dạng.
-2. `core_skill`: Kỹ năng tư duy cốt lõi cần đo lường.
-3. `bloom_level`: Mức độ nhận thức Bloom phù hợp (1..4).
-4. `theory_recap`: Tóm lược kiến thức nền tảng SGK GDPT 2018 (KaTeX inline $...$ nếu có).
-5. `solution_method`: Quy trình giải / làm bài 4 bước chi tiết chuẩn mực.
-6. `exam_traps`: 2-3 bẫy đề thi ĐGNL học sinh hay mắc sai lầm nhất.
-7. `casio_tricks`: {(isStem ? "Kỹ thuật bấm máy Casio (fx-580VN X, fx-880BTG) hoặc mẹo tư duy nhanh." : "Mẹo tư duy nhanh, chiến thuật đọc hiểu/hành văn, kỹ thuật phân bổ thời gian và mẹo ghi điểm tối đa ĐGNL (TUYỆT ĐỐI KHÔNG đề cập máy tính Casio vì đây là môn Ngữ văn / Khoa học xã hội).")}
-8. `sample_question`: 1 câu hỏi trắc nghiệm minh họa 4 phương án kèm lời giải chi tiết. ĐẶC BIỆT: KỂ CẢ KHI BÀI TOÁN CHỈ MÔ TẢ HÌNH/HÀM SỐ BẰNG CHỮ (như tứ diện ABCD, chóp S.ABCD, lăng trụ, hộp, lập phương, hàm số, bảng biến thiên...), BẮT BUỘC tự động tính toán tọa độ và nhúng thẻ [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào CẢ 3 NƠI: trong ví dụ của `theory_recap`, trong bài toán mẫu của `solution_method`, và trong `sample_question` (ở cả `content_latex` và `explanation`)! (Cú pháp Bảng biến thiên: [VARIATION_TABLE]\ntitle: Bảng biến thiên\nx: -\\infty | 1 | +\\infty\ny': + | 0 | -\ny: -\\infty | 2 | -\\infty\ndir: up | down\n[/VARIATION_TABLE]).
-
-LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
-- Mọi ký tự gạch chéo ngược LaTeX BẮT BUỘC dùng 2 gạch chéo ngược: \\frac, \\sqrt, \\Delta, \\{{, \\}}, \\%, \\$, \\alpha... Tuyệt đối không dùng 1 gạch chéo ngược đơn độc.
-- TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng "" bên trong nội dung văn bản (đề bài, lý thuyết, giải thích, phương án A-D). Nếu cần trích dẫn thuật ngữ, điểm hay công thức, BẮT BUỘC dùng dấu nháy đơn '...' (ví dụ: 'chất khử', 'Fe', 'S.ABCD', 'M', 'N').
-- Chỉ trả về duy nhất 1 JSON object hợp lệ.
-
-ĐẦU RA JSON BẮT BUỘC:
-{{
-  ""pattern_name"": ""{patternName}"",
-  ""classification"": ""..."",
-  ""core_skill"": ""..."",
-  ""bloom_level"": 3,
-  ""theory_recap"": ""..."",
-  ""solution_method"": ""..."",
-  ""exam_traps"": ""..."",
-  ""casio_tricks"": ""..."",
-  ""sample_question"": {{
-    ""difficulty_level"": 3,
-    ""content_latex"": ""..."",
-    ""option_a"": ""..."",
-    ""option_b"": ""..."",
-    ""option_c"": ""..."",
-    ""option_d"": ""..."",
-    ""correct_option"": ""A"",
-    ""explanation"": ""...""
-  }}
-}}";
-
             foreach (var modelName in geminiModels)
             {
                 if (cancellationToken.IsCancellationRequested) break;
@@ -671,9 +634,70 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
             }
         }
 
+        // 3. TẦNG 2: FAILOVER SANG MÔ HÌNH OPENAI (GPT-4o-mini / GPT-4o) CHO PHÂN TÍCH DẠNG BÀI
+        var openAiKey = ResolveOpenAiKey();
+        if (!string.IsNullOrWhiteSpace(openAiKey))
+        {
+            var openAiModels = ResolveOpenAiModels();
+            int maxAttempts = _configuration.GetValue<int>("AiSettings:MaxAttempts", 5);
+            if (maxAttempts <= 0) maxAttempts = 5;
+
+            _logger.LogInformation("Kích hoạt cơ chế Failover sang OpenAI cho phân tích dạng bài (Phát hiện {Count} mô hình GPT dự phòng)...", openAiModels.Count);
+
+            int attempt = 0;
+            foreach (var gptModel in openAiModels)
+            {
+                if (cancellationToken.IsCancellationRequested || attempt >= maxAttempts) break;
+                attempt++;
+
+                try
+                {
+                    _logger.LogInformation("[Fallback Pattern lần {Attempt}/{MaxAttempts}] Đang gửi yêu cầu phân tích tới OpenAI '{ModelName}'...", attempt, maxAttempts, gptModel);
+                    string? gptResult = await TryCallOpenAiCurriculumAsync(gptModel, openAiKey, prompt, cancellationToken);
+                    if (!string.IsNullOrWhiteSpace(gptResult))
+                    {
+                        string contentText = SanitizeAndRepairGeminiJson(gptResult);
+                        AnalyzePatternResponseDto? parsed = null;
+                        try
+                        {
+                            parsed = JsonSerializer.Deserialize<AnalyzePatternResponseDto>(contentText, new JsonSerializerOptions 
+                            { 
+                                PropertyNameCaseInsensitive = true,
+                                AllowTrailingCommas = true
+                            });
+                        }
+                        catch (Exception jsonEx)
+                        {
+                            _logger.LogWarning("OpenAI '{Model}' JSON deserialize pattern gặp lỗi ({Msg}), thử Regex...", gptModel, jsonEx.Message);
+                            parsed = ExtractPatternAnalysisViaRegex(contentText, patternName);
+                        }
+
+                        if (parsed == null || string.IsNullOrWhiteSpace(parsed.PatternName))
+                        {
+                            parsed = ExtractPatternAnalysisViaRegex(contentText, patternName);
+                        }
+
+                        if (parsed != null)
+                        {
+                            stopwatch.Stop();
+                            parsed.ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2);
+                            _logger.LogInformation("OpenAI Failover '{Model}' nhận diện thành công dạng bài '{Pattern}' trong {Elapsed:F2}s!", gptModel, patternName, parsed.ProcessingTimeSeconds);
+                            return parsed;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Lỗi gọi OpenAI '{Model}' trong luồng phân tích dạng bài. Thử model tiếp theo...", gptModel);
+                }
+            }
+        }
+
         stopwatch.Stop();
-        string errDetail = apiKeys.Count == 0 ? "Chưa cấu hình GEMINI_API_KEY trong hệ thống." : "Gemini AI không thể phân tích dạng bài hoặc kết nối mạng bị gián đoạn.";
-        throw new InvalidOperationException($"Không thể phân tích dạng bài '{patternName}' từ Gemini AI: {errDetail}.");
+        string errDetail = apiKeys.Count == 0 && string.IsNullOrWhiteSpace(openAiKey)
+            ? "Chưa cấu hình GEMINI_API_KEY hoặc OPENAI_API_KEY trong hệ thống."
+            : "Các mô hình AI (Gemini / OpenAI) không thể phân tích dạng bài hoặc kết nối mạng bị gián đoạn.";
+        throw new InvalidOperationException($"Không thể phân tích dạng bài '{patternName}' từ AI: {errDetail}.");
     }
 
     public async Task<GeneratePatternQuestionsResponseDto> GeneratePatternQuestionsAsync(
@@ -692,72 +716,33 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
         var geminiModels = ResolveGeminiModels();
         string geminiBaseUrl = _configuration["AiSettings:GeminiBaseUrl"] ?? "https://generativelanguage.googleapis.com/v1beta";
 
-        if (apiKeys.Count > 0)
+        string antiDuplicationNote = string.Empty;
+        if (request.ExistingQuestions != null && request.ExistingQuestions.Count > 0)
         {
-            bool isStem = IsStemDomain(domainName);
-            string antiDuplicationNote = string.Empty;
-            if (request.ExistingQuestions != null && request.ExistingQuestions.Count > 0)
-            {
-                var samples = string.Join("\n- ", request.ExistingQuestions.TakeLast(6).Select(q => q.Length > 150 ? q[..150] + "..." : q));
-                antiDuplicationNote = $@"
+            var samples = string.Join("\n- ", request.ExistingQuestions.TakeLast(6).Select(q => q.Length > 150 ? q[..150] + "..." : q));
+            antiDuplicationNote = $@"
 QUY TẮC BẮT BUỘC CHỐNG TRÙNG LẶP:
 Dạng bài này hiện ĐÃ CÓ {request.ExistingQuestions.Count} câu hỏi sau:
 - {samples}
 TUYỆT ĐỐI KHÔNG ĐƯỢC lặp lại, không được copy lại đề bài hoặc ngữ liệu y hệt ở trên!
 BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn cảm thụ mới, chi tiết nghệ thuật mới, hoặc các câu hỏi đọc hiểu/vận dụng hoàn toàn mới!";
-            }
+        }
 
-            string prompt = $@"BẠN LÀ CHUYÊN GIA SƯ PHẠM V-EVAL & ĐÁNH GIÁ NĂNG LỰC ĐHQG (PRACTICE QUESTION GENERATOR).
-Nhiệm vụ: Tạo ra đúng {count} câu hỏi trắc nghiệm rèn luyện (gồm 1 câu L3 Vận dụng và 1 câu L4 Vận dụng cao) BÁM SÁT 100% VÀO DẠNG BÀI ĐANG ĐƯỢC PHÂN TÍCH:
-- Tên Dạng bài: ""{patternName}""
-- Bài học: ""{lessonName}""
-- Môn học / Miền: ""{domainName}""
-- Khối 1 (Lý thuyết nền tảng SGK & Ví dụ minh họa):
-{theoryRecap}
-- Khối 2 (Phương pháp giải chi tiết & Bài toán mẫu áp dụng):
-{solutionMethod}
-{antiDuplicationNote}
+        var promptVariables = new Dictionary<string, string>
+        {
+            ["count"] = count.ToString(),
+            ["patternName"] = patternName,
+            ["lessonName"] = lessonName,
+            ["domainName"] = domainName,
+            ["theoryRecap"] = theoryRecap,
+            ["solutionMethod"] = solutionMethod,
+            ["antiDuplicationNote"] = antiDuplicationNote
+        };
 
-QUY TẮC BẮT BUỘC VỀ SƯ PHẠM:
-1. ĐẶC BIỆT LƯU Ý VỚI MÔN NGỮ VĂN / KHOA HỌC XÃ HỘI:
-   - Câu hỏi BẮT BUỘC PHẢI THAM KHẢO VÀ DỰA VÀO ĐÚNG TÁC PHẨM, NGỮ LIỆU, HOẶC VÍ DỤ NÊU TRONG LÝ THUYẾT VÀ PHƯƠNG PHÁP GIẢI CỦA DẠNG NÀY (ví dụ: các bài thơ, đoạn trích, tác giả, vấn đề nghị luận được đề cập ở trên).
-   - TUYỆT ĐỐI KHÔNG dùng toán học, không có đại số, không có biến số X, nồng độ, thể tích hay phương trình!
-   - Câu hỏi L3: Đo lường kỹ năng đọc hiểu, xác định vấn đề nghị luận, phạm vi dẫn chứng, kiểu đoạn văn (Tổng - phân - hợp, diễn dịch...), hoặc phân tích chi tiết tiêu biểu.
-   - Câu hỏi L4: Đo lường tư duy đánh giá, liên hệ nâng cao bối cảnh thời đại, chiều sâu tư tưởng nhân văn hoặc phong cách tác giả.
-2. ĐỐI VỚI CÁC MÔN STEM (Toán, Lý, Hóa, Sinh, Tin):
-   - Câu hỏi phải bám sát đúng mô hình toán/khoa học, thuật toán và công thức của dạng này.
-   - Nếu là dạng bài Hình học không gian, Đồ thị hàm số hoặc Bảng biến thiên, BẮT BUỘC nhúng thẻ tương tác [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào `contentLatex` hoặc `explanation` để học sinh và giáo viên quan sát trực quan.
+        string prompt = await _promptTemplateService.RenderPromptAsync("PracticeQuestionGenerator.prompt.txt", promptVariables, cancellationToken);
 
-LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
-- Mọi ký tự gạch chéo ngược LaTeX BẮT BUỘC dùng 2 gạch chéo ngược: \\frac, \\sqrt, \\Delta, \\{{, \\}}, \\%, \\$, \\alpha...
-- TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng "" bên trong nội dung văn bản (đề bài, lý thuyết, giải thích, phương án A-D). Nếu cần trích dẫn thuật ngữ, tên điểm hay công thức, BẮT BUỘC dùng dấu nháy đơn '...' (ví dụ: 'chất khử', 'Fe', 'S.ABCD', 'M', 'N').
-- Chỉ trả về duy nhất 1 JSON object hợp lệ theo schema sau:
-
-{{
-  ""questions"": [
-    {{
-      ""difficultyLevel"": 3,
-      ""contentLatex"": ""[Bài tập rèn luyện 1] Đề bài..."",
-      ""optionA"": ""Phương án A..."",
-      ""optionB"": ""Phương án B..."",
-      ""optionC"": ""Phương án C..."",
-      ""optionD"": ""Phương án D..."",
-      ""correctOption"": ""A"",
-      ""explanation"": ""Lời giải chi tiết từng bước...""
-    }},
-    {{
-      ""difficultyLevel"": 4,
-      ""contentLatex"": ""[Bài tập rèn luyện 2 - Vận dụng cao] Đề bài..."",
-      ""optionA"": ""Phương án A..."",
-      ""optionB"": ""Phương án B..."",
-      ""optionC"": ""Phương án C..."",
-      ""optionD"": ""Phương án D..."",
-      ""correctOption"": ""A"",
-      ""explanation"": ""Lời giải chi tiết từng bước...""
-    }}
-  ]
-}}";
-
+        if (apiKeys.Count > 0)
+        {
             foreach (var modelName in geminiModels)
             {
                 if (cancellationToken.IsCancellationRequested) break;
@@ -873,8 +858,93 @@ LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
             }
         }
 
+        // 3. TẦNG 2: FAILOVER SANG MÔ HÌNH OPENAI (GPT-4o-mini / GPT-4o) CHO SINH CÂU HỎI
+        var openAiKey = ResolveOpenAiKey();
+        if (!string.IsNullOrWhiteSpace(openAiKey))
+        {
+            var openAiModels = ResolveOpenAiModels();
+            int maxAttempts = _configuration.GetValue<int>("AiSettings:MaxAttempts", 5);
+            if (maxAttempts <= 0) maxAttempts = 5;
+
+            _logger.LogInformation("Kích hoạt cơ chế Failover sang OpenAI cho sinh câu hỏi dạng bài...");
+
+            int attempt = 0;
+            foreach (var gptModel in openAiModels)
+            {
+                if (cancellationToken.IsCancellationRequested || attempt >= maxAttempts) break;
+                attempt++;
+
+                try
+                {
+                    _logger.LogInformation("[Fallback Question lần {Attempt}/{MaxAttempts}] Đang gửi yêu cầu tới OpenAI '{ModelName}'...", attempt, maxAttempts, gptModel);
+                    string? gptResult = await TryCallOpenAiCurriculumAsync(gptModel, openAiKey, prompt, cancellationToken);
+                    if (!string.IsNullOrWhiteSpace(gptResult))
+                    {
+                        string contentText = SanitizeAndRepairGeminiJson(gptResult);
+                        var resultQuestions = new List<ImportQuestionDto>();
+
+                        try
+                        {
+                            var docNode = JsonNode.Parse(contentText);
+                            var questionsArray = docNode?["questions"]?.AsArray();
+                            if (questionsArray != null && questionsArray.Count > 0)
+                            {
+                                foreach (var qNode in questionsArray)
+                                {
+                                    if (qNode == null) continue;
+                                    var q = new ImportQuestionDto
+                                    {
+                                        DifficultyLevel = qNode["difficultyLevel"]?.GetValue<int>() ?? qNode["difficulty_level"]?.GetValue<int>() ?? 3,
+                                        ContentLatex = qNode["contentLatex"]?.GetValue<string>() ?? qNode["content_latex"]?.GetValue<string>() ?? string.Empty,
+                                        OptionA = qNode["optionA"]?.GetValue<string>() ?? qNode["option_a"]?.GetValue<string>() ?? string.Empty,
+                                        OptionB = qNode["optionB"]?.GetValue<string>() ?? qNode["option_b"]?.GetValue<string>() ?? string.Empty,
+                                        OptionC = qNode["optionC"]?.GetValue<string>() ?? qNode["option_c"]?.GetValue<string>() ?? string.Empty,
+                                        OptionD = qNode["optionD"]?.GetValue<string>() ?? qNode["option_d"]?.GetValue<string>() ?? string.Empty,
+                                        CorrectOption = NormalizeCorrectOption(ExtractJsonNodeAsString(qNode["correctOption"] ?? qNode["correct_option"])),
+                                        Explanation = qNode["explanation"]?.GetValue<string>() ?? string.Empty
+                                    };
+                                    if (!string.IsNullOrWhiteSpace(q.ContentLatex))
+                                    {
+                                        resultQuestions.Add(q);
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception jsonEx)
+                        {
+                            _logger.LogWarning("OpenAI '{Model}' JSON deserialize câu hỏi gặp lỗi ({Msg}), thử Regex...", gptModel, jsonEx.Message);
+                            resultQuestions = ExtractQuestionsViaRegex(contentText);
+                        }
+
+                        if (resultQuestions.Count == 0)
+                        {
+                            resultQuestions = ExtractQuestionsViaRegex(contentText);
+                        }
+
+                        if (resultQuestions.Count > 0)
+                        {
+                            stopwatch.Stop();
+                            _logger.LogInformation("OpenAI Failover '{Model}' sinh thành công {Count} câu hỏi cho dạng bài '{Pattern}' trong {Elapsed:F2}s!", gptModel, resultQuestions.Count, patternName, stopwatch.Elapsed.TotalSeconds);
+                            return new GeneratePatternQuestionsResponseDto
+                            {
+                                Questions = resultQuestions,
+                                ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2)
+                            };
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Lỗi gọi OpenAI '{Model}' trong luồng sinh câu hỏi. Thử model tiếp theo...", gptModel);
+                }
+            }
+        }
+
         stopwatch.Stop();
-        throw new InvalidOperationException($"Không thể tạo thêm câu hỏi cho dạng bài '{patternName}' từ Gemini AI.");
+        string errDetail = apiKeys.Count == 0 && string.IsNullOrWhiteSpace(openAiKey)
+            ? "Chưa cấu hình GEMINI_API_KEY hoặc OPENAI_API_KEY trong hệ thống."
+            : "Các mô hình AI (Gemini / OpenAI) không thể sinh câu hỏi bài tập hoặc kết nối mạng bị gián đoạn.";
+        throw new InvalidOperationException($"Không thể tạo thêm câu hỏi cho dạng bài '{patternName}' từ AI: {errDetail}.");
     }
 
 
