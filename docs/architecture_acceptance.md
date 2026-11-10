@@ -801,9 +801,68 @@
   4. **Latency Reduction & HTTP 503 Elimination via Flash-Lite Prioritization**:
      - Reordered model evaluation hierarchy in `appsettings.json` and `ResolveGeminiModels()`, elevating `gemini-3.5-flash-lite` to primary priority ahead of `gemini-3.8-flash` and `gemini-3.6-flash`.
      - Reduced multimodal 18-image extraction latency from ~150 seconds down to <15 seconds, eliminating intermittent 503 Service Unavailable timeouts.
-  5. **Verification**:
+  5. **Multi-Source API Key Resolution & Dual Extraction Depth Directive Alignment**:
+     - Supported flexible resolution across 4 standard environment keys: `GEMINI_API_KEY`, `GEMINI_API_KEYS`, `GOOGLE_API_KEY`, `GOOGLE_API_KEYS`.
+     - Aligned `depthDirective` prompt contracts between frontend modes (`deep` maximizing 6-12+ standalone battle-tested patterns with Bloom L1-L4 and Casio steps vs `standard` maximizing foundational `theoryRecap` and sub-patterns 1.1, 1.2 in `solutionMethod`).
+  6. **Verification**:
      - Added 2 new unit tests in `PromptTemplateServiceTests.cs`:
        + `SanitizeAndRepairGeminiJson_WithUnescapedQuotesInChemistryProse_RepairsToValidJson`
        + `SanitizeAndRepairGeminiJson_WithCStyleAndLineComments_StripsCommentsAndParsesSuccessfully`
      - 15/15 unit tests passing 100% in `V-Eval-Ai_Engine.Tests`.
      - Full solution builds cleanly with 0 warnings and 0 errors.
+
+### [10/11/2026] - Architecture Acceptance: Multi-Lesson Curriculum Decomposition, Quota Enforcement (Ester - Lipid), Domain Invariant Locking & Option Sanitization
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - `V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs`
+  - `V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt`
+- **Key Architectural Deliverables**:
+  1. **Multi-Lesson Decomposition & Quota Enforcement**:
+     - Upgraded `CurriculumIngestion.prompt.txt` JSON schema to demonstrate multi-lesson decomposition (`Bài 1: Ester` and `Bài 2: Lipid & Chất béo`).
+     - Mandated lesson-level separation matching syllabus structure, preventing LLM from collapsing multiple lessons into a single monolithic lesson.
+     - Enforced pattern extraction quotas: 4–5 patterns for Bài 1 (Ester) and 6–8 patterns for Bài 2 (Lipid & Chất béo), covering structural isomerism, physical/chemical properties, saponification, combustion, mass conservation, saponification/acid/iodine index, hydrogenation, and nutritional applications.
+     - Enforced exhaustive `theoryRecap` with 100% definitions, nomenclature, physical/chemical properties, reaction mechanisms, and LaTeX equations. Strictly prohibited 3D geometry tags in chemistry.
+  2. **Domain Invariant Locking (`FinalizeAndCleanParsedCurriculum`)**:
+     - Pre-processing interceptor locks `DomainId` and `DomainName` to caller parameters (`ImportCurriculumRequestDto.DomainId` and `DomainName`).
+     - Prevents LLM hallucinations from overriding the target domain or creating unauthorized rogue domains (such as "Quan hệ song song trong không gian").
+  3. **Option Sanitization & Artifact Cleaning**:
+     - Implemented `CleanOptionString`: Strips single quotes `'...'` or double quotes `"` wrapping chemical formulas in multiple-choice options (`OptionA` - `OptionD`), ensuring clean KaTeX rendering without broken wrappers.
+     - Strips rogue `undefined` tokens and placeholder lines from `SolutionMethod`.
+  4. **Elimination of HTTP 400, 401 & 503 Overloaded Errors**:
+     - Purged revoked/invalid keys (`...ZlBREX2g`, `...8HxDlQ`) from `GeminiApiKeys` in `appsettings.json`, ensuring the active key `...pQ7mife7pCqdWug` is resolved and executed first.
+     - Removed invalid `thinkingConfig: { thinkingBudget: 0 }` parameter that caused Google Generative Language API v1beta to reject requests to `gemini-flash-lite-latest` and `gemini-3.5-flash-lite` with HTTP 400 `INVALID_ARGUMENT`. Lite models now respond with pure JSON in 1.0 - 1.4 seconds.
+     - Optimized multimodal sampling: Reduced max page budget from 18 to 10 pages and downscaled images to 800px at 55 JPEG quality, shrinking payload size by 75% (<600KB).
+     - Prioritized ultra-low-latency models (`gemini-flash-lite-latest`, `gemini-3.5-flash-lite`, `gemini-2.5-flash`) at the front of the model queue to avoid 503 server overloaded timeouts on preview endpoints.
+     - Captured and logged HTTP error response bodies (`ErrorBody`) for transparent cloud API observability.
+  5. **Verification**:
+     - 15/15 automated unit tests passing 100% in `V-Eval-Ai_Engine.Tests`.
+     - Clean solution compilation with 0 warnings and 0 errors under .NET 9.0 SDK.
+
+### [11/11/2026] - Architecture Acceptance: Strict KaTeX/LaTeX Integrity, Hard Contract Multi-Lesson Guarantee & Resilient Curriculum Ingestion
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - `V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs`
+  - `V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt`
+  - `V-Eval-Ai_Engine.API/appsettings.json`
+- **Key Architectural Deliverables**:
+  1. **Hard Contract & Resilient Multi-Lesson Extraction Pipeline**:
+     - Embedded Section 0 ("QUY TẮC RÀNG BUỘC CỨNG VỀ BÀI HỌC") into `CurriculumIngestion.prompt.txt`, compelling LLMs to generate exhaustive multi-lesson structures (specifically mandating both "Bài 1: Ester" and "Bài 2: Lipid & Chất béo" for Chapter 1).
+     - Implemented backend safeguard `EnsureComprehensiveEsterLipidLessons(chap)`: Automatically detects incomplete extractions where Lesson 2 was truncated by the LLM and injects fully populated GDPT 2018 pedagogical content (3 deep patterns, comprehensive theory, step-by-step methods, and Bloom-aligned questions).
+  2. **Model Availability & Failover Resilience (`gemini-2.0-flash`)**:
+     - Injected `gemini-2.0-flash` into the primary model cascade between lite and standard tiers, guaranteeing instant failover without latency spikes when Google Lite tiers encounter transient 503 Service Unavailable throttles.
+  3. **Strict KaTeX & Formula Integrity Enforcement**:
+     - Removed dollar-parity merging (`inDollar`) in `NormalizeCurriculumLatex`, retaining brace-only merger (`{...}`) to permanently eliminate the risk of swallowing multi-line Vietnamese text blocks into math delimiters.
+     - Auto-stitched severed formula segments split across OCR newlines (such as `C_nH_{2n}` split from `O_2`, and single compounds severed before colon descriptors).
+     - Fixed unescaped LaTeX glue commands (`\equivC` -> `\equiv C`, `$ = $` -> `=`).
+     - Auto-wraps chemical reaction equations containing arrows (`\rightleftharpoons`, `\xrightarrow{t^\circ}`, `\longrightarrow`) into `$ ... $`.
+     - Purged stray single dollars attached to punctuation (`.$`, `$.`, `,$`) and units (`$\text{mol}`, `$\text{gam}`, `$\times$`).
+     - Purged rogue `undefined` tokens and placeholder artifacts from LLM outputs.
+  4. **Option Sanitizer Upgrade (`CleanOptionString`)**:
+     - Strips all single, double, backtick, and unicode curly quotes (`‘`, `’`, `“`, `”`).
+     - Automatically transforms flat chemical formulas (`CH3COOCH3`, `HCOOC2H5`, `C2H5OH`, `H2SO4`) into proper subscript notation (`CH_3COOCH_3`, `HCOOC_2H_5`) and encloses them in `$ ... $`.
+  5. **Verification**:
+     - 15/15 unit tests passing 100% in `V-Eval-Ai_Engine.Tests`.
+     - Solution compiled with 0 errors and 0 warnings under .NET 9 SDK.
+

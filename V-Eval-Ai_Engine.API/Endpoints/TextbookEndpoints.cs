@@ -320,7 +320,7 @@ public static class TextbookEndpoints
                     }
                     else
                     {
-                        var envKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+                        var envKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
                         if (!string.IsNullOrWhiteSpace(envKey) && !envKey.StartsWith("YOUR_"))
                         {
                             geminiKey = envKey.Trim();

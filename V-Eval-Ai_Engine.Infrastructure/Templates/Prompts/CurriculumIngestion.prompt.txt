@@ -4,26 +4,58 @@ Miền ({{domainName}}) -> Các Chương -> Các Bài học -> {{domainScope}}.
 
 {{depthDirective}}
 
-QUY TẮC BẮT BUỘC VỀ VÍ DỤ MINH HỌA, BÀI MẪU & NGÂN HÀNG CÂU HỎI (MANDATORY EXAMPLES & SAMPLE PROBLEMS):
-1. PHÂN BIỆT RÕ VÀ TỐI ĐA HÓA CÁC DẠNG BÀI (MAXIMIZE PATTERNS): Quét toàn bộ tài liệu để bóc tách TOÀN BỘ các dạng bài xuất hiện (từ Dạng 1 đến Dạng N). Đặt tên dạng bài rõ ràng: 'Dạng [Số]: [Tên dạng bài chi tiết]'. TUYỆT ĐỐI KHÔNG tóm tắt gộp chỉ 2-3 dạng bài sơ sài. Đối với tài liệu chuyên đề toàn diện (từ 10 đến 50+ trang như chuyên đề Hóa học Ester - Lipid, Hàm số...), BẮT BUỘC trích xuất từ 6 đến 12+ dạng bài cốt lõi bao quát trọn vẹn mọi phần lý thuyết, phản ứng, bài toán định lượng và trắc nghiệm.
+QUY TẮC BẮT BUỘC VỀ BÀI HỌC, DẠNG BÀI, VÍ DỤ MINH HỌA & BÀI TOÁN MẪU (MANDATORY LESSONS, PATTERNS & SAMPLES):
+0. QUY TẮC RÀNG BUỘC CỨNG VỀ BÀI HỌC (HARD CONTRACT - BẮT BUỘC ĐỦ TẤT CẢ CÁC BÀI HỌC):
+   - MẢNG `lessons` BẮT BUỘC PHẢI CHỨA TẤT CẢ CÁC BÀI HỌC ĐƯỢC ĐỀ CẬP TRONG TÀI LIỆU HOẶC CHUẨN SGK GDPT 2018 CỦA CHƯƠNG ĐÓ.
+   - VỚI CHUYÊN ĐỀ "ESTER - LIPID": BẮT BUỘC PHẢI CÓ TỐI THIỂU 2 BÀI HỌC ĐỘC LẬP TRONG MẢNG `lessons`:
+     * Bài học 1: "Bài 1: Ester" (với đầy đủ các dạng bài về Este: Khái niệm, Đồng phân - Danh pháp, Tính chất vật lý & hóa học, Hiệu suất este hóa...)
+     * Bài học 2: "Bài 2: Lipid & Chất béo" (với đầy đủ các dạng bài về Chất béo: Khái niệm & cấu tạo lipid/chất béo, Phản ứng xà phòng hóa & bảo toàn khối lượng, Bài toán đốt cháy & hydro hóa...)
+   - TUYỆT ĐỐI KHÔNG ĐƯỢC KẾT THÚC JSON SAU BÀI 1. BẮT BUỘC PHẢI SINH TIẾP BÀI 2 VÀ CÁC DẠNG BÀI CỦA BÀI 2 TRƯỚC KHI ĐÓNG JSON. NẾU THIẾU BÀI 2 LÀ LỖI NGHIÊM TRỌNG!
+
+1. BẮT BUỘC BÓC TÁCH TẤT CẢ CÁC BÀI HỌC VÀ TỐI ĐA HÓA CÁC DẠNG BÀI (MAXIMIZE LESSONS & PATTERNS):
+   - PHÂN TÁCH BÀI HỌC (MULTI-LESSON EXTRACTION): Quét toàn bộ tài liệu để nhận diện TẤT CẢ các Bài học riêng biệt trong chương/chuyên đề:
+     * Ví dụ: Chuyên đề "CHƯƠNG 1: ESTER - LIPID" BẮT BUỘC phân tách thành 2 Bài học riêng biệt trong JSON:
+       + "Bài 1: Ester" (Este)
+       + "Bài 2: Lipid & Chất béo" (Lipit - Chất béo)
+     * TUYỆT ĐỐI KHÔNG gộp các bài học khác nhau thành 1 bài duy nhất!
+   - TỐI ĐA HÓA SỐ LƯỢNG DẠNG BÀI (PATTERNS):
+     * Nếu là chế độ Chuyên sâu ĐGNL (TỐI ĐA HÓA CÁC DẠNG BÀI): Bóc tách tối đa các dạng bài thực chiến độc lập (từ 6 đến 12+ dạng bài cho tài liệu 10-50+ trang), đặt tên rõ ràng 'Dạng [Số]: [Tên dạng bài chi tiết]'.
+       + Bài 1 (Ester): Bóc tách từ 4 đến 5 dạng bài thực chiến (Đồng phân - Danh pháp, Tính chất vật lý & hóa học, Phản ứng thủy phân & xà phòng hóa, Phản ứng đốt cháy ester, Bài toán điều chế & hiệu suất este hóa).
+       + Bài 2 (Lipid & Chất béo): BẮT BUỘC bóc tách đủ 6 đến 8 dạng bài chi tiết (Khái niệm & Cấu tạo lipid/triglyceride, Tính chất vật lý & trạng thái chất béo, Phản ứng xà phòng hóa chất béo, Bảo toàn khối lượng xà phòng hóa, Chỉ số xà phòng hóa/chỉ số acid/chỉ số iot, Đốt cháy chất béo & bảo toàn nguyên tố, Phản ứng hydro hóa chất béo lỏng, Ứng dụng & vai trò dinh dưỡng).
+     * Nếu là chế độ Tiêu chuẩn: Tinh gọn thành các Dạng bài trọng tâm lớn theo mục lục, NHƯNG phần lý thuyết `theoryRecap` phải cực kỳ đầy đủ, sâu sắc và toàn diện (100% định nghĩa, công thức tổng quát, danh pháp, tính chất vật lý, cơ chế phản ứng, phương trình hóa học bằng LaTeX chuẩn), và phần phương pháp giải `solutionMethod` bắt buộc phân rã chi tiết thành nhiều Dạng con (Dạng 1.1, Dạng 1.2...).
 2. BẮT BUỘC ĐỦ 4 KHỐI NỘI DUNG SƯ PHẠM KÈM VÍ DỤ VÀ BÀI TOÁN MẪU:
-   - `theoryRecap`: Lý thuyết nền tảng SGK, định lý/khái niệm cốt lõi, công thức KaTeX đặt trong $...$ (nếu có). Kèm theo '### 📌 Ví dụ minh họa SGK:' (Trích xuất ví dụ/ngữ liệu từ tài liệu có phân tích và lời giải ngắn gọn).
+   - `theoryRecap`: Lý thuyết nền tảng SGK toàn diện, định lý/khái niệm cốt lõi, công thức KaTeX đặt trong $...$, phương trình hóa học viết bằng LaTeX chuẩn. Kèm theo '### 📌 Ví dụ minh họa SGK:' (Trích xuất ví dụ/ngữ liệu từ tài liệu có phân tích và lời giải ngắn gọn).
    - `solutionMethod`: Quy trình 3-4 bước giải / làm bài: 'Bước 1: ...', 'Bước 2: ...', 'Bước 3: ...'. Kèm theo:
-     * '{{sampleHeading}}' (Bài mẫu có phân tích/giải từng bước).
+     * '{{sampleHeading}}' (Bài toán mẫu áp dụng phương pháp có đề bài, phân tích và hướng dẫn giải từng bước chi tiết, đầy đủ số liệu và đáp số).
      * '### ⚠️ Các bẫy đề thi ĐGNL thường gặp:' (1-2 bẫy đề thi hay gặp).
      * '{{tipHeading}}' ({{tipGuideline}}).
    - `videoUrl`: null, `durationSeconds`: 600.
    - `questions`: MỖI DẠNG BÀI CÓ TỪ 2 ĐẾN 3 CÂU HỎI TRẮC NGHIỆM ĐẠI DIỆN CÁC CẤP ĐỘ BLOOM (L1/L2 -> L3/L4):
      * Câu 1: [L1 - Nhận biết / L2 - Thông hiểu] Câu hỏi lý thuyết, khái niệm hoặc ví dụ áp dụng trực tiếp.
      * Câu 2: [L3 - Vận dụng / L4 - Vận dụng cao] Bài toán vận dụng tổng hợp, thực tế hoặc phân loại học sinh (kèm hình 3D/2D nếu là hình học/hàm số).
-     Mỗi câu gồm: difficultyLevel (1-4), contentLatex, optionA, optionB, optionC, optionD, correctOption ('A'|'B'|'C'|'D'), explanation (giải súc tích).
-3. QUY TẮC MINH HỌA TOÁN HỌC & CÔNG THỨC KHOA HỌC:
+     * Mỗi câu gồm: difficultyLevel (1-4), contentLatex, optionA, optionB, optionC, optionD, correctOption ('A'|'B'|'C'|'D'), explanation (giải súc tích).
+     * TUYỆT ĐỐI KHÔNG bọc các phương án optionA, optionB, optionC, optionD trong dấu nháy đơn '...'. Hãy ghi nội dung trực tiếp (ví dụ: "optionA": "HCOOC_2H_5").
+3. QUY TẮC BẮT BUỘC VỀ ĐỊNH DẠNG KATEX & CÔNG THỨC KHOA HỌC (STRICT KATEX & LATEX INTEGRITY):
+   - BẮT BUỘC BỌC MỌI CÔNG THỨC VÀ BIỂU THỨC TRONG CẶP DẤU $...$ HOẶC $$...$$:
+     * Mọi công thức tổng quát, công thức phân tử, công thức cấu tạo, điều kiện toán học (như $C_nH_{2n}O_2$, $n \ge 2$, $CH_3COOC_2H_5$, $C_4H_8O_2$, $H_2SO_4$, $CO_2$, $H_2O$) BẮT BUỘC PHẢI BỌC TRỌN VẸN trong cặp dấu $...$.
+     * Mọi phương trình phản ứng hóa học (có mũi tên thuận nghịch \rightleftharpoons hoặc 1 chiều \xrightarrow) BẮT BUỘC BỌC TRỌN VẸN cả phương trình trong $$...$$ hoặc $...$, ví dụ:
+       $$\text{RCOOR}' + \text{NaOH} \xrightarrow{t^\circ} \text{RCOONa} + \text{R}'\text{OH}$$
+       $$\text{CH}_3\text{COOH} + \text{C}_2\text{H}_5\text{OH} \rightleftharpoons \text{CH}_3\text{COOC}_2\text{H}_5 + \text{H}_2\text{O}$$
+   - TUYỆT ĐỐI CẤM XUỐNG DÒNG \n Ở GIỮA CÔNG THỨC LATEX:
+     * Cấm ngắt dòng bên trong \frac{...}{...}, \text{...} hoặc giữa các dấu ngoặc { }.
+     * Mọi công thức tính toán số học/hóa học (như tính hiệu suất $H\% = \frac{m_{\text{thực tế}}}{m_{\text{lý thuyết}}} \times 100\%$ hoặc số mol $n = \frac{m}{M}$) BẮT BUỘC phải nằm gọn trọn vẹn trên 1 dòng duy nhất.
+   - TUYỆT ĐỐI CẤM DẤU $ LẺ / UNBALANCED DOLLARS:
+     * Không bao giờ để sót dấu $ đơn độc ở cuối dòng (như 'A. HCOOC_2H_5$'). Cặp dấu $ luôn phải có mở $ và đóng $.
+   - ĐỊNH DẠNG PHƯƠNG ÁN TRẮC NGHIỆM (OPTION A-D):
+     * Các phương án optionA, optionB, optionC, optionD chứa công thức hóa học phải viết có chỉ số dưới chuẩn KaTeX (ví dụ: "$CH_3COOCH_3$", "$C_2H_5OH$", "$HCOOC_2H_5$").
+     * TUYỆT ĐỐI KHÔNG bọc dấu nháy đơn '...' quanh nội dung đáp án (như '25,00%').
    - ĐỐI VỚI MÔN TOÁN HỌC (Hình học không gian, Khảo sát hàm số):
      KỂ CẢ KHI TÀI LIỆU/ĐỀ BÀI CHỈ MÔ TẢ HÌNH HỌC, HÀM SỐ BẰNG CHỮ: Tự động tính toán và nhúng các khối thẻ cấu trúc [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào ví dụ SGK (Khối 1), bài toán mẫu (Khối 2) và câu hỏi trắc nghiệm (Khối 4).
    - ĐỐI VỚI CÁC MÔN KHOA HỌC TỰ NHIÊN (Hóa học, Vật lý, Sinh học) VÀ CÁC MÔN KHÁC:
      Biểu diễn phương trình phản ứng hóa học hoặc công thức bằng LaTeX chuẩn (ví dụ: `\text{CH}_3\text{COOH} + \text{C}_2\text{H}_5\text{OH} \rightleftharpoons \text{CH}_3\text{COOC}_2\text{H}_5 + \text{H}_2\text{O}`, `\text{CO}_2`, `\text{H}_2\text{O}`). TUYỆT ĐỐI KHÔNG chèn mô hình hình học không gian (chóp, tứ diện...) vào các bài học Hóa học/Sinh học/Văn học.
    
    - [A] ĐỐI VỚI HÌNH HỌC KHÔNG GIAN 3D [MATH_GRAPH_3D]:
+     (Chỉ dùng cho môn Toán học khi có hình học không gian):
      [MATH_GRAPH_3D]
      title: Cho tứ diện ABCD
      shapeType: tetrahedron
@@ -36,8 +68,6 @@ QUY TẮC BẮT BUỘC VỀ VÍ DỤ MINH HỌA, BÀI MẪU & NGÂN HÀNG CÂU H
 
    - [B] ĐỐI VỚI BẢNG BIẾN THIÊN [VARIATION_TABLE] (Chuẩn SGK GDPT 2018):
      Khi đề bài hoặc bài giảng nói về Bảng biến thiên (tính đơn điệu, cực trị, GTLN/GTNN, tiệm cận):
-     (LƯU Ý: Nếu đã dùng [VARIATION_TABLE] thì TUYỆT ĐỐI KHÔNG sinh thêm [MATH_GRAPH]! Mỗi thuộc tính BẮT BUỘC xuống dòng rõ ràng):
-     * Hàm đa thức liên tục (bậc ba, trùng phương bậc bốn, bậc hai):
      [VARIATION_TABLE]
      title: Bảng biến thiên hàm số y = f(x)
      x: -\infty | x_1 | x_2 | +\infty
@@ -45,24 +75,15 @@ QUY TẮC BẮT BUỘC VỀ VÍ DỤ MINH HỌA, BÀI MẪU & NGÂN HÀNG CÂU H
      y: -\infty | y_max | y_min | +\infty
      dir: up | down | up
      [/VARIATION_TABLE]
-     * Hàm phân thức hữu tỉ có tiệm cận đứng / vạch kép (||):
-     [VARIATION_TABLE]
-     title: Bảng biến thiên hàm số phân thức y = \frac{ax+b}{cx+d}
-     x: -\infty | x_0 | +\infty
-     y': - | || | -
-     y: y_asymp | -\infty || +\infty | y_asymp
-     dir: down || down
-     [/VARIATION_TABLE]
 
    - [C] ĐỐI VỚI ĐỒ THỊ HÀM SỐ 2D [MATH_GRAPH]:
-     (Chỉ dùng khi đề bài yêu cầu vẽ hoặc nhận dạng ĐỒ THỊ hình vẽ cụ thể, KHÔNG dùng chung với [VARIATION_TABLE]):
      [MATH_GRAPH]
      title: Đồ thị hàm số y = f(x)
      formula: y = x^3 - 3*x + 1
      type: cubic
      params: a=1,b=0,c=-3,d=1
      [/MATH_GRAPH]
-     (Các type hợp lệ: cubic [bậc ba y=ax^3+bx^2+cx+d, params: a,b,c,d], quartic [bậc bốn trùng phương y=ax^4+bx^2+c, params: a,b,c], rational [phân thức bậc 1/1 y=(ax+b)/(cx+d), params: a,b,c,d], rational_21 [phân thức bậc 2/1 y=(ax^2+bx+c)/(dx+e), params: a,b,c,d,e], quadratic [parabol y=ax^2+bx+c, params: a,b,c], custom [biểu thức tùy ý expr=...]).
+
 4. ĐẦU RA JSON BẮT BUỘC:
 Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
 {
@@ -70,25 +91,25 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
   "domainName": "{{domainName}}",
   "chapters": [
     {
-      "chapterName": "Chương: [Tên chương / Tên chuyên đề]",
-      "weight": 0.35,
+      "chapterName": "Chương [Số]: [Tên chương / Tên chuyên đề bao quát]",
+      "weight": 0.4,
       "lessons": [
         {
-          "lessonName": "Bài 1: [Tên bài học 1]",
-          "weight": 0.1,
+          "lessonName": "Bài 1: [Tên bài học thứ nhất theo tài liệu, ví dụ: Ester]",
+          "weight": 0.2,
           "patterns": [
             {
-              "patternName": "Dạng 1: [Tên dạng bài 1]",
+              "patternName": "Dạng 1: [Tên dạng bài 1 chi tiết]",
               "weight": 0.05,
               "classification": "...",
               "coreSkill": "...",
-              "theoryRecap": "[Định lý & Công thức SGK]\n\n### 📌 Ví dụ minh họa SGK:\n**Ví dụ:** Cho hình chóp S.ABCD có đáy là hình vuông, SA vuông góc đáy...\n**Phân tích & Lời giải:** ...\n\n[MATH_GRAPH_3D]\ntitle: Cho hình chóp S.ABCD\nshapeType: pyramid_rect_sa\ndimensions: h=4,w=4,d=3.5,r=3,planeD=1.8\nvertices: S:S(0,0,4);A:A(0,0,0);B:B(4,0,0);C:C(4,3.5,0);D:D(0,3.5,0)\nextraPoints: M:name=M:edge=S,C:ratio=0.5:color=#ec4899\nauxLines: M-A:dash=2:color=#ef4444\n[/MATH_GRAPH_3D]",
-              "solutionMethod": "Bước 1: ...\nBước 2: ...\n\n{{sampleHeading}}\n**{{sampleKey}}** Cho tứ diện ABCD...\n**Hướng dẫn giải:** ...\n\n[MATH_GRAPH_3D]\ntitle: Cho tứ diện ABCD\nshapeType: tetrahedron\ndimensions: h=4,w=4,d=3.5,r=3,planeD=1.8\nvertices: A:A(1.3,1.2,4);B:B(0,0,0);C:C(4,0,0);D:D(2,3.5,0)\nextraPoints: M:name=M:edge=A,B:ratio=0.5:color=#ec4899\nauxLines: M-C:dash=0:color=#ef4444\n[/MATH_GRAPH_3D]\n\n### ⚠️ Các bẫy đề thi:\n...\n\n{{tipHeading}}\n...",
+              "theoryRecap": "[Lý thuyết nền tảng SGK toàn diện, định nghĩa, công thức tổng quát, danh pháp, tính chất vật lý và hóa học đặc trưng]\n\n### 📌 Ví dụ minh họa SGK:\n**Ví dụ:** ...\n**Phân tích & Lời giải:** ...",
+              "solutionMethod": "Bước 1: ...\nBước 2: ...\n\n{{sampleHeading}}\n**{{sampleKey}}** [Đề bài bài mẫu áp dụng phương pháp]\n**Hướng dẫn giải:** [Lời giải chi tiết từng bước]\n\n### ⚠️ Các bẫy đề thi:\n...\n\n{{tipHeading}}\n...",
               "durationSeconds": 600,
               "questions": [
                 {
                   "difficultyLevel": 1,
-                  "contentLatex": "[Câu 1 - Nhận biết] Cho hình chóp S.ABCD...",
+                  "contentLatex": "[Câu 1 - Nhận biết] ...",
                   "optionA": "...",
                   "optionB": "...",
                   "optionC": "...",
@@ -98,7 +119,7 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
                 },
                 {
                   "difficultyLevel": 2,
-                  "contentLatex": "[Câu 2 - Thông hiểu]...",
+                  "contentLatex": "[Câu 2 - Thông hiểu] ...",
                   "optionA": "...",
                   "optionB": "...",
                   "optionC": "...",
@@ -108,22 +129,12 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
                 },
                 {
                   "difficultyLevel": 3,
-                  "contentLatex": "[Câu 3 - Vận dụng] Cho hình chóp S.ABCD có đáy là hình thang...\n\n[MATH_GRAPH_3D]\ntitle: Cho hình chóp S.ABCD\nshapeType: pyramid_rect_sa\ndimensions: h=4,w=4,d=3.5,r=3,planeD=1.8\nvertices: S:S(0,0,4);A:A(0,0,0);B:B(4,0,0);C:C(4,3.5,0);D:D(0,3.5,0)\nextraPoints: M:name=M:edge=C,D:ratio=0.5:color=#ec4899\nauxLines: B-M:dash=2:color=#ef4444;A-C:dash=2:color=#0f172a\n[/MATH_GRAPH_3D]",
+                  "contentLatex": "[Câu 3 - Vận dụng] ...",
                   "optionA": "...",
                   "optionB": "...",
                   "optionC": "...",
                   "optionD": "...",
                   "correctOption": "C",
-                  "explanation": "Lời giải chi tiết từng bước: Giao tuyến là SI.\n\n[MATH_GRAPH_3D]\ntitle: Thiết diện S.ABCD\nshapeType: pyramid_rect_sa\ndimensions: h=4,w=4,d=3.5,r=3,planeD=1.8\nvertices: S:S(0,0,4);A:A(0,0,0);B:B(4,0,0);C:C(4,3.5,0);D:D(0,3.5,0)\nextraPoints: M:name=M:edge=C,D:ratio=0.5:color=#ec4899;I:name=I:edge=A,C:ratio=0.5:color=#ef4444\nauxLines: S-I:dash=0:color=#ef4444;B-M:dash=2:color=#0f172a\n[/MATH_GRAPH_3D]"
-                },
-                {
-                  "difficultyLevel": 4,
-                  "contentLatex": "[Câu 4 - Vận dụng cao]...",
-                  "optionA": "...",
-                  "optionB": "...",
-                  "optionC": "...",
-                  "optionD": "...",
-                  "correctOption": "D",
                   "explanation": "..."
                 }
               ]
@@ -156,6 +167,27 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
                   "optionD": "...",
                   "correctOption": "B",
                   "explanation": "..."
+                }
+              ]
+            },
+            {
+              "patternName": "Dạng 3: [Tên dạng bài 3 chi tiết]",
+              "weight": 0.05,
+              "classification": "...",
+              "coreSkill": "...",
+              "theoryRecap": "...",
+              "solutionMethod": "...",
+              "durationSeconds": 600,
+              "questions": [
+                {
+                  "difficultyLevel": 2,
+                  "contentLatex": "...",
+                  "optionA": "...",
+                  "optionB": "...",
+                  "optionC": "...",
+                  "optionD": "...",
+                  "correctOption": "A",
+                  "explanation": "..."
                 },
                 {
                   "difficultyLevel": 3,
@@ -164,23 +196,19 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
                   "optionB": "...",
                   "optionC": "...",
                   "optionD": "...",
-                  "correctOption": "C",
-                  "explanation": "..."
-                },
-                {
-                  "difficultyLevel": 4,
-                  "contentLatex": "...",
-                  "optionA": "...",
-                  "optionB": "...",
-                  "optionC": "...",
-                  "optionD": "...",
-                  "correctOption": "D",
+                  "correctOption": "B",
                   "explanation": "..."
                 }
               ]
-            },
+            }
+          ]
+        },
+        {
+          "lessonName": "Bài 2: [Tên bài học thứ hai theo tài liệu, ví dụ: Lipid & Chất béo]",
+          "weight": 0.2,
+          "patterns": [
             {
-              "patternName": "Dạng 3: [Tên dạng bài 3 chi tiết]",
+              "patternName": "Dạng 1: [Tên dạng bài 1 của Bài 2]",
               "weight": 0.05,
               "classification": "...",
               "coreSkill": "...",
@@ -209,6 +237,27 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
                   "explanation": "..."
                 }
               ]
+            },
+            {
+              "patternName": "Dạng 2: [Tên dạng bài 2 của Bài 2]",
+              "weight": 0.05,
+              "classification": "...",
+              "coreSkill": "...",
+              "theoryRecap": "...",
+              "solutionMethod": "...",
+              "durationSeconds": 600,
+              "questions": [
+                {
+                  "difficultyLevel": 2,
+                  "contentLatex": "...",
+                  "optionA": "...",
+                  "optionB": "...",
+                  "optionC": "...",
+                  "optionD": "...",
+                  "correctOption": "C",
+                  "explanation": "..."
+                }
+              ]
             }
           ]
         }
@@ -222,7 +271,7 @@ TÀI LIỆU CẦN BÓC TÁCH:
 
 LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX (CRITICAL JSON RULES):
 0. TUYỆT ĐỐI KHÔNG SINH CHÚ THÍCH (COMMENTS): Tuyệt đối không sinh bất kỳ dấu chú thích /*...*/ hay //... bên trong hoặc bên ngoài JSON. JSON phải tuân thủ nghiêm ngặt chuẩn RFC 8259.
-1. TRÍCH XUẤT 100% DỮ LIỆU THẬT & TỐI ĐA HÓA DẠNG BÀI: Tiếp tục trích xuất đầy đủ Dạng 4, Dạng 5, Dạng 6, Dạng 7, Dạng 8, Dạng 9... cho đến khi bao quát 100% tất cả các phần lý thuyết, bài toán định lượng và bài tập trong tài liệu! Với tài liệu toàn diện từ 10 đến 50+ trang, BẮT BUỘC có tối thiểu từ 6 đến 12+ dạng bài! TUYỆT ĐỐI KHÔNG HARDCODE MẪU CỐ ĐỊNH. ĐẶC BIỆT: Đối với các bài toán hình học không gian (chóp, tứ diện, lăng trụ, hộp), đồ thị hàm số hoặc bảng biến thiên được mô tả bằng chữ trong tài liệu (kể cả khi file PDF gốc không có hình vẽ in sẵn), BẮT BUỘC đóng vai trò máy dựng hình, tự động tính toán tọa độ và nhúng thẻ [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào ví dụ SGK (Khối 1), bài toán mẫu (Khối 2) và câu hỏi trắc nghiệm (Khối 4)!
+1. TRÍCH XUẤT 100% DỮ LIỆU THẬT THEO ĐÚNG CHỈ THỊ ĐỘ SÂU: Tiếp tục trích xuất đầy đủ các Bài học và Dạng bài cho đến khi bao quát 100% tất cả các phần lý thuyết, bài toán định lượng và bài tập trong tài liệu theo đúng chỉ thị độ sâu đã chọn. TUYỆT ĐỐI KHÔNG HARDCODE MẪU CỐ ĐỊNH. ĐẶC BIỆT: Với môn Toán hình học không gian hoặc khảo sát hàm số, tự động tính toán tọa độ và nhúng thẻ [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE]. Với các môn Khoa học tự nhiên (Hóa học, Vật lý, Sinh học), viết phương trình và công thức bằng LaTeX chuẩn, TUYỆT ĐỐI KHÔNG sinh mô hình 3D cho các môn Hóa học/Văn học/Sinh học.
 2. ESCAPE LATEX TRONG JSON: Mọi ký tự gạch chéo ngược LaTeX BẮT BUỘC phải dùng hai gạch chéo ngược (double backslash): \\frac, \\sqrt, \\Delta, \\{, \\}, \\%, \\$, \\alpha, \\beta, \\times, \\text... Tuyệt đối không dùng 1 gạch chéo ngược đơn độc.
-3. QUY TẮC DẤU NGOẶC KÉP TRÍCH DẪN: TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng " bên trong nội dung văn bản (đề bài, lý thuyết, giải thích, phương án A-D). Nếu cần trích dẫn thuật ngữ, tên chất hay công thức (ví dụ: 'Aspirin', 'Xà phòng hóa', 'Fe', 'Cu'), BẮT BUỘC dùng dấu nháy đơn '...' thay vì ngoặc kép.
+3. QUY TẮC NỘI DUNG VĂN BẢN VÀ DẤU NHÁY: TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng " bên trong nội dung văn bản JSON. TUYỆT ĐỐI KHÔNG bọc toàn bộ chuỗi phương án optionA, optionB, optionC, optionD trong dấu nháy đơn hay nháy kép (ví dụ: ghi trực tiếp "optionA": "$HCOOC_2H_5$" hoặc "optionA": "25,00%", TUYỆT ĐỐI CẤM ghi "'HCOOC_2H_5'" hay "'25,00%'"). Mọi công thức phân tử, công thức cấu tạo, điều kiện toán học trong nội dung lý thuyết hay đề bài PHẢI được bọc trọn vẹn trong cặp dấu $...$ (ví dụ: $C_nH_{2n}O_2$, $n \ge 2$, $CH_3COOC_2H_5$).
 4. ĐẦU RA HOÀN CHỈNH: Đảm bảo đóng đầy đủ các dấu ngoặc nhọn } và ngoặc vuông ] để JSON hợp lệ 100%. Không sinh bất kỳ đoạn chat giải thích nào ngoài khối JSON.

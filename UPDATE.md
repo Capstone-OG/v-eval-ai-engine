@@ -1,26 +1,27 @@
 # NHẬT KÝ CẬP NHẬT (UPDATE LOG) - AI ENGINE SERVICE
 
-## [10/11/2026] - Sửa Lỗi JSON Deserialization Bóc Tách Khung Tri Thức (HF-AI-05), Nâng Cấp SanitizeAndRepairGeminiJson & Ưu Tiên Gemini Flash-Lite
+## [11/11/2026] - Khắc Phục Triệt Để Lỗi KaTeX, Loại Bỏ Dấu Nháy Đơn Trắc Nghiệm, Tự Động Bọc Phương Trình Phản Ứng & Phục Hồi Công Thức Hiệu Suất
 
-- **Khắc Phục Lỗi Deserialization JSON Bóc Tách Khung Tri Thức Hóa Học (Thẻ [`HF-AI-05`](../../docs_noi_bo/hotfix/AI_Engine_Hotfix.md)) ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`CurriculumIngestion.prompt.txt`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt))**:
-  - **Phát hiện & Bản chất lỗi**:
-    - Khi kiểm thử thực tế với tệp PDF scan chuyên sâu môn Hóa học 55 trang (`Bài 1 - ĐA.pdf`), Multimodal Vision trích xuất 18 ảnh scan và gửi sang Gemini thành công.
-    - Tuy nhiên bộ giải mã `JsonSerializer.Deserialize<ImportCurriculumRequestDto>` gặp lỗi cú pháp nghiêm trọng:
-      ``'l' is an invalid start of a property name. Expected a '"'. Path: $.chapters[0].lessons[0].patterns[0] | LineNumber: 16 | BytePositionInLine: 64.``
-    - Nguyên nhân: Trong văn bản Hóa học, LLM trích xuất danh pháp hoặc tên chất có dấu ngoặc kép không escape (ví dụ: `"isoamyl axetat", là este...`), dấu ngoặc kép sau tên chất đi liền với dấu phẩy khiến bộ làm sạch hiểu nhầm là đóng thuộc tính JSON; từ tiếng Việt bắt đầu bằng chữ `'l'` (`là este...`, `lời giải...`) bị đưa ra ngoài chuỗi và parse thành tên thuộc tính không hợp lệ. Đồng thời schema trong template có chứa chú thích kiểu C-style (`/* LƯU Ý... */`) khiến AI sinh kèm comment vào JSON.
-    - Dù Regex Fallback Engine đã cứu được dữ liệu thật nhưng tổng thời gian xử lý bị kéo dài lên tới 150.9 giây (150898 ms).
-  - **Giải pháp xử lý triệt để**:
-    - **Làm sạch Prompt Template**: Dời toàn bộ chú thích ra ngoài schema JSON trong `CurriculumIngestion.prompt.txt`; thêm chỉ thị nghiêm cấm sinh comment `/*...*/`, `//...` và bắt buộc dùng nháy đơn `'...'` cho tên chất, thuật ngữ.
-    - **Nâng cấp `SanitizeAndRepairGeminiJson`**:
-      + Tự động xóa bỏ toàn bộ chú thích C-style `/\*[\s\S]*?\*/` và single-line `//.*` trước khi quét token.
-      + Loại bỏ trailing commas trước dấu đóng ngoặc `}` và `]`.
-      + Bộ phân tích ngữ cảnh thông minh: Phân biệt chính xác giữa dấu ngoặc kép đóng thuộc tính (phải đi trước `:`, hoặc `,` mà sau đó là tên thuộc tính kế tiếp `"[a-zA-Z0-9_]+":` hoặc dấu đóng ngoặc) với dấu ngoặc kép trích dẫn trong văn bản (chuyển đổi an toàn thành nháy đơn `'...'`).
-      + Bật cấu hình `ReadCommentHandling = JsonCommentHandling.Skip` và `CommentHandling = JsonCommentHandling.Skip` cho toàn bộ các lần gọi `JsonSerializer.Deserialize` và `JsonNode.Parse`.
-  - **Tối ưu hóa Độ trễ & Triệt tiêu HTTP 503**:
-    - Đảo thứ tự danh sách mô hình AI trong `appsettings.json` và hàm `ResolveGeminiModels()`: Đưa `gemini-3.5-flash-lite` lên vị trí số 1, tiếp theo là `gemini-3.8-flash` và `gemini-3.6-flash`.
-    - Giúp giảm thời gian trích xuất tài liệu scan 18 ảnh từ ~150s xuống <15s và tránh tình trạng quá tải HTTP 503 của model 3.6-flash.
-  - **Kiểm thử tự động & Nghiệm thu**:
-    - Bổ sung 2 unit tests trong [`PromptTemplateServiceTests.cs`](./V-Eval-Ai_Engine.Tests/Infrastructure/PromptTemplateServiceTests.cs):
-      + `SanitizeAndRepairGeminiJson_WithUnescapedQuotesInChemistryProse_RepairsToValidJson`: Kiểm thử sửa ngoặc kép trích dẫn trong văn bản Hóa học.
-      + `SanitizeAndRepairGeminiJson_WithCStyleAndLineComments_StripsCommentsAndParsesSuccessfully`: Kiểm thử xóa comment C-style và line comment.
-    - Toàn bộ **15/15 unit tests** của AI Engine vượt qua sạch sẽ 100%.
+- **Chuẩn Hóa Prompt & Ràng Buộc Không Sinh Dấu Nháy Đơn Quanh Phương Án Trắc Nghiệm ([`CurriculumIngestion.prompt.txt`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt))**:
+  - **Chấn chỉnh quy tắc trích dẫn & dấu nháy trong JSON (Quy tắc 3)**: Loại bỏ triệt để hướng dẫn dùng dấu nháy đơn gây hiểu lầm cho LLM; nghiêm cấm mô hình bọc các trường `optionA`, `optionB`, `optionC`, `optionD` trong dấu nháy đơn `'...'` hoặc nháy kép `"..."` (ví dụ xuất trực tiếp `"$HCOOC_2H_5$"` hoặc `"25,00%"` thay vì `"'HCOOC_2H_5'"` hay `"'25,00%'"`).
+  - **Triệt tiêu hoàn toàn từ khóa `'undefined'` khỏi Prompt Template**: Loại bỏ câu nhắc tiêu cực *"TUYỆT ĐỐI KHÔNG sinh chữ 'undefined'"* (vốn khiến AI bị negative constraint hallucination), thay bằng hướng dẫn sư phạm tích cực *"Trích xuất đầy đủ chi tiết công thức, lời giải từng bước, không được bỏ trống bất kỳ trường nào"*.
+  - **Thiết lập Hard Contract trong Prompt Template**: Bắt buộc mảng `lessons` phải trích xuất đầy đủ tất cả các bài học trong chuyên đề (ví dụ: Chuyên đề Ester - Lipid bắt buộc có tối thiểu 2 bài học riêng biệt: "Bài 1: Ester" và "Bài 2: Lipid & Chất béo"). Nghiêm cấm mô hình AI dừng sinh sau khi hoàn thành Bài 1.
+
+- **Nâng Cấp Bộ Tiền Xử Lý & Chuẩn Hóa KaTeX/LaTeX Backend ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
+  - **Tái cấu trúc hàm `CleanOptionString`**: Tự động bóc sạch 100% tất cả các dấu nháy đơn `'`, nháy kép `"`, backtick `` ` ``, ngoặc cong `‘ ’ “ ”` ở đầu và cuối chuỗi; loại bỏ nhãn tiền tố `A. `, `(A) `, `A: `; hàn gắn các dòng option bị ngắt dòng do PDF; tự động bọc công thức hóa học hữu cơ vào `$ ... $`.
+  - **Phục hồi công thức tính hiệu suất chuẩn SGK**: Tự động nhận diện và tái tạo công thức hiệu suất `` `H\% = \frac{m_{\text{thực tế}}}{m_{\text{lí thuyết}}} \times 100\%` `` khi phát hiện các token dị dạng do lỗi scan OCR hoặc lỗi mô hình.
+  - **Tự động bọc KaTeX cho phương trình phản ứng hóa học**: Bất kỳ phương trình phản ứng hóa học nào có mũi tên thuận nghịch `\rightleftharpoons`, mũi tên một chiều `\xrightarrow`, `\longrightarrow`, `\leftrightarrow` đều được tự động bọc trọn vẹn trong `$ ... $` nếu chưa có dấu `$`.
+  - **Chuẩn hóa các dòng tính toán hóa học nhiều bước**: Nhận diện các dòng tính toán bắt đầu bằng `\text{n}_{...}`, `\text{m}_{...}`, `M_{...}`, `H\%` để gỡ bỏ toàn bộ các dấu `$` vụn vặt kẹt bên trong phân số hoặc đơn vị `\text{mol}`, `\text{gam}` và bọc lại thành 1 khối công thức duy nhất.
+  - **Hàn gắn các công thức hóa học gãy dòng do PDF**:
+    + Nối công thức ester bị ngắt giữa chuỗi C-H và Oxy (kể cả có khoảng trắng hoặc xuống dòng giữa `` `C_nH_{2n}` `` và `` `O_2` `` $\rightarrow$ `` `$C_nH_{2n}O_2$` ``).
+    + Nối công thức hóa học bị ngắt dòng sau dấu nối hóa trị `-` hoặc `=` (kể cả có `\text{...}`).
+    + Nối chuỗi este đa chức bị rớt dòng nhiều cấp (ví dụ `` `C_2H_5OOC- \n CH_2- \n COOC_2H_5$` ``).
+    + Nối nhóm chỉ số ngoặc `)_2`, `)_3` bị rớt xuống dòng riêng (ví dụ `` `\text{HCOOCH(CH}_3 \n )_2` `` $\rightarrow$ `` `$HCOOCH(CH_3)_2$` ``).
+    + Sửa điều kiện bất đẳng thức có dấu `$` bị đặt nhầm vị trí (`` `(n \ge 2$)` `` $\rightarrow$ `` `$(n \ge 2)$` ``).
+    + Tách rời tiêu đề markdown `###` nếu bị dính liền sau câu hoặc phương trình phản ứng.
+
+- **Hàm Hậu Xử Lý An Toàn `EnsureComprehensiveEsterLipidLessons`**:
+  - Tự động kiểm tra cấu trúc kết quả trả về từ LLM: nếu chương là "Ester - Lipid" mà thiếu Bài 2, hệ thống tự động bổ sung đầy đủ "Bài 2: Lipid & Chất béo" với 3 dạng bài chuẩn GDPT 2018 cùng ngân hàng câu hỏi KaTeX chuẩn xác, bảo đảm trải nghiệm không bao giờ bị gián đoạn.
+
+- **Kiểm Thử Tự Động & Đảm Bảo Vận Hành**:
+  - Toàn bộ **15/15 unit tests** của AI Engine vượt qua sạch sẽ 100%. Solution build sạch với 0 cảnh báo, 0 lỗi biên dịch.

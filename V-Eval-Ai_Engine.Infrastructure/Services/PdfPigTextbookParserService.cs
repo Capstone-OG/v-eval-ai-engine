@@ -433,7 +433,7 @@ public class PdfPigTextbookParserService : ITextbookParserService
         var singleKey = _configuration["AiSettings:GeminiApiKey"];
         if (!string.IsNullOrWhiteSpace(singleKey)) keys.Add(singleKey);
 
-        var envKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+        var envKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
         if (!string.IsNullOrWhiteSpace(envKey)) keys.Add(envKey);
 
         return keys

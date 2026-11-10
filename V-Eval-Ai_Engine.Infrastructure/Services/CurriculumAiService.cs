@@ -42,12 +42,7 @@ public class CurriculumAiService : ICurriculumAiService
     {
         var keys = new List<string>();
 
-        var keysSection = _configuration.GetSection("AiSettings:GeminiApiKeys").Get<string[]>();
-        if (keysSection != null && keysSection.Length > 0)
-        {
-            keys.AddRange(keysSection);
-        }
-
+        // 1. Ưu tiên khóa chính AiSettings:GeminiApiKey
         var singleOrDelimited = _configuration.GetSection("AiSettings")["GeminiApiKey"];
         if (!string.IsNullOrWhiteSpace(singleOrDelimited))
         {
@@ -55,7 +50,18 @@ public class CurriculumAiService : ICurriculumAiService
             keys.AddRange(splitKeys);
         }
 
-        var envKeys = Environment.GetEnvironmentVariable("GEMINI_API_KEYS") ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+        // 2. Khóa xoay tua dự phòng AiSettings:GeminiApiKeys
+        var keysSection = _configuration.GetSection("AiSettings:GeminiApiKeys").Get<string[]>();
+        if (keysSection != null && keysSection.Length > 0)
+        {
+            keys.AddRange(keysSection);
+        }
+
+        // 3. Biến môi trường hệ thống
+        var envKeys = Environment.GetEnvironmentVariable("GEMINI_API_KEYS") 
+                      ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY")
+                      ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY")
+                      ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEYS");
         if (!string.IsNullOrWhiteSpace(envKeys))
         {
             keys.AddRange(envKeys.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
@@ -233,7 +239,7 @@ public class CurriculumAiService : ICurriculumAiService
         byte[] pdfBytes,
         int targetStart,
         int targetEnd,
-        int maxImages = 18)
+        int maxImages = 10)
     {
         var result = new List<string>();
         try
@@ -296,13 +302,13 @@ public class CurriculumAiService : ICurriculumAiService
                         if (originalBitmap != null)
                         {
                             int maxDim = Math.Max(originalBitmap.Width, originalBitmap.Height);
-                            float scale = maxDim > 960 ? 960f / maxDim : 1.0f;
+                            float scale = maxDim > 800 ? 800f / maxDim : 1.0f;
                             int targetW = (int)(originalBitmap.Width * scale);
                             int targetH = (int)(originalBitmap.Height * scale);
 
                             using var resized = originalBitmap.Resize(new SKImageInfo(targetW, targetH), SKSamplingOptions.Default);
                             using var skImage = SKImage.FromBitmap(resized);
-                            using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, 65);
+                            using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, 55);
                             jpegBytes = encoded.ToArray();
                         }
                     }
@@ -316,7 +322,7 @@ public class CurriculumAiService : ICurriculumAiService
                     if (renderedBitmap != null)
                     {
                         using var skImage = SKImage.FromBitmap(renderedBitmap);
-                        using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, 65);
+                        using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, 55);
                         jpegBytes = encoded.ToArray();
                     }
                 }
@@ -393,7 +399,7 @@ public class CurriculumAiService : ICurriculumAiService
                 if (actualTextChars < 300 && pdfBytes != null)
                 {
                     _logger.LogInformation("Phát hiện tài liệu PDF dạng ảnh scan / không có lớp text số hóa ({Chars} ký tự). Kích hoạt động cơ trích xuất Multimodal Vision AI...", actualTextChars);
-                    pageImagesBase64 = ExtractDownscaledPageImages(pdfBytes, targetStart, targetEnd, maxImages: 18);
+                    pageImagesBase64 = ExtractDownscaledPageImages(pdfBytes, targetStart, targetEnd, maxImages: 10);
                     _logger.LogInformation("Đã trích xuất và tối ưu hóa {Count} trang ảnh scan chất lượng cao cho Multimodal Vision.", pageImagesBase64.Count);
                     extractedText = $"[Tài liệu PDF ảnh scan gồm {totalPagesProcessed} trang. Dữ liệu các trang đã được trích xuất tối ưu hóa hình ảnh và truyền trực tiếp qua kênh Multimodal Vision AI.]";
                 }
@@ -443,14 +449,35 @@ public class CurriculumAiService : ICurriculumAiService
 
         string textSnippet = extractedText.Length > 200000 ? extractedText[..200000] : extractedText;
 
-        string depthDirective = $@"YÊU CẦU BÓC TÁCH CẤU TRÚC TRI THỨC VÀ TỐI ĐA HÓA CÁC DẠNG BÀI (MAXIMIZE PEDAGOGICAL PATTERNS DIRECTIVE):
+        bool isDeep = string.IsNullOrWhiteSpace(extractionDepth) || extractionDepth.Equals("deep", StringComparison.OrdinalIgnoreCase);
+
+        string depthDirective = isDeep
+            ? $@"YÊU CẦU BÓC TÁCH CẤU TRÚC TRI THỨC VÀ TỐI ĐA HÓA CÁC DẠNG BÀI (MAXIMIZE PEDAGOGICAL PATTERNS DIRECTIVE - CHUYÊN SÂU ĐGNL):
 - Phân tích quét TOÀN BỘ nội dung thực tế từ tài liệu thuộc lĩnh vực: {domainName} (Bao gồm cả các môn Khoa học tự nhiên như Hóa học, Vật lý, Sinh học và Toán học).
+- NGUYÊN TẮC BẮT BUỘC PHÂN TÁCH BÀI HỌC (MULTI-LESSON EXTRACTION):
+  + Quét toàn bộ tài liệu để nhận diện TẤT CẢ các Bài học riêng biệt trong chương/chuyên đề.
+  + Ví dụ chuyên đề Ester - Lipid: BẮT BUỘC phân tách thành 2 bài học riêng biệt: 'Bài 1: Ester' và 'Bài 2: Lipid & Chất béo'. TUYỆT ĐỐI KHÔNG gộp thành 1 bài học duy nhất!
 - NGUYÊN TẮC TỐI ĐA HÓA SỐ LƯỢNG DẠNG BÀI (PATTERNS) - TUYỆT ĐỐI KHÔNG BỎ SÓT NỘI DUNG:
   + Quét từ trang đầu đến trang cuối để nhận diện ĐẦY ĐỦ TẤT CẢ các dạng bài xuất hiện trong tài liệu.
   + TUYỆT ĐỐI KHÔNG được tóm tắt gộp hoặc chỉ tạo 2-3 dạng bài sơ sài.
-  + Đối với tài liệu chuyên đề toàn diện / tài liệu dày (từ 10 đến 50+ trang như chuyên đề Ester - Lipid, Hàm số...), BẮT BUỘC nhận diện và bóc tách từ 6 đến 12+ Dạng bài (`patterns`) chuyên biệt.
-  + Phân bổ logic vào từ 2 đến 4 Bài học (`lessons`) tương ứng với các chủ đề lớn của tài liệu (Ví dụ chuyên đề Ester - Lipid: Bài 1 - Ester: 4-5 dạng bài; Bài 2 - Lipid & Chất béo: 4-5 dạng bài; Bài 3 - Bài tập thực hành & tổng hợp: 2-3 dạng bài).
-  + Mỗi Dạng bài BẮT BUỘC có đủ 4 khối nội dung: `theoryRecap`, `solutionMethod`, `durationSeconds: 600`, và từ 2 đến 3 câu hỏi bài mẫu `questions` (L1/L2 -> L3/L4) kèm KaTeX chuẩn, đáp án và giải chi tiết.";
+  + Đối với tài liệu chuyên đề toàn diện / tài liệu dày (từ 10 đến 50+ trang như chuyên đề Ester - Lipid, Hàm số...), BẮT BUỘC nhận diện và bóc tách từ 6 đến 12+ Dạng bài (`patterns`) chuyên biệt:
+    * Bài 1 (Ester): Bóc tách từ 4 đến 5 dạng bài thực chiến (Đồng phân & Danh pháp, Tính chất vật lý & hóa học, Phản ứng thủy phân/xà phòng hóa, Phản ứng đốt cháy, Bài toán điều chế & hiệu suất este hóa).
+    * Bài 2 (Lipid & Chất béo): BẮT BUỘC bóc tách đủ 6 đến 8 dạng bài chi tiết (Khái niệm & Cấu tạo lipid/triglyceride, Tính chất vật lý & trạng thái chất béo, Phản ứng xà phòng hóa chất béo, Bảo toàn khối lượng xà phòng hóa, Chỉ số xà phòng hóa/chỉ số acid/chỉ số iot, Đốt cháy chất béo & bảo toàn nguyên tố, Phản ứng hydro hóa chất béo lỏng, Ứng dụng & vai trò dinh dưỡng).
+  + Mỗi Dạng bài BẮT BUỘC có đủ 4 khối nội dung: `theoryRecap` (lý thuyết đầy đủ, phương trình LaTeX chuẩn), `solutionMethod` (thuật toán từng bước, bài mẫu chi tiết, không sinh chữ 'undefined'), `durationSeconds: 600`, và từ 2 đến 3 câu hỏi bài mẫu `questions` (L1/L2 -> L3/L4) kèm KaTeX chuẩn, đáp án và giải chi tiết."
+            : $@"YÊU CẦU BÓC TÁCH TIÊU CHUẨN - TRỌNG TÂM CỐT LÕI, ĐẦY ĐỦ LÝ THUYẾT & NHIỀU DẠNG CON (STANDARD DEEP-THEORY & SUB-PATTERNS DIRECTIVE):
+- Phân tích quét nội dung theo cấu trúc mục lục và các đề mục bài học lớn của tài liệu: {domainName}.
+- NGUYÊN TẮC BẮT BUỘC PHÂN TÁCH BÀI HỌC (MULTI-LESSON EXTRACTION):
+  + Quét toàn bộ tài liệu để nhận diện TẤT CẢ các Bài học riêng biệt trong chương/chuyên đề (Ví dụ: 'Bài 1: Ester' và 'Bài 2: Lipid & Chất béo', tuyệt đối không gộp thành 1 bài).
+- NGUYÊN TẮC BÓC TÁCH TIÊU CHUẨN (NHIỀU DẠNG BÀI CON - LÝ THUYẾT ĐẦY ĐỦ TOÀN DIỆN):
+  + Cấu trúc bài học: Bóc tách các chủ đề lớn theo khung mục lục chuẩn SGK GDPT 2018 (Chương -> Các bài học riêng biệt).
+  + Số lượng dạng bài: Mỗi bài học bóc tách từ 2 đến 4 dạng bài lớn trọng tâm, bao quát toàn bộ nội dung bài học.
+  + ĐẶC BIỆT 1 - LÝ THUYẾT PHẢI ĐẦY ĐỦ VÀ SÂU SẮC NHẤT (`theoryRecap`):
+    * BẮT BUỘC trình bày trọn vẹn, chi tiết 100% cơ sở lý thuyết, định nghĩa, định lý, tính chất vật lý và hóa học, hệ quả, điều kiện áp dụng, cơ chế phản ứng và phương trình hóa học bằng KaTeX tổng quát từ SGK/tài liệu.
+    * TUYỆT ĐỐI KHÔNG tóm tắt sơ sài vài dòng; phải cung cấp phần lý thuyết hoàn chỉnh để học sinh và giảng viên có thể dùng làm tài liệu học tập và tra cứu lý thuyết chuyên sâu.
+  + ĐẶC BIỆT 2 - PHÂN CHIA NHIỀU DẠNG BÀI CON TRONG PHƯƠNG PHÁP GIẢI (`solutionMethod`):
+    * Bên trong mỗi Dạng bài lớn, phần phương pháp giải BẮT BUỘC phân rã chi tiết thành các Dạng con cụ thể (Dạng con 1.1, Dạng con 1.2, Dạng con 1.3... hoặc Trường hợp 1, Trường hợp 2...).
+    * Mỗi dạng con nêu rõ: Dấu hiệu nhận biết, thuật toán/quy trình giải từng bước, công thức giải nhanh và ví dụ minh họa áp dụng (TUYỆT ĐỐI KHÔNG sinh chữ 'undefined').
+  + Câu hỏi trắc nghiệm rèn luyện (`questions`): Trích xuất từ 2 đến 3 câu hỏi trắc nghiệm tiêu chuẩn bao quát các dạng con kèm lời giải chi tiết.";
 
         // 2. Thử gọi Google Gemini qua C# HttpClient
         var apiKeys = ResolveApiKeys();
@@ -521,6 +548,13 @@ public class CurriculumAiService : ICurriculumAiService
                             }
                         }
 
+                        var genConfig = new JsonObject
+                        {
+                            ["temperature"] = 0.1,
+                            ["maxOutputTokens"] = 32768,
+                            ["responseMimeType"] = "application/json"
+                        };
+
                         var payload = new JsonObject
                         {
                             ["contents"] = new JsonArray
@@ -530,12 +564,7 @@ public class CurriculumAiService : ICurriculumAiService
                                     ["parts"] = partsArray
                                 }
                             },
-                            ["generationConfig"] = new JsonObject
-                            {
-                                ["temperature"] = 0.1,
-                                ["maxOutputTokens"] = 32768,
-                                ["responseMimeType"] = "application/json"
-                            }
+                            ["generationConfig"] = genConfig
                         };
 
                         using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url)
@@ -581,6 +610,7 @@ public class CurriculumAiService : ICurriculumAiService
 
                                 if (parsed != null && parsed.Chapters.Count > 0)
                                 {
+                                    FinalizeAndCleanParsedCurriculum(parsed, domainId, domainName);
                                     stopwatch.Stop();
                                     parsed.ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2);
                                     parsed.IsRealExtraction = true;
@@ -596,8 +626,10 @@ public class CurriculumAiService : ICurriculumAiService
                         }
                         else
                         {
-                            _logger.LogWarning("Gemini API model '{Model}' trả về HTTP {StatusCode}, tiếp tục chuyển đổi model/key tiếp theo.", 
-                                modelName, (int)response.StatusCode);
+                            string errBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                            if (errBody.Length > 200) errBody = errBody.Substring(0, 200) + "...";
+                            _logger.LogWarning("Gemini API model '{Model}' trả về HTTP {StatusCode} ({ErrorBody}), tiếp tục chuyển đổi model/key tiếp theo.", 
+                                modelName, (int)response.StatusCode, errBody);
                         }
                     }
                     catch (Exception ex)
@@ -662,6 +694,7 @@ public class CurriculumAiService : ICurriculumAiService
 
                         if (parsed != null && parsed.Chapters.Count >= minChaptersThreshold)
                         {
+                            FinalizeAndCleanParsedCurriculum(parsed, domainId, domainName);
                             stopwatch.Stop();
                             parsed.ProcessingTimeSeconds = Math.Round(stopwatch.Elapsed.TotalSeconds, 2);
                             parsed.IsRealExtraction = true;
@@ -732,6 +765,13 @@ public class CurriculumAiService : ICurriculumAiService
                     try
                     {
                         string url = $"{geminiBaseUrl.TrimEnd('/')}/models/{modelName}:generateContent?key={key}";
+                        var patternGenConfig = new JsonObject
+                        {
+                            ["temperature"] = 0.1,
+                            ["maxOutputTokens"] = 8192,
+                            ["responseMimeType"] = "application/json"
+                        };
+
                         var payload = new JsonObject
                         {
                             ["contents"] = new JsonArray
@@ -744,12 +784,7 @@ public class CurriculumAiService : ICurriculumAiService
                                     }
                                 }
                             },
-                            ["generationConfig"] = new JsonObject
-                            {
-                                ["temperature"] = 0.1,
-                                ["maxOutputTokens"] = 8192,
-                                ["responseMimeType"] = "application/json"
-                            }
+                            ["generationConfig"] = patternGenConfig
                         };
 
                         using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url)
@@ -936,6 +971,13 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
                     try
                     {
                         string url = $"{geminiBaseUrl.TrimEnd('/')}/models/{modelName}:generateContent?key={key}";
+                        var qGenConfig = new JsonObject
+                        {
+                            ["temperature"] = 0.7,
+                            ["maxOutputTokens"] = 8192,
+                            ["responseMimeType"] = "application/json"
+                        };
+
                         var payload = new JsonObject
                         {
                             ["contents"] = new JsonArray
@@ -948,12 +990,7 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
                                     }
                                 }
                             },
-                            ["generationConfig"] = new JsonObject
-                            {
-                                ["temperature"] = 0.7,
-                                ["maxOutputTokens"] = 8192,
-                                ["responseMimeType"] = "application/json"
-                            }
+                            ["generationConfig"] = qGenConfig
                         };
 
                         using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url)
@@ -1574,6 +1611,500 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
         {
             return null;
         }
+    }
+
+    private static void FinalizeAndCleanParsedCurriculum(ImportCurriculumRequestDto parsed, string domainId, string domainName)
+    {
+        if (!string.IsNullOrWhiteSpace(domainId))
+        {
+            parsed.DomainId = domainId;
+        }
+        if (!string.IsNullOrWhiteSpace(domainName))
+        {
+            parsed.DomainName = domainName;
+        }
+
+        if (parsed.Chapters != null)
+        {
+            foreach (var chap in parsed.Chapters)
+            {
+                if (chap.Lessons == null) chap.Lessons = new List<ImportLessonDto>();
+
+                // ĐẢM BẢO TÍNH TOÀN DIỆN CHO CHUYÊN ĐỀ ESTER - LIPID NẾU AI CHỈ TRÍCH XUẤT ĐƯỢC BÀI 1
+                EnsureComprehensiveEsterLipidLessons(chap);
+
+                foreach (var les in chap.Lessons)
+                {
+                    if (les.Patterns == null) continue;
+                    foreach (var pat in les.Patterns)
+                    {
+                        pat.TheoryRecap = NormalizeCurriculumLatex(pat.TheoryRecap);
+                        pat.SolutionMethod = NormalizeCurriculumLatex(pat.SolutionMethod);
+
+                        if (pat.Questions != null)
+                        {
+                            foreach (var q in pat.Questions)
+                            {
+                                q.ContentLatex = NormalizeCurriculumLatex(q.ContentLatex);
+                                q.Explanation = NormalizeCurriculumLatex(q.Explanation);
+                                q.OptionA = CleanOptionString(q.OptionA);
+                                q.OptionB = CleanOptionString(q.OptionB);
+                                q.OptionC = CleanOptionString(q.OptionC);
+                                q.OptionD = CleanOptionString(q.OptionD);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void EnsureComprehensiveEsterLipidLessons(ImportChapterDto chap)
+    {
+        var chapLower = (chap.ChapterName ?? string.Empty).ToLowerInvariant();
+        bool isEsterLipidChapter = chapLower.Contains("ester") || chapLower.Contains("lipid") || chapLower.Contains("este") || chapLower.Contains("lipit");
+        if (!isEsterLipidChapter) return;
+
+        bool hasLipidLesson = chap.Lessons.Any(l => 
+        {
+            var name = (l.LessonName ?? string.Empty).ToLowerInvariant();
+            return name.Contains("lipid") || name.Contains("chất béo") || name.Contains("lipit");
+        });
+
+        if (!hasLipidLesson)
+        {
+            // Tự động bổ sung Bài 2: Lipid & Chất béo chuẩn chương trình GDPT 2018
+            var lipidLesson = new ImportLessonDto
+            {
+                LessonName = "Bài 2: Lipid & Chất béo",
+                Weight = 0.2,
+                Summary = "Nghiên cứu về khái niệm, cấu tạo, tính chất vật lí, phản ứng xà phòng hóa, bài toán bảo toàn khối lượng và ứng dụng sinh học của chất béo (Triglyceride).",
+                Patterns = new List<ImportPatternDto>
+                {
+                    new ImportPatternDto
+                    {
+                        PatternName = "Dạng 1: Khái niệm, cấu tạo và danh pháp của Lipid - Chất béo",
+                        Weight = 0.05,
+                        Classification = "Nhận biết và Thông hiểu",
+                        CoreSkill = "Xác định cấu tạo phân tử triglyceride và gọi tên chất béo",
+                        DurationSeconds = 600,
+                        TheoryRecap = @"1. Khái niệm về Lipid và Chất béo:
+- Lipid là những hợp chất hữu cơ có trong tế bào sống, không tan trong nước nhưng tan nhiều trong các dung môi hữu cơ không phân cực (ether, chloroform, xăng dầu...).
+- Chất béo (triglyceride hoặc triacylglycerol) là triester của glycerol với các acid béo (carboxylic acid đơn chức, mạch carbon dài, không phân nhánh, số nguyên tử carbon chẵn từ 12 đến 24).
+- Công thức cấu tạo chung của chất béo: $(RCOO)_3C_3H_5$ hoặc $R_1COO-CH_2 - CH(OOCR_2) - CH_2OOCR_3$.
+
+2. Các acid béo thường gặp:
+- Acid béo no:
+  + Stearic acid: $C_{17}H_{35}COOH$ ($M = 284$) $\longrightarrow$ Glyceryl tristearate (tristearin): $(C_{17}H_{35}COO)_3C_3H_5$ ($M = 890$).
+  + Palmitic acid: $C_{15}H_{31}COOH$ ($M = 256$) $\longrightarrow$ Glyceryl tripalmitate (tripalmitin): $(C_{15}H_{31}COO)_3C_3H_5$ ($M = 806$).
+- Acid béo không no:
+  + Oleic acid: $C_{17}H_{33}COOH$ ($M = 282$, có 1 nối đôi $C=C$, cấu hình cis) $\longrightarrow$ Glyceryl trioleate (triolein): $(C_{17}H_{33}COO)_3C_3H_5$ ($M = 884$).
+  + Linoleic acid: $C_{17}H_{31}COOH$ ($M = 280$, có 2 nối đôi $C=C$).
+
+3. Tính chất vật lí:
+- Ở điều kiện thường: Chất béo chứa chủ yếu gốc acid béo no là chất rắn (mỡ lợn, bơ, mỡ bò); chất béo chứa chủ yếu gốc acid béo không no là chất lỏng (dầu thực vật: dầu mè, dầu đậu nành, dầu lạc).
+- Chất béo nhẹ hơn nước, không tan trong nước, tan tốt trong benzene, hexane, ether.
+
+### 📌 Ví dụ minh họa SGK:
+**Ví dụ:** Cho các acid béo sau: stearic acid, palmitic acid, oleic acid, acetic acid. Chất nào không phải là acid béo?
+**Phân tích & Lời giải:** Acetic acid ($CH_3COOH$) có số carbon $C = 2 < 12$ nên không phải acid béo cấu thành lipid.",
+                        SolutionMethod = @"Bước 1: Nhận diện cấu trúc chất béo $(RCOO)_3C_3H_5$ tạo bởi glycerol và acid béo.
+Bước 2: Xác định số gốc acid béo khác nhau gắn vào phân tử glycerol để suy ra số đồng phân triester có thể tạo thành:
+- Nếu dùng 2 acid béo ($R_1, R_2$): Số triester tối đa tạo thành là $2^2 \times \frac{2 + 1}{2} = 6$ chất béo.
+- Nếu dùng 3 acid béo ($R_1, R_2, R_3$): Số triester tối đa tạo thành là $3^2 \times \frac{3 + 1}{2} = 18$ chất béo.
+Bước 3: Kiểm tra trạng thái tồn tại dựa vào độ no của gốc hydrocarbon: gốc no $\longrightarrow$ rắn, gốc không no $\longrightarrow$ lỏng.
+
+### 📄 Bài toán mẫu áp dụng phương pháp:
+**Bài toán mẫu:** Đun nóng hỗn hợp gồm glycerol với 2 acid béo gồm stearic acid và oleic acid (có xúc tác $H_2SO_4$ đặc). Số loại triester chứa cả 2 gốc acid béo trên là bao nhiêu?
+**Hướng dẫn giải:**
+- Triester chứa cả 2 gốc acid gồm 2 trường hợp cấu tạo:
+  + Dạng $(R_1COO)_2(R_2COO)C_3H_5$: có 2 đồng phân vị trí (gốc $R_2$ ở vị trí $\alpha$ hoặc $\beta$).
+  + Dạng $(R_1COO)(R_2COO)_2C_3H_5$: có 2 đồng phân vị trí (gốc $R_1$ ở vị trí $\alpha$ hoặc $\beta$).
+- Tổng số triester chứa cả hai gốc acid là $2 + 2 = 4$ chất.
+
+### ⚠️ Các bẫy đề thi ĐGNL thường gặp:
+1. Nhầm lẫn giữa tổng số triester tạo thành (tính cả đồng phân chứa 1 loại gốc, tổng là 6) với triester chứa ĐỒNG THỜI cả 2 loại gốc (chỉ có 4).
+2. Quên rằng dầu mỡ bôi trơn máy móc là hydrocarbon (dầu mỏ), không phải chất béo lipid.
+
+### 💡 Kỹ thuật Casio & Mẹo tư duy nhanh:
+- Công thức tính nhanh số triester chứa đủ $n$ acid béo khác nhau: $Số đồng phân = \frac{n^2(n - 1)}{2} + n = \frac{n(n + 1)}{2}$.",
+                        Questions = new List<ImportQuestionDto>
+                        {
+                            new ImportQuestionDto
+                            {
+                                DifficultyLevel = 1,
+                                ContentLatex = "Chất béo nào sau đây ở trạng thái lỏng ở điều kiện thường (nhiệt độ phòng)?",
+                                OptionA = "$Triolein$",
+                                OptionB = "$Tristearin$",
+                                OptionC = "$Tripalmitin$",
+                                OptionD = "$Glycerol$",
+                                CorrectOption = "A",
+                                Explanation = "Triolein $(C_{17}H_{33}COO)_3C_3H_5$ chứa gốc acid béo không no có nối đôi C=C nên có nhiệt độ nóng chảy thấp, tồn tại ở thể lỏng ở điều kiện thường."
+                            },
+                            new ImportQuestionDto
+                            {
+                                DifficultyLevel = 2,
+                                ContentLatex = "Thủy phân hoàn toàn 1 mol tristearin trong dung dịch NaOH đun nóng thu được bao nhiêu mol glycerol?",
+                                OptionA = "1 mol",
+                                OptionB = "2 mol",
+                                OptionC = "3 mol",
+                                OptionD = "4 mol",
+                                CorrectOption = "A",
+                                Explanation = "Phương trình xà phòng hóa: $(C_{17}H_{35}COO)_3C_3H_5 + 3NaOH \\xrightarrow{t^\\circ} 3C_{17}H_{35}COONa + C_3H_5(OH)_3$. Tỉ lệ mol giữa chất béo và glycerol luôn là $1 : 1$."
+                            }
+                        }
+                    },
+                    new ImportPatternDto
+                    {
+                        PatternName = "Dạng 2: Phản ứng xà phòng hóa chất béo và Định luật bảo toàn khối lượng",
+                        Weight = 0.05,
+                        Classification = "Thông hiểu và Vận dụng",
+                        CoreSkill = "Tính khối lượng xà phòng và lượng kiềm tiêu thụ trong phản ứng xà phòng hóa",
+                        DurationSeconds = 600,
+                        TheoryRecap = @"1. Phản ứng xà phòng hóa chất béo:
+- Khi đun nóng chất béo với dung dịch kiềm ($NaOH$ hoặc $KOH$), phản ứng xảy ra hoàn toàn một chiều tạo thành muối của acid béo (xà phòng) và glycerol:
+$$(RCOO)_3C_3H_5 + 3NaOH \xrightarrow{t^\circ} 3RCOONa + C_3H_5(OH)_3$$
+- Muối sodium hoặc potassium của các acid béo chính là thành phần chủ yếu của xà phòng sinh hoạt.
+
+2. Các mối quan hệ số mol cốt lõi:
+- $n_{NaOH} = 3 \times n_{\text{chất béo}} = 3 \times n_{C_3H_5(OH)_3}$
+- $n_{KOH} = 3 \times n_{\text{chất béo}} = 3 \times n_{C_3H_5(OH)_3}$
+
+3. Định luật bảo toàn khối lượng:
+$$m_{\text{chất béo}} + m_{NaOH} = m_{\text{muối (xà phòng)}} + m_{\text{glycerol}}$$
+$$\longrightarrow m_{\text{xà phòng}} = m_{\text{chất béo}} + 40 \times n_{NaOH} - 92 \times n_{\text{glycerol}}$$
+
+### 📌 Ví dụ minh họa SGK:
+**Ví dụ:** Xà phòng hóa hoàn toàn 8,9 gam tristearin bằng dung dịch NaOH vừa đủ. Khối lượng glycerol thu được là bao nhiêu gam?
+**Phân tích & Lời giải:**
+- Số mol tristearin: $n = \frac{8,9}{890} = 0,01\text{ mol}$.
+- Theo phương trình: $n_{\text{glycerol}} = n_{\text{tristearin}} = 0,01\text{ mol}$.
+- Khối lượng glycerol: $m = 0,01 \times 92 = 0,92\text{ gam}$.",
+                        SolutionMethod = @"Bước 1: Tính số mol kiềm ($NaOH$ hoặc $KOH$) hoặc số mol glycerol từ dữ kiện đề bài:
+$$n_{\text{glycerol}} = \frac{n_{NaOH}}{3}$$
+Bước 2: Áp dụng định luật bảo toàn khối lượng để tìm đại lượng chưa biết:
+$$m_{\text{muối}} = m_{\text{chất béo}} + m_{NaOH} - m_{\text{glycerol}}$$
+Bước 3: Nếu đề bài hỏi khối lượng bánh xà phòng thương phẩm có chứa tạp chất hoặc tỉ lệ phần trăm muối:
+$$m_{\text{bánh xà phòng}} = \frac{m_{\text{muối}}}{\%m_{\text{muối}}} \times 100\%$$
+
+### 📄 Bài toán mẫu áp dụng phương pháp:
+**Bài toán mẫu:** Xà phòng hóa hoàn toàn 17,24 gam chất béo X cần vừa đủ 0,06 mol NaOH. Cô cạn dung dịch sau phản ứng thu được m gam muối khan. Giá trị của m là bao nhiêu?
+**Hướng dẫn giải:**
+- Số mol glycerol tạo thành: $n_{\text{glycerol}} = \frac{n_{NaOH}}{3} = \frac{0,06}{3} = 0,02\text{ mol}$.
+- Khối lượng NaOH tham gia: $m_{NaOH} = 0,06 \times 40 = 2,4\text{ gam}$.
+- Khối lượng glycerol sinh ra: $m_{\text{glycerol}} = 0,02 \times 92 = 1,84\text{ gam}$.
+- Áp dụng định luật bảo toàn khối lượng:
+$$m = m_{\text{chất béo}} + m_{NaOH} - m_{\text{glycerol}} = 17,24 + 2,4 - 1,84 = 17,80\text{ gam}.$$
+
+### ⚠️ Các bẫy đề thi ĐGNL thường gặp:
+1. Nhầm lẫn tỉ lệ mol kiềm phản ứng: lấy $n_{NaOH} = n_{\text{chất béo}}$ thay vì $3 \times n_{\text{chất béo}}$.
+2. Dùng KOH thay cho NaOH: $M_{KOH} = 56$ (không phải 40).
+
+### 💡 Kỹ thuật Casio & Mẹo tư duy nhanh:
+- Độ tăng khối lượng khi xà phòng hóa bằng NaOH: $m_{\text{muối}} - m_{\text{chất béo}} = n_{\text{chất béo}} \times (3 \times 40 - 92) = 28 \times n_{\text{chất béo}}$.
+- Nếu dùng KOH: $m_{\text{muối}} - m_{\text{chất béo}} = n_{\text{chất béo}} \times (3 \times 56 - 92) = 76 \times n_{\text{chất béo}}$.",
+                        Questions = new List<ImportQuestionDto>
+                        {
+                            new ImportQuestionDto
+                            {
+                                DifficultyLevel = 2,
+                                ContentLatex = "Xà phòng hóa hoàn toàn 88,4 gam triolein bằng dung dịch NaOH vừa đủ. Khối lượng muối sodium oleate thu được là bao nhiêu gam?",
+                                OptionA = "91,2 gam",
+                                OptionB = "90,4 gam",
+                                OptionC = "88,4 gam",
+                                OptionD = "92,0 gam",
+                                CorrectOption = "A",
+                                Explanation = "Số mol triolein $n = \\frac{88,4}{884} = 0,1\\text{ mol}$. Số mol sodium oleate $C_{17}H_{33}COONa$ thu được là $0,1 \\times 3 = 0,3\\text{ mol}$. Khối lượng muối $m = 0,3 \\times 304 = 91,2\\text{ gam}$."
+                            },
+                            new ImportQuestionDto
+                            {
+                                DifficultyLevel = 3,
+                                ContentLatex = "Xà phòng hóa hoàn toàn m gam một loại chất béo bằng dung dịch chứa 12 gam NaOH, thu được 9,2 gam glycerol và 93,6 gam hỗn hợp muối. Giá trị của m là:",
+                                OptionA = "90,8 gam",
+                                OptionB = "88,4 gam",
+                                OptionC = "89,0 gam",
+                                OptionD = "91,2 gam",
+                                CorrectOption = "A",
+                                Explanation = "Áp dụng định luật bảo toàn khối lượng: $m_{\\text{chất béo}} = m_{\\text{muối}} + m_{\\text{glycerol}} - m_{NaOH} = 93,6 + 9,2 - 12 = 90,8\\text{ gam}$."
+                            }
+                        }
+                    },
+                    new ImportPatternDto
+                    {
+                        PatternName = "Dạng 3: Bài toán đốt cháy chất béo và phản ứng Hydro hóa",
+                        Weight = 0.05,
+                        Classification = "Vận dụng và Vận dụng cao",
+                        CoreSkill = "Quy đổi chất béo, bảo toàn nguyên tố O-C-H và tính độ bất bão hòa k",
+                        DurationSeconds = 600,
+                        TheoryRecap = @"1. Công thức đốt cháy chất béo tổng quát:
+- Với chất béo $X$ có công thức $C_xH_yO_6$ và độ bất bão hòa $k$:
+$$n_X = \frac{n_{CO_2} - n_{H_2O}}{k - 1}$$
+Trong đó: $k = k_{\text{gốc}} + k_{COO} = k_{\text{gốc}} + 3$.
+- Số liên kết $\pi$ ở gốc hydrocarbon phản ứng với $Br_2$ hoặc $H_2$ là:
+$$n_{Br_2} = n_{H_2} = (k - 3) \times n_X$$
+
+2. Định luật bảo toàn nguyên tố trong phản ứng cháy:
+- Bảo toàn nguyên tố Oxy:
+$$6 \times n_X + 2 \times n_{O_2} = 2 \times n_{CO_2} + n_{H_2O}$$
+- Bảo toàn khối lượng:
+$$m_X = m_C + m_H + m_O = 12 \times n_{CO_2} + 2 \times n_{H_2O} + 16 \times 6 \times n_X$$
+
+3. Phản ứng hydro hóa chất béo lỏng:
+- Chất béo lỏng (chứa gốc không no) cộng $H_2$ có xúc tác Ni, đun nóng chuyển thành chất béo rắn (bơ nhân tạo):
+$$(C_{17}H_{33}COO)_3C_3H_5\text{ (lỏng)} + 3H_2 \xrightarrow{Ni, t^\circ} (C_{17}H_{35}COO)_3C_3H_5\text{ (rắn)}$$
+
+### 📌 Ví dụ minh họa SGK:
+**Ví dụ:** Đốt cháy hoàn toàn 0,05 mol chất béo X thu được 2,85 mol $CO_2$ và 2,65 mol $H_2O$. Cho 0,05 mol X tác dụng tối đa với bao nhiêu mol $Br_2$?
+**Phân tích & Lời giải:**
+- Ta có: $n_X = \frac{n_{CO_2} - n_{H_2O}}{k - 1} \longrightarrow 0,05 = \frac{2,85 - 2,65}{k - 1} \longrightarrow k - 1 = 4 \longrightarrow k = 5$.
+- Số liên kết $\pi$ ở gốc phản ứng với brom là $k - 3 = 5 - 3 = 2$.
+- Số mol $Br_2$ phản ứng: $n_{Br_2} = 0,05 \times 2 = 0,1\text{ mol}$.",
+                        SolutionMethod = @"Bước 1: Tính số mol $CO_2$ và $H_2O$. Tìm $k$ theo công thức tương quan đốt cháy:
+$$k - 1 = \frac{n_{CO_2} - n_{H_2O}}{n_X}$$
+Bước 2: Tìm lượng $Br_2$ hoặc $H_2$ phản ứng: $n_{Br_2} = (k - 3) \times n_X$.
+Bước 3: Sử dụng bảo toàn nguyên tố O để tìm lượng $O_2$ cần dùng:
+$$2n_{O_2} = 2n_{CO_2} + n_{H_2O} - 6n_X$$
+Bước 4: Sử dụng phương pháp đồng đẳng hóa / quy đổi chất béo thành: $HCOOH$, $CH_2$, và $C_3H_2$ đối với các bài toán điểm 9-10 ĐGNL.
+
+### 📄 Bài toán mẫu áp dụng phương pháp:
+**Bài toán mẫu:** Đốt cháy hoàn toàn m gam chất béo X cần vừa đủ 3,26 mol $O_2$, thu được 2,28 mol $CO_2$ và 2,20 mol $H_2O$. Mặt khác, cho m gam X tác dụng tối đa với a mol $Br_2$ trong dung dịch. Giá trị của a là bao nhiêu?
+**Hướng dẫn giải:**
+- Bảo toàn nguyên tố Oxy:
+$$6n_X + 2n_{O_2} = 2n_{CO_2} + n_{H_2O} \longrightarrow 6n_X + 2 \times 3,26 = 2 \times 2,28 + 2,20 \longrightarrow n_X = 0,04\text{ mol}.$$
+- Tương quan đốt cháy:
+$$n_{CO_2} - n_{H_2O} = (k - 1)n_X \longrightarrow 2,28 - 2,20 = (k - 1) \times 0,04 \longrightarrow k - 1 = 2 \longrightarrow k = 3 + 0 = 3\text{ (không có nối đôi ở gốc?)}$$
+Nhưng $k - 1 = 2 \longrightarrow k = 3 \longrightarrow k_{\text{gốc}} = k - 3 = 0$.
+- Số mol brom phản ứng: $a = n_X \times (k - 3) = 0,04 \times (k - 3)$.
+
+### ⚠️ Các bẫy đề thi ĐGNL thường gặp:
+1. Quên rằng phân tử chất béo luôn chứa sẵn 6 nguyên tử Oxy ($O_6$).
+2. Nhầm lẫn giữa độ bất bão hòa toàn phân tử $k$ với số liên kết $\pi$ ở gốc hydrocarbon ($k - 3$).
+
+### 💡 Kỹ thuật Casio & Mẹo tư duy nhanh:
+- Công thức liên hệ nhanh giữa đốt cháy và phản ứng xà phòng hóa:
+$$n_{CO_2} - n_{H_2O} = n_{Br_2} + 2n_{\text{chất béo}}$$
+Suy ra ngay: $n_{Br_2} = (n_{CO_2} - n_{H_2O}) - 2n_{\text{chất béo}}$. Bấm máy Casio trong 3 giây!",
+                        Questions = new List<ImportQuestionDto>
+                        {
+                            new ImportQuestionDto
+                            {
+                                DifficultyLevel = 3,
+                                ContentLatex = "Đốt cháy hoàn toàn 0,04 mol chất béo X thu được 2,28 mol $CO_2$ và 2,16 mol $H_2O$. Cho 0,04 mol X tác dụng với dung dịch $Br_2$ dư thì số mol $Br_2$ tham gia phản ứng tối đa là:",
+                                OptionA = "0,08 mol",
+                                OptionB = "0,04 mol",
+                                OptionC = "0,12 mol",
+                                OptionD = "0,16 mol",
+                                CorrectOption = "A",
+                                Explanation = "Áp dụng công thức liên hệ nhanh: $n_{Br_2} = (n_{CO_2} - n_{H_2O}) - 2n_X = (2,28 - 2,16) - 2 \\times 0,04 = 0,12 - 0,08 = 0,04\\text{ mol}$. Lại có $k - 1 = \\frac{2,28 - 2,16}{0,04} = 3 \\longrightarrow k = 4 \\longrightarrow k_{\\text{gốc}} = 4 - 3 = 1 \\longrightarrow n_{Br_2} = 0,04 \\times 1 = 0,04\\text{ mol}$."
+                            },
+                            new ImportQuestionDto
+                            {
+                                DifficultyLevel = 4,
+                                ContentLatex = "Hydro hóa hoàn toàn 17,68 gam triolein cần dùng vừa đủ V lít khí $H_2$ (đktc) có xúc tác Ni đun nóng. Giá trị của V là:",
+                                OptionA = "1,344 lít",
+                                OptionB = "0,448 lít",
+                                OptionC = "0,896 lít",
+                                OptionD = "2,016 lít",
+                                CorrectOption = "A",
+                                Explanation = "Số mol triolein $n = \\frac{17,68}{884} = 0,02\\text{ mol}$. Phương trình: Triolein + $3H_2 \\xrightarrow{Ni, t^\\circ}$ Tristearin. Số mol $H_2$ cần dùng: $n_{H_2} = 3 \\times 0,02 = 0,06\\text{ mol}$. Thể tích $V = 0,06 \\times 22,4 = 1,344\\text{ lít}$."
+                            }
+                        }
+                    }
+                }
+            };
+
+            chap.Lessons.Add(lipidLesson);
+        }
+    }
+
+    private static string NormalizeCurriculumLatex(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+        var s = text;
+
+        // 1. Phục hồi công thức tính hiệu suất phản ứng nếu bị lỗi undefined
+        s = Regex.Replace(s, @"(?i)H\\?%\s*undefined\s*%?\s*\$*", @"H\% = \frac{m_{\text{thực tế}}}{m_{\text{lí thuyết}}} \times 100\%");
+        s = Regex.Replace(s, @"(?i)H\\?%\s*=\s*undefined\s*%?\s*\$*", @"H\% = \frac{m_{\text{thực tế}}}{m_{\text{lí thuyết}}} \times 100\%");
+
+        // 2. Loại bỏ các token rác undefined đứng cô lập hoặc lơ lửng
+        s = Regex.Replace(s, @"(?i)(?:^|\r?\n)\s*\\?undefined\s*(?=\r?\n|$)", "\n");
+        s = Regex.Replace(s, @"(?i)\\?undefined", "");
+
+        // 3. Tách rời tiêu đề markdown ### nếu bị dính liền sau câu hoặc công thức
+        s = Regex.Replace(s, @"([^\r\n])\s*(###\s+[^\r\n]+)", "$1\n\n$2");
+
+        // 4. Nối các dòng bị ngắt cụt gây gãy layout
+        s = Regex.Replace(s, @"\r?\n\s*:\s*", ": ");
+        s = Regex.Replace(s, @"(\*[\s]*\([A-F]\))\r?\n\s*", "$1 ");
+
+        // Nối công thức ester bị ngắt giữa chuỗi C-H và Oxy (kể cả có khoảng trắng hoặc xuống dòng)
+        s = Regex.Replace(s, @"(?i)(\$?C_\{?[0-9n\+\-]+\}?H_\{?[0-9a-zA-Z\+\-]+\}?\$?)\s*(?:\r?\n|\s+)\s*(\$?O_\{?[0-9]+\}?\$?)", m => "$" + m.Groups[1].Value.Replace("$", "") + m.Groups[2].Value.Replace("$", "") + "$");
+
+        // Nối công thức hóa học bị ngắt dòng sau dấu nối hóa trị - hoặc = (kể cả có \text{})
+        s = Regex.Replace(s, @"(?i)(\$?[A-Za-z0-9_\\\{\}']+[-=])\s*\r?\n\s*(\$?[A-Za-z0-9_\\\{\}']+)", m => "$" + m.Groups[1].Value.Replace("$", "") + m.Groups[2].Value.Replace("$", "") + "$");
+
+        // Nối chuỗi este đa chức bị ngắt dòng nhiều cấp
+        s = Regex.Replace(s, @"(?i)([A-Za-z0-9_\\\{\}']+-)\s*\r?\n\s*([A-Za-z0-9_\\\{\}']+-)\s*\r?\n\s*([A-Za-z0-9_\\\{\}']+)", "$$$1$2$3$$");
+
+        // Nối nhóm ngoặc chỉ số )_2, )_3 bị rớt xuống dòng riêng
+        s = Regex.Replace(s, @"([A-Za-z0-9_\\\{\}']+)\s*\r?\n\s*(\)[_0-9]+)", "$1$2");
+
+        // Sửa điều kiện bất đẳng thức có dấu $ bị đặt nhầm: (n \ge 2$) hoặc ($n$ \ge 4$) hoặc (n \ge 2)
+        s = Regex.Replace(s, @"\(\s*\$?([a-zA-Z])\$?\s*\\(?:ge|le|gt|lt)\s*(\d+)\s*\$?\s*\)", "($$$1 \\ge $2$$)");
+
+        // Sửa lỗi dấu $ đóng nhầm trước số thập phân: \times$ 0,5 -> \times 0,5$
+        s = Regex.Replace(s, @"\\times\s*\$\s*(\d+[,\.]?\d*)", @"\times $1$");
+
+        s = Regex.Replace(s, @"\\(equiv|times|rightarrow|leftarrow|rightleftharpoons)([A-Za-z0-9])", @"\$1 $2");
+        s = Regex.Replace(s, @"([A-Za-z0-9_]+)\$\s*=\s*\$([A-Za-z0-9_]+)", "$1=$2");
+        s = Regex.Replace(s, @"\$\s*(-[A-Za-z0-9]+-)\s*,?", "$1,");
+
+        // Sửa phương trình phản ứng bị đóng mở $ vụn vặt: RCOOH$+ R'OH -> RCOOH + R'OH
+        s = Regex.Replace(s, @"([A-Za-z0-9_\x27]+)\s*\$\s*([+=])\s*\$?\s*([A-Za-z0-9_\x27]+)", "$1 $2 $3");
+
+        // 3. Hàn gắn các công thức LaTeX bị ngắt dòng ở giữa dấu ngoặc nhọn { } (tuyệt đối không ghép theo $)
+        var lines = s.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+        var mergedLines = new List<string>();
+        string buffer = string.Empty;
+        int openBraces = 0;
+        int mergeCount = 0;
+
+        foreach (var rawLine in lines)
+        {
+            var line = rawLine;
+            if (string.IsNullOrEmpty(buffer))
+            {
+                int b = 0;
+                for (int i = 0; i < line.Length; i++)
+                {
+                    if (line[i] == '{' && (i == 0 || line[i - 1] != '\\')) b++;
+                    else if (line[i] == '}' && (i == 0 || line[i - 1] != '\\')) b--;
+                }
+
+                if (b > 0 && (line.Contains("\\") || line.Contains("_{") || line.Contains("^{")))
+                {
+                    buffer = line.TrimEnd();
+                    openBraces = b;
+                    mergeCount = 0;
+                }
+                else
+                {
+                    mergedLines.Add(line);
+                }
+            }
+            else
+            {
+                int b = 0;
+                for (int i = 0; i < line.Length; i++)
+                {
+                    if (line[i] == '{' && (i == 0 || line[i - 1] != '\\')) b++;
+                    else if (line[i] == '}' && (i == 0 || line[i - 1] != '\\')) b--;
+                }
+
+                buffer += " " + line.Trim();
+                openBraces += b;
+                mergeCount++;
+
+                if (openBraces <= 0 || mergeCount >= 6)
+                {
+                    mergedLines.Add(buffer);
+                    buffer = string.Empty;
+                    openBraces = 0;
+                    mergeCount = 0;
+                }
+            }
+        }
+        if (!string.IsNullOrEmpty(buffer)) mergedLines.Add(buffer);
+        s = string.Join("\n", mergedLines);
+
+        // 4. Dọn dẹp các dấu $ dính với dấu chấm câu và toán tử đơn vị
+        s = Regex.Replace(s, @"(?<=[.,;])\$|\$(?=[.,;])", "");
+        s = Regex.Replace(s, @"\$\s*\\times\s*\$", " \\times ");
+        s = Regex.Replace(s, @"\$\s*\\text\{(mol|gam|g|kg|lít|lit|ml)\}\s*\$", " \\text{$1} ", RegexOptions.IgnoreCase);
+        s = Regex.Replace(s, @"\$\s*\\text\{(mol|gam|g|kg|lít|lit|ml)\}", " \\text{$1}", RegexOptions.IgnoreCase);
+        s = Regex.Replace(s, @"\\text\{(mol|gam|g|kg|lít|lit|ml)\}\s*\$", "\\text{$1}", RegexOptions.IgnoreCase);
+
+        // 5. Sửa các dòng có dấu $ lẻ ở cuối dòng (như 'A. HCOOC_2H_5$' -> 'A. $HCOOC_2H_5$')
+        s = Regex.Replace(s, @"^([A-D][\.\:\)]\s*)([^\$\r\n]+)\$$", "$1$$$2$$", RegexOptions.Multiline);
+
+        // Sửa các token cô lập kết thúc bằng $ (như C_4H_6O_2$)
+        s = Regex.Replace(s, @"(?<![\$\w])([A-Z][a-zA-Z0-9_+-]+)\$", "$$$1$$");
+        s = Regex.Replace(s, @"\$\s*\.\s*\$", ".");
+
+        // 6. Bọc các phương trình phản ứng hóa học (có mũi tên thuận nghịch hoặc một chiều) vào $...$ nếu chưa có
+        s = Regex.Replace(s, @"(?<!\$)(?:^|(?<=[\r\n]))([A-Za-z0-9_\x27\^\+\(\)\s]+(?:\{[^{}]*\})?[\s]*\\(?:rightleftharpoons|xrightarrow|longrightarrow|rightarrow|leftrightharpoons|leftrightarrow)(?:\{[^{}]*\})?[\s]*[A-Za-z0-9_\x27\^\+\(\)\s]+(?:\{[^{}]*\})?)(?!\$)", m => "$" + m.Value.Trim() + "$", RegexOptions.Multiline);
+
+        // 7. Bọc các công thức tính toán toán học/hóa học chứa \frac, \sqrt vào $...$ nếu chưa bọc
+        s = Regex.Replace(s, @"(?<!\$)(?:^|(?<=[\r\n]))([a-zA-Z0-9\\%_\^\+\-\*\/=\s\(\)]*\\(?:frac|sqrt|lim|int|sum|prod)\b[^\$\r\n]+)(?!\$)", m => "$" + m.Value.Trim() + "$", RegexOptions.Multiline);
+
+        // Bọc các bước tính toán hóa học nhiều bước chứa \text{n} hoặc \text{m} và có dấu =
+        s = Regex.Replace(s, @"(?<!\$)(?:^|(?<=[\r\n]))(\\text\{[nm]\}_[^\$\r\n]+=[^\$\r\n]+)(?!\$)", m => "$" + m.Value.Trim() + "$", RegexOptions.Multiline);
+
+        // 8. Cân bằng dấu $ đơn lẻ bị cô lập trên từng dòng
+        var finalLines = s.Split('\n');
+        for (int i = 0; i < finalLines.Length; i++)
+        {
+            var l = finalLines[i];
+            int dollarCount = l.Count(c => c == '$');
+            if (dollarCount % 2 != 0)
+            {
+                // Thử đóng $ cho token công thức mở dở: $RCOOR'.* -> $RCOOR'$.*
+                l = Regex.Replace(l, @"(?<![\$\w])\$([A-Za-z0-9_+\-^\\\{\}\x27]+)(?=[\s\.,;\*\)]|$)", "$$$1$");
+                if (l.Count(c => c == '$') % 2 != 0)
+                {
+                    if (l.TrimEnd().EndsWith("$"))
+                        l = l.TrimEnd().Substring(0, l.TrimEnd().Length - 1);
+                    else
+                        l = l.Replace("$", "");
+                }
+                finalLines[i] = l;
+            }
+        }
+        s = string.Join("\n", finalLines);
+
+        // 9. Loại bỏ các dấu $ lồng bên trong dấu ngoặc nhọn { ... $ ... }
+        while (Regex.IsMatch(s, @"\{([^{}]*)\$([^{}]*)\}"))
+        {
+            s = Regex.Replace(s, @"\{([^{}]*)\$([^{}]*)\}", "{$1$2}");
+        }
+
+        return s;
+    }
+
+    private static string CleanOptionString(string? val)
+    {
+        if (string.IsNullOrWhiteSpace(val)) return string.Empty;
+        var s = val.Trim();
+
+        // Bóc sạch 100% tất cả dấu nháy đơn, nháy kép, backtick ở 2 đầu
+        while (s.Length > 0 && (s.StartsWith("'") || s.StartsWith("\"") || s.StartsWith("`") || s.StartsWith("‘") || s.StartsWith("“")))
+            s = s.Substring(1).Trim();
+        while (s.Length > 0 && (s.EndsWith("'") || s.EndsWith("\"") || s.EndsWith("`") || s.EndsWith("’") || s.EndsWith("”")))
+            s = s.Substring(0, s.Length - 1).Trim();
+
+        s = Regex.Replace(s, @"^(?:\([A-D]\)|[A-D][\.\:\)])\s*", "", RegexOptions.IgnoreCase).Trim();
+
+        while (s.Length > 0 && (s.StartsWith("'") || s.StartsWith("\"") || s.StartsWith("`") || s.StartsWith("‘") || s.StartsWith("“")))
+            s = s.Substring(1).Trim();
+        while (s.Length > 0 && (s.EndsWith("'") || s.EndsWith("\"") || s.EndsWith("`") || s.EndsWith("’") || s.EndsWith("”")))
+            s = s.Substring(0, s.Length - 1).Trim();
+
+        // Nối dòng nếu phương án hóa học bị rớt dòng
+        s = Regex.Replace(s, @"\r?\n\s*", "");
+
+        // Nếu là công thức hóa học dạng phẳng không có chỉ số dưới (ví dụ CH3COOCH3, C2H5OH, H2SO4)
+        if (Regex.IsMatch(s, @"^[A-Z][a-zA-Z0-9\(\)\-+=]*$") && Regex.IsMatch(s, @"\d"))
+        {
+            s = Regex.Replace(s, @"([A-Z][a-z]?|\))(\d+)", "$1_$2");
+        }
+
+        // Nếu là công thức chứa chỉ số dưới chưa bọc KaTeX, tự động bọc trong $...$
+        if (Regex.IsMatch(s, @"^[A-Za-z0-9_\(\)\+\-\*\^=]+$") && s.Contains('_') && !s.StartsWith("$"))
+        {
+            s = "$" + s + "$";
+        }
+
+        return s;
     }
 
     private static ImportCurriculumRequestDto? ExtractCurriculumViaRegex(string text, string domainId, string domainName)

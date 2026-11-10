@@ -55,7 +55,10 @@ public class MultiCloudExamParserService : IExamParserService
         }
 
         // 3. Lấy từ biến môi trường nếu có
-        var envKeys = Environment.GetEnvironmentVariable("GEMINI_API_KEYS") ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+        var envKeys = Environment.GetEnvironmentVariable("GEMINI_API_KEYS") 
+                      ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY")
+                      ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY")
+                      ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEYS");
         if (!string.IsNullOrWhiteSpace(envKeys))
         {
             keys.AddRange(envKeys.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
