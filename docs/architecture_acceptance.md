@@ -916,4 +916,26 @@
      - 17/17 automated unit tests passed in 397 ms (`dotnet test`).
      - Solution cleanly built with 0 errors and 0 warnings.
 
+---
+
+### [12/11/2026] - Architecture Acceptance: KaTeX Math Normalization Robustness, Punctuation Dollar Preservation & Natural Language Isolation
+- **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
+- **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
+- **Target Files**:
+  - `CurriculumAiService.cs`
+  - `PromptTemplateServiceTests.cs`
+- **Key Architectural Deliverables**:
+  1. **Preservation of Closing Dollars Preceding Punctuation**:
+     - Removed legacy regex `(?<=[.,;])\$|\$(?=[.,;])` that inadvertently stripped valid closing dollar delimiters immediately preceding periods or commas (`$C_{17}H_{33}$.`), which previously caused KaTeX math-mode leakage into succeeding Vietnamese explanatory prose.
+     - Implemented safe dollar parity balancer `EnsureBalancedDollars(s)` that strictly appends missing delimiters only when the count of raw dollar signs is odd.
+  2. **Chemical Radical & Functional Group Boundary Protection**:
+     - Decommissioned uppercase prefix splitting regex `(?<![\$\w])([A-Z][a-zA-Z0-9_+-]+)\$` that broke leading hyphen functional groups like `$-OH$` and `$-COOH$` into `$-$OH$`, preventing dollar parity inversion.
+  3. **Line-by-Line Reaction Equation Wrapping**:
+     - Isolated reaction arrow auto-wrapping (`\xrightarrow`, `\rightleftharpoons`, `\longrightarrow`) strictly to standalone single lines devoid of natural Vietnamese prose, guaranteeing clean block math rendering without multiline entanglement.
+  4. **Verification**:
+     - Added comprehensive regression test `NormalizeCurriculumLatex_WithChemistryFormulas_ShouldNotCorruptVietnameseOrDollarPlacement`.
+     - 18/18 automated unit tests passed in 415 ms (`dotnet test`).
+     - Solution built cleanly with 0 errors and 0 warnings.
+
+
 

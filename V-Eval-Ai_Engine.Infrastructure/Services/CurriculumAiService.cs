@@ -2062,7 +2062,7 @@ Suy ra ngay: $n_{Br_2} = (n_{CO_2} - n_{H_2O}) - 2n_{\text{chất béo}}$. Bấm
         }
     }
 
-    private static string NormalizeCurriculumLatex(string? text)
+    internal static string NormalizeCurriculumLatex(string? text)
     {
         if (string.IsNullOrWhiteSpace(text)) return string.Empty;
         var s = text;
@@ -2162,8 +2162,7 @@ Suy ra ngay: $n_{Br_2} = (n_{CO_2} - n_{H_2O}) - 2n_{\text{chất béo}}$. Bấm
         if (!string.IsNullOrEmpty(buffer)) mergedLines.Add(buffer);
         s = string.Join("\n", mergedLines);
 
-        // 4. Dọn dẹp các dấu $ dính với dấu chấm câu và toán tử đơn vị
-        s = Regex.Replace(s, @"(?<=[.,;])\$|\$(?=[.,;])", "");
+        // 4. Dọn dẹp các dấu $ dính với toán tử đơn vị
         s = Regex.Replace(s, @"\$\s*\\times\s*\$", " \\times ");
         s = Regex.Replace(s, @"\$\s*\\text\{(mol|gam|g|kg|lít|lit|ml)\}\s*\$", " \\text{$1} ", RegexOptions.IgnoreCase);
         s = Regex.Replace(s, @"\$\s*\\text\{(mol|gam|g|kg|lít|lit|ml)\}", " \\text{$1}", RegexOptions.IgnoreCase);
@@ -2171,21 +2170,35 @@ Suy ra ngay: $n_{Br_2} = (n_{CO_2} - n_{H_2O}) - 2n_{\text{chất béo}}$. Bấm
 
         // 5. Sửa các dòng có dấu $ lẻ ở cuối dòng (như 'A. HCOOC_2H_5$' -> 'A. $HCOOC_2H_5$')
         s = Regex.Replace(s, @"^([A-D][\.\:\)]\s*)([^\$\r\n]+)\$$", "$1$$$2$$", RegexOptions.Multiline);
-
-        // Sửa các token cô lập kết thúc bằng $ (như C_4H_6O_2$)
-        s = Regex.Replace(s, @"(?<![\$\w])([A-Z][a-zA-Z0-9_+-]+)\$", "$$$1$$");
         s = Regex.Replace(s, @"\$\s*\.\s*\$", ".");
 
-        // 6. Bọc các phương trình phản ứng hóa học (có mũi tên thuận nghịch hoặc một chiều) vào $...$ nếu chưa có
-        s = Regex.Replace(s, @"(?<!\$)(?:^|(?<=[\r\n]))([A-Za-z0-9_\x27\^\+\(\)\s]+(?:\{[^{}]*\})?[\s]*\\(?:rightleftharpoons|xrightarrow|longrightarrow|rightarrow|leftrightharpoons|leftrightarrow)(?:\{[^{}]*\})?[\s]*[A-Za-z0-9_\x27\^\+\(\)\s]+(?:\{[^{}]*\})?)(?!\$)", m => "$" + m.Value.Trim() + "$", RegexOptions.Multiline);
+        // 6. Xử lý phương trình hóa học và công thức toán học đứng riêng dòng không có $ (Xử lý theo từng dòng riêng biệt, TUYỆT ĐỐI KHÔNG ghép qua dòng mới)
+        var eqLines = s.Split('\n');
+        for (int i = 0; i < eqLines.Length; i++)
+        {
+            var trimmedLine = eqLines[i].Trim();
+            if (!trimmedLine.Contains("$"))
+            {
+                // Kiểm tra phương trình phản ứng hóa học (có mũi tên phản ứng và không chứa từ tiếng Việt)
+                if (Regex.IsMatch(trimmedLine, @"\\(?:rightleftharpoons|xrightarrow|longrightarrow|rightarrow|leftrightharpoons|leftrightarrow)\b") &&
+                    !Regex.IsMatch(trimmedLine, @"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]", RegexOptions.IgnoreCase))
+                {
+                    eqLines[i] = "$" + trimmedLine + "$";
+                    continue;
+                }
 
-        // 7. Bọc các công thức tính toán toán học/hóa học chứa \frac, \sqrt vào $...$ nếu chưa bọc
-        s = Regex.Replace(s, @"(?<!\$)(?:^|(?<=[\r\n]))([a-zA-Z0-9\\%_\^\+\-\*\/=\s\(\)]*\\(?:frac|sqrt|lim|int|sum|prod)\b[^\$\r\n]+)(?!\$)", m => "$" + m.Value.Trim() + "$", RegexOptions.Multiline);
+                // Kiểm tra công thức toán/hóa chứa dấu = và \frac hoặc \sqrt (không chứa từ tiếng Việt)
+                if (trimmedLine.Contains("=") && Regex.IsMatch(trimmedLine, @"\\(?:frac|sqrt|lim|sum|prod|int)\b") &&
+                    !Regex.IsMatch(trimmedLine, @"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]", RegexOptions.IgnoreCase))
+                {
+                    eqLines[i] = "$" + trimmedLine + "$";
+                    continue;
+                }
+            }
+        }
+        s = string.Join("\n", eqLines);
 
-        // Bọc các bước tính toán hóa học nhiều bước chứa \text{n} hoặc \text{m} và có dấu =
-        s = Regex.Replace(s, @"(?<!\$)(?:^|(?<=[\r\n]))(\\text\{[nm]\}_[^\$\r\n]+=[^\$\r\n]+)(?!\$)", m => "$" + m.Value.Trim() + "$", RegexOptions.Multiline);
-
-        // 8. Cân bằng dấu $ đơn lẻ bị cô lập trên từng dòng
+        // 7. Cân bằng dấu $ đơn lẻ bị cô lập trên từng dòng
         var finalLines = s.Split('\n');
         for (int i = 0; i < finalLines.Length; i++)
         {
@@ -2193,14 +2206,20 @@ Suy ra ngay: $n_{Br_2} = (n_{CO_2} - n_{H_2O}) - 2n_{\text{chất béo}}$. Bấm
             int dollarCount = l.Count(c => c == '$');
             if (dollarCount % 2 != 0)
             {
-                // Thử đóng $ cho token công thức mở dở: $RCOOR'.* -> $RCOOR'$.*
-                l = Regex.Replace(l, @"(?<![\$\w])\$([A-Za-z0-9_+\-^\\\{\}\x27]+)(?=[\s\.,;\*\)]|$)", "$$$1$");
-                if (l.Count(c => c == '$') % 2 != 0)
+                // Nếu kết thúc bằng $ thừa thì bỏ $ cuối
+                if (l.TrimEnd().EndsWith("$"))
                 {
-                    if (l.TrimEnd().EndsWith("$"))
-                        l = l.TrimEnd().Substring(0, l.TrimEnd().Length - 1);
-                    else
+                    int lastIdx = l.LastIndexOf('$');
+                    l = l.Remove(lastIdx, 1);
+                }
+                else
+                {
+                    // Thử đóng $ cho token công thức mở dở ở cuối dòng
+                    l = Regex.Replace(l, @"(?<![\$\w])\$([A-Za-z0-9_+\-^\\\{\}\x27]+)(?=[\s\.,;\*\)]|$)", "$$$1$");
+                    if (l.Count(c => c == '$') % 2 != 0)
+                    {
                         l = l.Replace("$", "");
+                    }
                 }
                 finalLines[i] = l;
             }

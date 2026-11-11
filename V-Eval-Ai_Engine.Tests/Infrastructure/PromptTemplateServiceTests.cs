@@ -300,4 +300,36 @@ public class PromptTemplateServiceTests
         result.Chapters[0].Lessons[0].Patterns[0].Questions[0].OptionA.Should().Be("$HCOOCH_3$");
         result.Chapters[0].Lessons[0].Patterns[0].Questions[0].CorrectOption.Should().Be("A");
     }
+
+    [Fact]
+    public void NormalizeCurriculumLatex_WithChemistryFormulas_ShouldNotCorruptVietnameseOrDollarPlacement()
+    {
+        string t1 = "Khái niệm: Khi thay thế nhóm - OH ở nhóm carboxyl (-COOH) của carboxylic acid bằng nhóm -OR' thì được ester. Công thức tổng quát của ester đơn chức, mạch hở : C_nH_{2n}O_2\n\nRCOOR' + NaOH \\xrightarrow{t^\\circ} RCOONa + R'OH\n\nRCOOCH=CH_2 + NaOH \\xrightarrow{t^\\circ} RCOONa + CH_3CHO";
+        string out1 = CurriculumAiService.NormalizeCurriculumLatex(t1);
+
+        string t2 = "Triolein có 3 liên kết \\pi ở gốc $C_{17}H_{33}$. 1 mol triolein phản ứng tối đa 3 mol $H_2$. Số mol triolein n = \\frac{17,68}{884} = 0,02 mol \\rightarrow n_{H_2} = 0,06 mol.";
+        string out2 = CurriculumAiService.NormalizeCurriculumLatex(t2);
+
+        string t3 = "n_{\\text{triglyceride}} = \\frac{n_{CO_2} - n_{H_2O}}{k - 1}";
+        string out3 = CurriculumAiService.NormalizeCurriculumLatex(t3);
+
+        string t4 = "-CH = CH_2. Do đó công thức cấu tạo của ester là CH_3COOCH = CH_2.";
+        string out4 = CurriculumAiService.NormalizeCurriculumLatex(t4);
+
+        // Assert 1: Standalone chemical equations are wrapped cleanly without merging lines
+        out1.Should().Contain("$RCOOR' + NaOH \\xrightarrow{t^\\circ} RCOONa + R'OH$");
+        out1.Should().Contain("$RCOOCH=CH_2 + NaOH \\xrightarrow{t^\\circ} RCOONa + CH_3CHO$");
+
+        // Assert 2: Formulas ending before punctuation keep their closing dollar without swallowing Vietnamese text
+        out2.Should().Contain("$C_{17}H_{33}$.");
+        out2.Should().NotContain("$C_{17}H_{33}. 1 mol");
+
+        // Assert 3: Equations with fractions are wrapped cleanly as a single formula, never inserting $ into = or denominator
+        out3.Should().Be("$n_{\\text{triglyceride}} = \\frac{n_{CO_2} - n_{H_2O}}{k - 1}$");
+        out3.Should().NotContain("$=");
+        out3.Should().NotContain("k - 1$}");
+
+        // Assert 4: Plain Vietnamese text is never corrupted by stray formulas
+        out4.Should().Contain("Do đó công thức cấu tạo của ester là");
+    }
 }
