@@ -108,13 +108,45 @@ public static class ExamEndpoints
 
             if (File.Exists(filePath))
             {
-                string htmlContent = await File.ReadAllTextAsync(filePath);
-                return Results.Content(htmlContent, "text/html");
+                string htmlContent = await File.ReadAllTextAsync(filePath, System.Text.Encoding.UTF8);
+                return Results.Content(htmlContent, "text/html; charset=utf-8");
             }
 
             return Results.NotFound(new { message = "Không tìm thấy file view-exam.html trong wwwroot." });
         })
         .WithName("ViewExamViewerPage");
+
+        // 4. Endpoint phục vụ giao diện khảo sát năng lực chẩn đoán & Psychometrics (Core Flow 1)
+        group.MapGet("/view-diagnostic", async (IWebHostEnvironment env) =>
+        {
+            string webRoot = env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            string filePath = Path.Combine(webRoot, "view-diagnostic.html");
+
+            if (File.Exists(filePath))
+            {
+                string htmlContent = await File.ReadAllTextAsync(filePath, System.Text.Encoding.UTF8);
+                return Results.Content(htmlContent, "text/html; charset=utf-8");
+            }
+
+            return Results.NotFound(new { message = "Không tìm thấy file view-diagnostic.html trong wwwroot." });
+        })
+        .WithName("ViewDiagnosticRunnerPage");
+
+        // 5. Endpoint phục vụ giao diện Socratic Tutor Mentor Review Dashboard (Core Flow 4)
+        group.MapGet("/view-tutor-mentor", async (IWebHostEnvironment env) =>
+        {
+            string webRoot = env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            string filePath = Path.Combine(webRoot, "view-tutor-mentor.html");
+
+            if (File.Exists(filePath))
+            {
+                string htmlContent = await File.ReadAllTextAsync(filePath, System.Text.Encoding.UTF8);
+                return Results.Content(htmlContent, "text/html; charset=utf-8");
+            }
+
+            return Results.NotFound(new { message = "Không tìm thấy file view-tutor-mentor.html trong wwwroot." });
+        })
+        .WithName("ViewTutorMentorDashboardPage");
 
         return app;
     }

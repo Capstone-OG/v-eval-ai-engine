@@ -12,6 +12,12 @@ obj/
 !**/appsettings.example.json
 
 # Uploaded test and preview files
-**/wwwroot/uploads/*.pdf
+**/wwwroot/uploads/**
+!**/wwwroot/uploads/.gitkeep
 **/wwwroot/extracted_images/*
 !**/wwwroot/extracted_images/.gitkeep
+
+# Test results and Coverage reports
+TestResults/
+[Tt]est[Rr]esults/
+*.cobertura.xml

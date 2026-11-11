@@ -1,0 +1,2977 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>V-Eval • Khảo Sát Năng Lực Đầu Vào & Phân Tích Psychometrics (Core Flow 1)</title>
+  
+  <!-- Fonts: Plus Jakarta Sans (Full Vietnamese Support), Inter, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- KaTeX for LaTeX formula rendering (Synchronous for guaranteed instant math rendering) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Chart.js for Radar Chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #070b14;
+      --bg-card: #0f172a;
+      --bg-card-subtle: rgba(30, 41, 59, 0.7);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.25);
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-purple: #a855f7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --border: #1e293b;
+      --border-focus: #38bdf8;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* KaTeX Typography Fine-Tuning */
+    .katex {
+      font-size: 1.1em !important;
+      color: #f1f5f9;
+    }
+    .katex-html {
+      user-select: text;
+    }
+    .katex-mathml {
+      user-select: none;
+    }
+
+    /* Header */
+    header {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, #6366f1, #06b6d4);
+      color: #fff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800;
+      font-size: 15px;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.05em;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+
+    .brand-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      background: linear-gradient(to right, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition);
+      border: none;
+      outline: none;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--text-muted);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    }
+    .btn-success:hover {
+      background: linear-gradient(135deg, #059669, #047857);
+      transform: translateY(-1px);
+    }
+
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.15);
+      color: #fda4af;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+    .btn-danger:hover {
+      background: rgba(244, 63, 94, 0.25);
+    }
+
+    /* Config Drawer / Bar */
+    .config-strip {
+      background: rgba(15, 23, 42, 0.6);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 28px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      font-size: 13px;
+    }
+
+    .config-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .config-label {
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .config-input {
+      background: #0b0f19;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+      outline: none;
+      transition: var(--transition);
+    }
+    .config-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-glow);
+    }
+
+    .config-select {
+      background: #0b0f19;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      flex: 1;
+    }
+
+    /* Tabs Navigation */
+    .tabs-bar {
+      display: flex;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    .tab-item {
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: 1px solid transparent;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .tab-item:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .tab-item.active {
+      color: #fff;
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    /* AI Exam Studio Styles */
+    .studio-container {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .studio-hero {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.08));
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: var(--radius-lg);
+      padding: 24px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .studio-hero-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .studio-hero-desc {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .studio-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .prompt-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .prompt-textarea {
+      width: 100%;
+      min-height: 95px;
+      background: #090d16;
+      border: 1.5px solid var(--border);
+      color: #f8fafc;
+      padding: 14px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      transition: var(--transition);
+    }
+    .prompt-textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .preset-pills-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: -6px;
+    }
+
+    .preset-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .preset-pill:hover {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: var(--primary);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .studio-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      align-items: end;
+    }
+
+    .studio-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .studio-select {
+      background: #090d16;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      outline: none;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .studio-select:focus {
+      border-color: var(--primary);
+    }
+
+    .count-pills {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .count-pill {
+      background: #090d16;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .count-pill:hover, .count-pill.active {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: #6366f1;
+      color: #fff;
+    }
+
+    .review-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-top: 10px;
+    }
+
+    .review-summary-banner {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .stats-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .stat-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stat-chip b {
+      color: #fff;
+    }
+
+    .review-q-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: var(--transition);
+    }
+    .review-q-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    .review-options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .review-opt {
+      background: rgba(30, 41, 59, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .review-opt.is-correct {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--accent-emerald);
+      color: #6ee7b7;
+      font-weight: 600;
+    }
+
+    .review-explanation {
+      background: rgba(6, 182, 212, 0.08);
+      border-left: 3px solid var(--accent-cyan);
+      padding: 10px 14px;
+      border-radius: 0 6px 6px 0;
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    /* Floating Toast Notification */
+    .toast-box {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 9999;
+      background: #0f172a;
+      border: 1px solid #6366f1;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.3);
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateY(-20px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+    .toast-box.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Exam Layout */
+    .exam-layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 992px) {
+      .exam-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Sidebar / Navigator */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .card-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .q-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .q-dot {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 10px 4px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+    }
+    .q-dot:hover {
+      border-color: var(--primary);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+    .q-dot.active {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+      color: #fff;
+    }
+    .q-dot.answered {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: var(--primary);
+      color: #e0e7ff;
+    }
+    .q-dot.fast-guess {
+      border-color: var(--accent-amber);
+    }
+    .q-dot.fast-guess::after {
+      content: '⚡';
+      position: absolute;
+      top: -6px;
+      right: -4px;
+      font-size: 10px;
+    }
+
+    /* Bloom Badge Styles */
+    .bloom-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 11px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .bloom-1 { background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; }
+    .bloom-2 { background: rgba(45, 212, 191, 0.15); border: 1px solid #2dd4bf; color: #2dd4bf; }
+    .bloom-3 { background: rgba(52, 211, 153, 0.15); border: 1px solid #34d399; color: #34d399; }
+    .bloom-4 { background: rgba(251, 191, 36, 0.15); border: 1px solid #fbbf24; color: #fbbf24; }
+    .bloom-5 { background: rgba(251, 146, 60, 0.15); border: 1px solid #fb923c; color: #fb923c; }
+    .bloom-6 { background: rgba(192, 132, 252, 0.15); border: 1px solid #c084fc; color: #c084fc; }
+
+    /* Question Pane */
+    .question-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+    }
+
+    .q-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    .q-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .q-number {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .domain-tag {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .timer-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: 20px;
+      color: var(--accent-cyan);
+    }
+
+    .q-body {
+      font-size: 16.5px;
+      line-height: 1.75;
+      color: var(--text-main);
+      padding: 10px 0;
+    }
+
+    /* Option Cards */
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .option-card {
+      background: rgba(30, 41, 59, 0.45);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+      position: relative;
+    }
+    .option-card:hover {
+      background: rgba(30, 41, 59, 0.85);
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateX(4px);
+    }
+    .option-card.selected {
+      background: rgba(99, 102, 241, 0.16);
+      border-color: #6366f1;
+      box-shadow: 0 0 18px rgba(99, 102, 241, 0.28);
+    }
+
+    .opt-key {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text-muted);
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+    .option-card:hover .opt-key {
+      border-color: rgba(99, 102, 241, 0.6);
+      color: #fff;
+    }
+    .option-card.selected .opt-key {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      border-color: #818cf8;
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.5);
+    }
+
+    .opt-text {
+      flex: 1;
+      font-size: 15.5px;
+      line-height: 1.6;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+    }
+
+    .opt-radio-indicator {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+    .option-card:hover .opt-radio-indicator {
+      border-color: rgba(99, 102, 241, 0.6);
+    }
+    .option-card.selected .opt-radio-indicator {
+      border-color: #6366f1;
+      background: #6366f1;
+      box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);
+    }
+    .opt-radio-indicator::after {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #fff;
+      display: none;
+    }
+    .option-card.selected .opt-radio-indicator::after {
+      display: block;
+    }
+
+    .q-nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+      margin-top: 10px;
+    }
+
+    /* Auto Fill Demo Panel */
+    .auto-fill-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px dashed var(--border);
+    }
+
+    /* Results Dashboard */
+    .results-container {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .kpi-card {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--card-accent, var(--primary));
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .kpi-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .placement-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.05em;
+    }
+    .tier-breakthrough {
+      background: linear-gradient(135deg, #a855f7, #6366f1);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(168, 85, 247, 0.4);
+    }
+    .tier-acceleration {
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4);
+    }
+    .tier-foundation {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+    }
+
+    /* Radar & Socratic Grid */
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 992px) {
+      .analysis-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .radar-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .radar-canvas-container {
+      width: 100%;
+      max-width: 480px;
+      height: 380px;
+      position: relative;
+    }
+
+    .socratic-card {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.95));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .socratic-quote {
+      background: rgba(99, 102, 241, 0.08);
+      border-left: 4px solid var(--primary);
+      padding: 16px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 14.5px;
+      line-height: 1.75;
+      color: #e2e8f0;
+      font-style: italic;
+    }
+
+    /* Bloom Progress Bars */
+    .bloom-progress-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .bloom-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .bloom-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .progress-track {
+      background: rgba(255, 255, 255, 0.06);
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s ease-in-out;
+    }
+
+    /* BKT Table */
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: rgba(15, 23, 42, 0.5);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    th {
+      background: rgba(30, 41, 59, 0.8);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 12px 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-main);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Modal / Alert */
+    .alert-banner {
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .alert-warning {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fde68a;
+    }
+    .alert-success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #a7f3d0;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 16px 28px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="logo-badge">V-EVAL</div>
+      <div>
+        <div class="brand-title">Core Flow 1 • Diagnostic Runner & Psychometrics</div>
+        <div class="brand-subtitle">Thang đo Bloom 6 Mức Độ • IRT 2PL • Bayesian Knowledge Tracing • Radar Chart</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" id="btn-toggle-config">⚙️ Cấu Hình API</button>
+      <button class="btn btn-success" id="btn-load-exam">📥 Tải Đề Thi (30 Câu)</button>
+      <button class="btn btn-primary" id="btn-submit-exam">🚀 NỘP BÀI & PHÂN TÍCH</button>
+    </div>
+  </header>
+
+  <!-- Configuration Bar -->
+  <div class="config-strip" id="config-strip">
+    <div class="config-group">
+      <span class="config-label">Content Service:</span>
+      <input type="text" class="config-input" id="cfg-content-url" value="http://localhost:5249" style="width: 170px;" />
+    </div>
+    <div class="config-group">
+      <span class="config-label">Practice Service:</span>
+      <input type="text" class="config-input" id="cfg-practice-url" value="http://localhost:5261" style="width: 170px;" />
+    </div>
+    <div class="config-group">
+      <span class="config-label">Học Sinh:</span>
+      <input type="text" class="config-input" id="cfg-student-id" value="a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d" style="width: 290px;" />
+      <button class="btn btn-outline" style="padding: 5px 8px; font-size: 11px;" id="btn-rand-student">🎲 Đổi ID</button>
+    </div>
+    <div class="config-group">
+      <span class="config-label">Cơ Sở (Campus):</span>
+      <select class="config-select" id="cfg-campus-id">
+        <option value="d0000000-0000-0000-0000-000000000001">Cơ sở Thủ Đức</option>
+        <option value="d0000000-0000-0000-0000-000000000002">Cơ sở Quận 10</option>
+      </select>
+    </div>
+    <div class="config-group">
+      <span class="config-label">Mục Tiêu V-ACT:</span>
+      <input type="number" class="config-input" id="cfg-target-score" value="850" min="300" max="1200" step="10" style="width: 80px;" />
+    </div>
+  </div>
+
+  <!-- Container -->
+  <div class="container">
+
+    <!-- Toast Notification -->
+    <div id="toast-box" class="toast-box">
+      <span>🔔</span>
+      <span id="toast-msg">Thông báo hệ thống</span>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs-bar">
+      <button class="tab-item active" id="tab-studio" onclick="switchTab('studio')">
+        ✨ 1. AI Exam Studio (Tạo & Duyệt Đề)
+      </button>
+      <button class="tab-item" id="tab-exam" onclick="switchTab('exam')">
+        📝 2. Phòng Thi Học Sinh (Làm Bài) <span id="badge-exam-loaded" style="font-size:10px; padding:2px 7px; border-radius:10px; background:rgba(99,102,241,0.25); color:#818cf8; margin-left:6px;">Sẵn Sàng</span>
+      </button>
+      <button class="tab-item" id="tab-results" onclick="switchTab('results')">
+        📊 3. Báo Cáo Năng Lực & Radar Chart <span id="badge-has-result" style="display:none; color:var(--accent-emerald);">●</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: AI EXAM STUDIO (TEACHER PROMPT & APPROVAL) -->
+    <div id="view-studio-section" class="studio-container">
+      
+      <!-- Studio Hero Header -->
+      <div class="studio-hero">
+        <div>
+          <div class="studio-hero-title">
+            <span>✨ AI Exam Studio • Thiết Kế & Kiểm Duyệt Đề Thi Trắc Nghiệm ĐGNL</span>
+          </div>
+          <div class="studio-hero-desc">
+            Nhập câu lệnh prompt tùy biến, định hướng chuyên sâu môn học/dạng bài, chọn 6 cấp độ Bloom Taxonomy và xem trước toàn bộ câu hỏi trước khi bấm <b>Accept</b> phát hành cho học sinh.
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span class="domain-tag" style="background: rgba(99, 102, 241, 0.2); border-color: #6366f1; color: #a5b4fc; font-weight: 700;">
+            🤖 Google Gemini Engine
+          </span>
+          <span class="domain-tag" style="background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #6ee7b7; font-weight: 700;">
+            📐 Bloom 6 Cấp Độ
+          </span>
+        </div>
+      </div>
+
+      <!-- Studio Controls Card -->
+      <div class="studio-card">
+        
+        <!-- Prompt Row -->
+        <div class="prompt-label-row">
+          <span class="config-label" style="font-size: 13px; font-weight: 700; color: #f8fafc;">
+            ✍️ Câu Lệnh Prompt Tùy Biến (Custom Focus Prompt):
+          </span>
+          <span style="font-size: 12px; color: var(--text-muted);">Gợi ý chuyên sâu / Dạng bài tập trọng tâm</span>
+        </div>
+
+        <textarea id="studio-prompt" class="prompt-textarea" placeholder="Nhập yêu cầu chi tiết cho AI sinh đề..."></textarea>
+
+        <!-- Quick Preset Pills -->
+        <div class="preset-pills-row">
+          <span style="font-size: 11px; color: var(--text-dim); display: flex; align-items: center; margin-right: 4px;">Gợi ý mẫu:</span>
+          <button class="preset-pill" onclick="applyPromptPreset('standard_vact')">
+            🎯 Chuẩn ĐGNL V-ACT (5 Lĩnh Vực Cân Bằng)
+          </button>
+          <button class="preset-pill" onclick="applyPromptPreset('deep_math')">
+            📐 Chuyên Sâu Toán & Phân Tích Dữ Liệu
+          </button>
+          <button class="preset-pill" onclick="applyPromptPreset('deep_logic')">
+            🧠 Chuyên Sâu Tư Duy Logic & Suy Diễn
+          </button>
+          <button class="preset-pill" onclick="applyPromptPreset('deep_nat_sci')">
+            🔬 Chuyên Sâu KHTN Ứng Dụng (Lý - Hóa - Sinh)
+          </button>
+          <button class="preset-pill" onclick="applyPromptPreset('deep_lang')">
+            📖 Chuyên Sâu Ngôn Ngữ & Đọc Hiểu
+          </button>
+          <button class="preset-pill" onclick="applyPromptPreset('deep_soc_sci')">
+            🌍 Chuyên Sâu KHXH (Lịch Sử & Địa Lý)
+          </button>
+        </div>
+
+        <!-- Studio Grid Filters -->
+        <div class="studio-grid">
+          
+          <!-- Domain Selector -->
+          <div class="studio-field">
+            <span class="config-label">Lĩnh Vực / Môn Học (Domain):</span>
+            <select id="studio-domain" class="studio-select">
+              <option value="ALL">🌐 Tất cả 5 lĩnh vực (Chuẩn hóa ĐGNL V-ACT)</option>
+              <option value="dom_math">📐 Toán học & Phân tích số liệu</option>
+              <option value="dom_logic">🧠 Tư duy Logic & Suy luận</option>
+              <option value="dom_lang">📖 Sử dụng Ngôn ngữ & Văn học</option>
+              <option value="dom_nat_sci">🔬 Khoa học Tự nhiên (Lý - Hóa - Sinh)</option>
+              <option value="dom_soc_sci">🌍 Khoa học Xã hội (Sử - Địa)</option>
+            </select>
+          </div>
+
+          <!-- Bloom Difficulty Selector -->
+          <div class="studio-field">
+            <span class="config-label">Mức Độ Khó (Bloom's Taxonomy 6 Cấp):</span>
+            <select id="studio-bloom" class="studio-select">
+              <option value="ALL">⚖️ Phân bổ Cân Bằng (Đủ 6 Mức Bloom: Nhận biết ➔ Sáng tạo)</option>
+              <option value="BASIC">🟢 Cơ bản (Mức 1: Nhận biết & Mức 2: Thông hiểu)</option>
+              <option value="INTERMEDIATE">🟡 Vận dụng (Mức 3: Vận dụng & Mức 4: Phân tích)</option>
+              <option value="ADVANCED">🔴 Nâng cao (Mức 5: Đánh giá & Mức 6: Sáng tạo)</option>
+              <option value="1">Mức 1: Nhận biết (Remembering)</option>
+              <option value="2">Mức 2: Thông hiểu (Understanding)</option>
+              <option value="3">Mức 3: Vận dụng (Applying)</option>
+              <option value="4">Mức 4: Phân tích (Analyzing)</option>
+              <option value="5">Mức 5: Đánh giá (Evaluating)</option>
+              <option value="6">Mức 6: Sáng tạo (Creating)</option>
+            </select>
+          </div>
+
+          <!-- Question Count Selector -->
+          <div class="studio-field">
+            <span class="config-label">Số Lượng Câu Hỏi:</span>
+            <div class="count-pills">
+              <button class="count-pill" id="pill-cnt-10" onclick="setStudioCount(10)">10 câu</button>
+              <button class="count-pill" id="pill-cnt-20" onclick="setStudioCount(20)">20 câu</button>
+              <button class="count-pill active" id="pill-cnt-30" onclick="setStudioCount(30)">30 câu</button>
+              <input type="number" id="studio-count" class="config-input" min="5" max="50" value="30" style="width: 70px; text-align: center;" />
+            </div>
+          </div>
+
+          <!-- Engine Mode Selector -->
+          <div class="studio-field">
+            <span class="config-label">Công Nghệ Sinh Đề (AI Engine):</span>
+            <select id="studio-engine" class="studio-select">
+              <option value="gemini">🧠 Google Gemini Cloud (~3-6s • Tự Sinh Mới 100%)</option>
+              <option value="fast">⚡ Siêu Tốc Calibrated (&lt; 0.1s • Kho Chuẩn Hóa RAM)</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Trigger Generation Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 18px; margin-top: 6px;">
+          <div id="studio-status" style="font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+            <span>🟢</span>
+            <span>Hệ thống AI sẵn sàng tiếp nhận prompt & tạo đề</span>
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button id="btn-restore-draft" class="btn btn-outline" style="display: none; padding: 11px 18px; font-size: 13.5px; border-color: var(--accent-cyan); color: #38bdf8;" onclick="restoreSavedDraft()">
+              📂 Khôi Phục Đề Đã Lưu
+            </button>
+            <button id="btn-studio-generate" class="btn btn-primary" style="padding: 11px 24px; font-size: 14px;" onclick="generateExamFromStudio()">
+              🚀 AI Sinh Đề Thi Theo Yêu Cầu
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Studio Review & Teacher Approval Section -->
+      <div id="studio-review-panel" class="review-panel" style="display: none;">
+        
+        <!-- Summary & Approval Bar -->
+        <div class="review-summary-banner">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div>
+              <div style="font-size: 17px; font-weight: 700; color: #fff;" id="lbl-review-title">
+                Đề Khảo Sát Năng Lực AI Sinh (30 câu)
+              </div>
+              <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px;" id="lbl-review-prompt">
+                Prompt: ...
+              </div>
+            </div>
+
+            <!-- Approval Action Buttons -->
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+              <button id="btn-studio-export" class="btn btn-outline" onclick="downloadExamJson()">
+                📥 Tải File JSON Đề Thi
+              </button>
+              <button id="btn-studio-save-db" class="btn btn-outline" style="border-color:#f59e0b; color:#fbbf24; background:rgba(245,158,11,0.08); font-weight:600;" onclick="saveExamToDatabase()">
+                💾 Lưu Vào Database (Chờ Duyệt)
+              </button>
+              <button id="btn-studio-accept" class="btn btn-success" style="padding: 10px 22px; font-size: 14px; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);" onclick="acceptStudioExam()">
+                ✅ ACCEPT: Phê Duyệt & Chuyển Sang Phòng Thi Học Sinh ➔
+              </button>
+            </div>
+          </div>
+
+          <!-- Detailed Statistical Distribution Chips -->
+          <div class="stats-chips-row" id="review-stats-chips">
+            <!-- Chips rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Generated Questions Preview List -->
+        <div id="studio-questions-list" style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- Question cards will be rendered here -->
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 2: EXAM RUNNER -->
+    <div id="view-exam-section" class="exam-layout" style="display: none;">
+      
+      <!-- Left: Navigator & Quick Fill -->
+      <div class="card">
+        <div class="card-title">
+          <span>Danh Sách 30 Câu</span>
+          <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);" id="progress-text">0/30 đã chọn</span>
+        </div>
+
+        <div class="q-grid" id="navigator-grid">
+          <!-- 30 dots will be rendered here -->
+        </div>
+
+        <div style="font-size: 11px; color: var(--text-dim); display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px;">
+          <div><span style="color: var(--primary);">●</span> Đã chọn câu trả lời</div>
+          <div><span style="color: var(--accent-cyan);">●</span> Câu đang mở</div>
+          <div><span style="color: var(--accent-amber);">⚡</span> Làm quá nhanh (&lt; 5s - Đoán mò)</div>
+        </div>
+
+        <!-- Quick Demo Fill -->
+        <div class="auto-fill-panel">
+          <div class="config-label" style="font-size: 11px;">⚡ Tự Động Điền Nhanh (Demo Solver):</div>
+          <button class="btn btn-outline" style="width:100%; justify-content: flex-start;" onclick="quickFill(0.85, 35)">
+            🎯 Học Sinh Khá Giỏi (~85% Đúng)
+          </button>
+          <button class="btn btn-outline" style="width:100%; justify-content: flex-start;" onclick="quickFill(0.50, 25)">
+            ⚖️ Học Sinh Trung Bình (~50% Đúng)
+          </button>
+          <button class="btn btn-outline" style="width:100%; justify-content: flex-start;" onclick="quickFill(0.25, 20)">
+            ⚠️ Học Sinh Yếu (~25% Đúng)
+          </button>
+          <button class="btn btn-outline" style="width:100%; justify-content: flex-start; color: var(--accent-amber);" onclick="quickFill(0.70, 2)">
+            ⚡ Khoanh Bừa &lt; 5s (Test Trừ Điểm)
+          </button>
+          <button class="btn btn-danger" style="width:100%; justify-content: center;" onclick="resetAnswers()">
+            🗑️ Xóa Tất Cả Câu Trả Lời
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: Question Pane -->
+      <div class="question-card" id="question-card">
+        <div class="q-header">
+          <div class="q-meta">
+            <span class="q-number" id="lbl-q-number">Câu 1</span>
+            <span class="domain-tag" id="lbl-q-domain">Toán học & Phân tích số liệu</span>
+            <span class="domain-tag" style="color: #cbd5e1;" id="lbl-q-skill">Giải tích & Hàm số</span>
+            <span class="bloom-badge bloom-1" id="lbl-q-bloom">Mức 1: Nhận biết</span>
+          </div>
+          <div class="timer-badge">
+            <span>⏱️</span>
+            <span id="lbl-q-timer">00:00</span>
+          </div>
+        </div>
+
+        <div class="q-body" id="lbl-q-content">
+          Đang tải đề khảo sát... Vui lòng đợi hoặc bấm "Tải Đề Thi".
+        </div>
+
+        <div class="options-list" id="options-container">
+          <!-- 4 option cards A, B, C, D -->
+        </div>
+
+        <div class="q-nav-buttons">
+          <button class="btn btn-outline" id="btn-prev" onclick="navigateQuestion(-1)">⬅️ Câu Trước</button>
+          <span style="font-size: 13px; color: var(--text-dim); font-family: 'JetBrains Mono';" id="lbl-q-pos">1 / 30</span>
+          <button class="btn btn-outline" id="btn-next" onclick="navigateQuestion(1)">Câu Tiếp Theo ➡️</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: RESULTS DASHBOARD -->
+    <div id="view-results-section" class="results-container" style="display: none;">
+      
+      <!-- Top Hero KPI Banner -->
+      <div class="hero-kpis">
+        <div class="kpi-card" style="--card-accent: var(--accent-cyan);">
+          <span class="kpi-label">Điểm Chẩn Đoán (Raw Score)</span>
+          <div class="kpi-value" id="kpi-score">-- / 30</div>
+          <div class="kpi-sub" id="kpi-accuracy">Tỷ lệ chính xác: --%</div>
+        </div>
+
+        <div class="kpi-card" style="--card-accent: var(--primary);">
+          <span class="kpi-label">Năng Lực Ước Lượng IRT (θ₀)</span>
+          <div class="kpi-value" id="kpi-theta">--</div>
+          <div class="kpi-sub">Thang đo tiêu chuẩn: [-3.0, +3.0]</div>
+        </div>
+
+        <div class="kpi-card" style="--card-accent: var(--accent-purple);">
+          <span class="kpi-label">Xếp Lớp Năng Lực (Placement Tier)</span>
+          <div style="margin-top: 4px;">
+            <span class="placement-badge tier-breakthrough" id="kpi-placement">--</span>
+          </div>
+          <div class="kpi-sub" id="kpi-enrolled-class">Lớp học: Đang đồng bộ...</div>
+        </div>
+
+        <div class="kpi-card" style="--card-accent: var(--accent-emerald);">
+          <span class="kpi-label">Tổng Thời Gian Làm Bài</span>
+          <div class="kpi-value" id="kpi-time">--:--</div>
+          <div class="kpi-sub" id="kpi-campus">Cơ sở: CS Thủ Đức</div>
+        </div>
+      </div>
+
+      <!-- Radar Chart & Socratic Feedback -->
+      <div class="analysis-grid">
+        
+        <!-- Left: Radar Chart Polygon -->
+        <div class="radar-box">
+          <div class="card-title" style="width: 100%; margin-bottom: 8px;">
+            <span>Biểu Đồ Radar Đa Giác Năng Lực (V-ACT Benchmark)</span>
+            <span style="font-size: 11px; font-weight: normal; color: var(--accent-amber);">🟠 Mục tiêu: <span id="lbl-radar-benchmark">850/1200</span></span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 12px; align-self: flex-start;">
+            Đối chiếu tỷ lệ chính xác thực tế (Vùng màu Tím/Cyan) so với ngưỡng chuẩn kỳ vọng (Đường màu Cam).
+          </p>
+          <div class="radar-canvas-container">
+            <canvas id="radarChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Right: Socratic Commentary & Weak Skills -->
+        <div class="socratic-card">
+          <div class="card-title">
+            <span>Nhận Xét Sư Phạm AI Socratic (Google Gemini)</span>
+            <span style="font-size: 12px; color: var(--accent-cyan);">✦ AI Engine</span>
+          </div>
+
+          <div class="socratic-quote" id="box-socratic-comment">
+            Chưa có kết quả phân tích. Hãy hoàn thành bài kiểm tra và bấm "Nộp Bài & Phân Tích".
+          </div>
+
+          <!-- Weak Skills Warning -->
+          <div class="card-title" style="font-size: 14px; margin-top: 10px;">
+            <span>Cảnh Báo Kỹ Năng Yếu (Độ chính xác &lt; 60%)</span>
+          </div>
+          <div id="weak-skills-container" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- Weak skill pills -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bloom Taxonomy 6 Levels Breakdown -->
+      <div class="card">
+        <div class="card-title">
+          <span>Phân Tích Năng Lực Nhận Thức Theo Thang Đo Bloom (6 Mức Độ)</span>
+          <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">Revised Bloom's Taxonomy Breakdown</span>
+        </div>
+        <div class="bloom-progress-list" id="bloom-progress-container">
+          <!-- 6 Bloom Progress bars -->
+        </div>
+      </div>
+
+      <!-- BKT Priors Table -->
+      <div class="card">
+        <div class="card-title">
+          <span>Giá Trị Thành Thạo Ban Đầu BKT P(L₀) Từng Kỹ Năng (Bayesian Knowledge Tracing)</span>
+          <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">Đầu vào cho Lộ Trình Cá Nhân Hóa (Flow 2) & Luyện Tập Thích Ứng (Flow 3)</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã Kỹ Năng (Skill ID)</th>
+                <th>Miền Năng Lực (Domain)</th>
+                <th>Năng Lực θ_Skill</th>
+                <th>BKT Prior P(L₀)</th>
+                <th>Nguồn Suy Diễn</th>
+                <th>Đánh Giá Ban Đầu</th>
+              </tr>
+            </thead>
+            <tbody id="bkt-table-body">
+              <!-- BKT rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Detailed 30-Question Review -->
+      <div class="card">
+        <div class="card-title">
+          <span>Chi Tiết 30 Câu Hỏi Đã Làm & Đo Lường Vi Mô Thời Gian</span>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 11px;" onclick="filterReviewTable('ALL')">Tất cả</button>
+            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 11px; color: var(--accent-emerald);" onclick="filterReviewTable('CORRECT')">Đúng</button>
+            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 11px; color: var(--accent-rose);" onclick="filterReviewTable('WRONG')">Sai</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nội Dung Câu Hỏi</th>
+                <th>Mức Bloom</th>
+                <th>Lựa Chọn Của Bạn</th>
+                <th>Đáp Án Chuẩn</th>
+                <th>Thời Gian Làm</th>
+                <th>Trạng Thái</th>
+              </tr>
+            </thead>
+            <tbody id="review-table-body">
+              <!-- Review rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    V-Eval Capstone Project • AI-Powered Personalized Learning Path • Core Flow 1 Competency Diagnosis Runner
+  </footer>
+
+  <!-- Logic Script -->
+  <script>
+    // -------------------------------------------------------------
+    // Intelligent Math Formatter (Auto-enclosing LaTeX delimiters)
+    // -------------------------------------------------------------
+    function ensureMathDelimiters(text) {
+      if (!text) return "";
+      let str = String(text).trim();
+      
+      // If already has $, KaTeX will parse those segments
+      if (str.includes("$")) {
+        return str;
+      }
+
+      // Check if it contains LaTeX syntax, equations or formulas:
+      // Any LaTeX command (\frac, \sqrt, \int, \infty, etc.), power (^), subscript (_), or algebraic equations like y = ..., f(x) = ...
+      const isMathExpr = /\\[a-zA-Z]+|[\^_]|(\b[a-zA-Z]_{?[a-zA-Z0-9\u00C0-\u024F]+}?)|(^[a-zA-Z](\([a-zA-Z0-9, ]+\))?\s*=)/i.test(str);
+
+      if (isMathExpr) {
+        return `$${str}$`;
+      }
+      return str;
+    }
+
+    function triggerMathRender(target) {
+      const el = target || document.getElementById("question-card");
+      if (!el) return;
+
+      if (window.renderMathInElement) {
+        try {
+          renderMathInElement(el, {
+            delimiters: [
+              { left: "$$", right: "$$", display: true },
+              { left: "$", right: "$", display: false },
+              { left: "\\[", right: "\\]", display: true },
+              { left: "\\(", right: "\\)", display: false }
+            ],
+            throwOnError: false
+          });
+        } catch (err) {
+          console.warn("KaTeX render error:", err);
+        }
+      } else {
+        setTimeout(() => triggerMathRender(el), 100);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Bloom's Revised Taxonomy Master Definitions (6 Levels)
+    // -------------------------------------------------------------
+    const BLOOM_LEVELS = {
+      1: { name: "Mức 1: Nhận biết (Remembering)", short: "Nhận biết", class: "bloom-1", color: "#38bdf8", b_irt: -1.8 },
+      2: { name: "Mức 2: Thông hiểu (Understanding)", short: "Thông hiểu", class: "bloom-2", color: "#2dd4bf", b_irt: -1.0 },
+      3: { name: "Mức 3: Vận dụng (Applying)", short: "Vận dụng", class: "bloom-3", color: "#34d399", b_irt: -0.2 },
+      4: { name: "Mức 4: Phân tích (Analyzing)", short: "Phân tích", class: "bloom-4", color: "#fbbf24", b_irt: 0.6 },
+      5: { name: "Mức 5: Đánh giá (Evaluating)", short: "Đánh giá", class: "bloom-5", color: "#fb923c", b_irt: 1.4 },
+      6: { name: "Mức 6: Sáng tạo (Creating)", short: "Sáng tạo", class: "bloom-6", color: "#c084fc", b_irt: 2.2 }
+    };
+
+    // -------------------------------------------------------------
+    // Fallback Mock Exam (30 Real V-ACT Questions with 6 Bloom Levels & Standard LaTeX)
+    // -------------------------------------------------------------
+    const MOCK_30_EXAM = [
+      { id: "q01", domainId: "dom_math", domainName: "Toán học & Phân tích số liệu", skillId: "sk_calc", skillName: "Giải tích & Hàm số", bloom: 1, content: "Hàm số nào sau đây đồng biến trên khoảng $(-\\infty; +\\infty)$?", options: ["$y = x^4 + 2x^2$", "$y = \\frac{2x - 1}{x + 1}$", "$y = x^3 + 3x - 1$", "$y = -x^3 + x$"], correct: "C" },
+      { id: "q02", domainId: "dom_math", domainName: "Toán học & Phân tích số liệu", skillId: "sk_calc", skillName: "Giải tích & Hàm số", bloom: 2, content: "Tìm giá trị cực đại $y_{\\text{CĐ}}$ của hàm số $y = x^3 - 3x + 2$.", options: ["$y_{\\text{CĐ}} = 0$", "$y_{\\text{CĐ}} = 4$", "$y_{\\text{CĐ}} = 2$", "$y_{\\text{CĐ}} = -1$"], correct: "B" },
+      { id: "q03", domainId: "dom_math", domainName: "Toán học & Phân tích số liệu", skillId: "sk_geom", skillName: "Hình học không gian", bloom: 3, content: "Cho hình chóp $S.ABC$ có đáy là tam giác vuông tại $B$, $SA \\perp (ABC)$. Biết $SA = a\\sqrt{3}, AB = a, BC = 2a$. Tính thể tích khối chóp $S.ABC$.", options: ["$\\frac{a^3\\sqrt{3}}{6}$", "$a^3\\sqrt{3}$", "$\\frac{a^3}{3}$", "$\\frac{a^3\\sqrt{3}}{3}$"], correct: "D" },
+      { id: "q04", domainId: "dom_math", domainName: "Toán học & Phân tích số liệu", skillId: "sk_stat", skillName: "Xác suất & Thống kê", bloom: 4, content: "Một hộp chứa 5 quả cầu đỏ và 7 quả cầu xanh. Chọn ngẫu nhiên 3 quả cầu. Xác suất để chọn được ít nhất một quả cầu đỏ là:", options: ["$\\frac{37}{44}$", "$\\frac{7}{44}$", "$\\frac{21}{44}$", "$\\frac{35}{44}$"], correct: "A" },
+      { id: "q05", domainId: "dom_math", domainName: "Toán học & Phân tích số liệu", skillId: "sk_calc", skillName: "Giải tích & Hàm số", bloom: 5, content: "Cho tích phân $I = \\int_0^1 x f'(x) dx = 5$ và $f(1) = 2$. Đánh giá giá trị của tích phân $J = \\int_0^1 f(x) dx$.", options: ["$J = 7$", "$J = -3$", "$J = 3$", "$J = -7$"], correct: "B" },
+      { id: "q06", domainId: "dom_math", domainName: "Toán học & Phân tích số liệu", skillId: "sk_opt", skillName: "Tối ưu hóa đa biến", bloom: 6, content: "Một công ty dự định thiết kế thùng chứa hình trụ không nắp thể tích $V = 54\\pi\\text{ m}^3$. Tìm bán kính $R$ để diện tích vật liệu chế tạo là nhỏ nhất.", options: ["$R = 6\\text{ m}$", "$R = 2\\text{ m}$", "$R = 3\\text{ m}$", "$R = 3\\sqrt{3}\\text{ m}$"], correct: "C" },
+      { id: "q07", domainId: "dom_logic", domainName: "Tư duy Logic & Suy luận", skillId: "sk_prop", skillName: "Mệnh đề logic", bloom: 1, content: "Mệnh đề phủ định của mệnh đề 'Mọi số tự nhiên đều lớn hơn 0' là:", options: ["Mọi số tự nhiên đều nhỏ hơn 0", "Tồn tại ít nhất một số tự nhiên nhỏ hơn hoặc bằng 0", "Không có số tự nhiên nào lớn hơn 0", "Tồn tại số tự nhiên lớn hơn 0"], correct: "B" },
+      { id: "q08", domainId: "dom_logic", domainName: "Tư duy Logic & Suy luận", skillId: "sk_deduct", skillName: "Suy luận suy diễn", bloom: 2, content: "Nếu trời mưa thì đường ướt. Biết rằng đường không ướt. Kết luận logic nào sau đây là chắc chắn đúng?", options: ["Trời có mưa", "Có thể trời đã mưa", "Không thể xác định được thời tiết", "Trời không mưa"], correct: "D" },
+      { id: "q09", domainId: "dom_logic", domainName: "Tư duy Logic & Suy luận", skillId: "sk_order", skillName: "Sắp xếp thứ tự logic", bloom: 3, content: "Có 5 bạn An, Bình, Cúc, Dũng, Em xếp hàng. An đứng trước Bình nhưng sau Cúc. Dũng đứng trước Cúc. Em đứng cuối cùng. Người đứng thứ hai là:", options: ["Cúc", "An", "Dũng", "Bình"], correct: "A" },
+      { id: "q10", domainId: "dom_logic", domainName: "Tư duy Logic & Suy luận", skillId: "sk_data_logic", skillName: "Phân tích đồ thị & bảng số", bloom: 4, content: "Doanh số của 4 chi nhánh A, B, C, D lần lượt tăng trưởng: 12%, 18%, -5%, 25%. Chi nhánh nào có tốc độ tăng trưởng cao nhất và đóng góp ổn định?", options: ["Chi nhánh B", "Chi nhánh A", "Chi nhánh D", "Chi nhánh C"], correct: "C" },
+      { id: "q11", domainId: "dom_logic", domainName: "Tư duy Logic & Suy luận", skillId: "sk_eval_arg", skillName: "Đánh giá luận cứ", bloom: 5, content: "'Tất cả các thiên nga từng thấy đều màu trắng, do đó mọi con thiên nga trên thế giới đều màu trắng'. Lập luận trên mắc lỗi tư duy gì?", options: ["Lập luận vòng vo (Circular Reasoning)", "Khái quát hóa vội vã (Hasty Generalization)", "Công kích cá nhân (Ad Hominem)", "Ngụy biện bù nhìn (Straw Man)"], correct: "B" },
+      { id: "q12", domainId: "dom_logic", domainName: "Tư duy Logic & Suy luận", skillId: "sk_model_logic", skillName: "Mô hình hóa bài toán logic", bloom: 6, content: "Cho hệ thống gồm 3 công tắc A, B, C điều khiển đèn S theo logic: $S = (A \\text{ AND } B) \\text{ OR } (\\text{NOT } C)$. Trạng thái nào của (A, B, C) làm đèn tắt?", options: ["(1, 1, 0)", "(0, 0, 0)", "(1, 1, 1)", "(0, 1, 1)"], correct: "D" },
+      { id: "q13", domainId: "dom_lang", domainName: "Sử dụng Ngôn ngữ & Văn học", skillId: "sk_spelling", skillName: "Chính tả & Từ vựng", bloom: 1, content: "Từ nào sau đây viết ĐÚNG chính tả tiếng Việt?", options: ["Chuẩn đoán", "Trẩn đoán", "Chẩn đoán", "Chẩn đón"], correct: "C" },
+      { id: "q14", domainId: "dom_lang", domainName: "Sử dụng Ngôn ngữ & Văn học", skillId: "sk_rhetoric", skillName: "Biện pháp tu từ", bloom: 2, content: "Câu thơ 'Bàn tay ta làm nên tất cả / Có sức người sỏi đá cũng thành cơm' sử dụng biện pháp tu từ nào?", options: ["Hoán dụ", "Ẩn dụ", "So sánh", "Nói quá"], correct: "A" },
+      { id: "q15", domainId: "dom_lang", domainName: "Sử dụng Ngôn ngữ & Văn học", skillId: "sk_syntax", skillName: "Ngữ pháp & Cú pháp câu", bloom: 3, content: "Xác định câu mắc lỗi ngữ pháp cấu tạo:", options: ["Tác phẩm Tắt đèn cho thấy số phận người nông dân.", "Qua tác phẩm Tắt đèn cho thấy số phận người nông dân.", "Qua tác phẩm Tắt đèn, tác giả làm nổi bật số phận người nông dân.", "Người nông dân trong tác phẩm Tắt đèn có số phận cay đắng."], correct: "B" },
+      { id: "q16", domainId: "dom_lang", domainName: "Sử dụng Ngôn ngữ & Văn học", skillId: "sk_reading", skillName: "Đọc hiểu văn bản phức tạp", bloom: 4, content: "Trong văn bản nghị luận xã hội, thao tác lập luận nào nhằm làm sáng tỏ bản chất của đối tượng bằng cách chia nhỏ các khía cạnh?", options: ["Chứng minh", "Bình luận", "So sánh", "Phân tích"], correct: "D" },
+      { id: "q17", domainId: "dom_lang", domainName: "Sử dụng Ngôn ngữ & Văn học", skillId: "sk_critique", skillName: "Phê bình & Đánh giá văn học", bloom: 5, content: "Đánh giá về giá trị nhân đạo cốt lõi của tác phẩm 'Vợ nhặt' (Kim Lân), khẳng định nào sau đây là sâu sắc nhất?", options: ["Tố cáo tội ác tày trời của thực dân và phát xít", "Miêu tả hiện thực bi thảm của nạn đói năm 1945", "Phát hiện khát vọng sống và tình thương giữa bờ vực cái chết", "Ca ngợi vẻ đẹp ngoại hình của người lao động nghèo"], correct: "C" },
+      { id: "q18", domainId: "dom_lang", domainName: "Sử dụng Ngôn ngữ & Văn học", skillId: "sk_synth_lang", skillName: "Tổng hợp phong cách ngôn ngữ", bloom: 6, content: "Hãy xác định phong cách chức năng ngôn ngữ phù hợp nhất để soạn thảo bản thỏa thuận hợp tác nghiên cứu giữa hai trường đại học:", options: ["Phong cách ngôn ngữ hành chính - công vụ", "Phong cách ngôn ngữ khoa học", "Phong cách ngôn ngữ báo chí", "Phong cách ngôn ngữ chính luận"], correct: "A" },
+      { id: "q19", domainId: "dom_nat_sci", domainName: "Khoa học Tự nhiên (Lý - Hóa - Sinh)", skillId: "sk_physics", skillName: "Dao động & Sóng cơ", bloom: 1, content: "Chu kỳ dao động điều hòa của con lắc lò xo độ cứng $k$, khối lượng $m$ được tính bởi:", options: ["$T = 2\\pi\\sqrt{\\frac{k}{m}}$", "$T = 2\\pi\\sqrt{\\frac{m}{k}}$", "$T = \\frac{1}{2\\pi}\\sqrt{\\frac{m}{k}}$", "$T = 2\\pi\\sqrt{\\frac{l}{g}}$"], correct: "B" },
+      { id: "q20", domainId: "dom_nat_sci", domainName: "Khoa học Tự nhiên (Lý - Hóa - Sinh)", skillId: "sk_chem", skillName: "Phản ứng hóa học & Vô cơ", bloom: 2, content: "Chất nào sau đây làm đổi màu quỳ tím ẩm sang màu đỏ?", options: ["Dung dịch NaOH", "Khí NH3", "Dung dịch NaCl", "Khí HCl"], correct: "D" },
+      { id: "q21", domainId: "dom_nat_sci", domainName: "Khoa học Tự nhiên (Lý - Hóa - Sinh)", skillId: "sk_bio", skillName: "Di truyền học Mendel", bloom: 3, content: "Ở đậu Hà Lan, gen A quy định hạt vàng trội hoàn toàn so với gen a hạt xanh. Phép lai $Aa \\times Aa$ cho tỷ lệ kiểu hình ở $F_1$ là:", options: ["1 hạt vàng : 1 hạt xanh", "3 hạt vàng : 1 hạt xanh", "100% hạt vàng", "1 vàng : 2 đốm : 1 xanh"], correct: "B" },
+      { id: "q22", domainId: "dom_nat_sci", domainName: "Khoa học Tự nhiên (Lý - Hóa - Sinh)", skillId: "sk_physics", skillName: "Mạch điện xoay chiều RLC", bloom: 4, content: "Đoạn mạch $RLC$ nối tiếp đang có hiện tượng cộng hưởng điện. Nếu tăng tần số góc $\\omega$ của dòng điện thì hệ số công suất $\\cos\\varphi$ sẽ:", options: ["Giảm", "Tăng", "Không đổi", "Bằng 0"], correct: "A" },
+      { id: "q23", domainId: "dom_nat_sci", domainName: "Khoa học Tự nhiên (Lý - Hóa - Sinh)", skillId: "sk_chem", skillName: "Cân bằng hóa học Le Chatelier", bloom: 5, content: "Cho phản ứng: $\\text{N}_2(k) + 3\\text{H}_2(k) \\rightleftharpoons 2\\text{NH}_3(k)$, $\\Delta H < 0$. Để cân bằng chuyển dịch theo chiều thuận, biện pháp tối ưu là:", options: ["Giảm áp suất và tăng nhiệt độ", "Tăng nhiệt độ và giữ nguyên áp suất", "Tăng áp suất và giảm nhiệt độ", "Thêm chất xúc tác mà không đổi áp suất"], correct: "C" },
+      { id: "q24", domainId: "dom_nat_sci", domainName: "Khoa học Tự nhiên (Lý - Hóa - Sinh)", skillId: "sk_bio_tech", skillName: "Công nghệ sinh học & Đột biến", bloom: 6, content: "Thiết kế phương án lai tạo để thu được giống cây trồng tam bội ($3n$) không hạt từ các dòng lưỡng bội ($2n$) ban đầu:", options: ["Nuôi cấy hạt phấn của dòng 2n rồi lưỡng bội hóa", "Chiếu xạ dòng 2n bằng tia phóng xạ gamma", "Dung hợp tế bào trần giữa hai dòng 2n khác loài", "Đa bội hóa dòng 2n thành 4n bằng Colchicine, sau đó lai giữa 4n với 2n"], correct: "D" },
+      { id: "q25", domainId: "dom_soc_sci", domainName: "Khoa học Xã hội (Sử - Địa)", skillId: "sk_hist", skillName: "Lịch sử Việt Nam hiện đại", bloom: 1, content: "Chiến dịch lịch sử nào đã kết thúc thắng lợi cuộc kháng chiến chống thực dân Pháp của nhân dân Việt Nam (1954)?", options: ["Chiến dịch Điện Biên Phủ", "Chiến dịch Việt Bắc", "Chiến dịch Biên giới", "Chiến dịch Hồ Chí Minh"], correct: "A" },
+      { id: "q26", domainId: "dom_soc_sci", domainName: "Khoa học Xã hội (Sử - Địa)", skillId: "sk_geo", skillName: "Địa lý tự nhiên Việt Nam", bloom: 2, content: "Đặc điểm cơ bản của khí hậu miền Bắc và Đông Bắc Bắc Bộ nước ta là:", options: ["Nhiệt đới gió mùa có mùa đông ấm áp quanh năm", "Mùa đông lạnh, ít mưa; mùa hạ nóng ẩm, mưa nhiều", "Cận xích đạo gió mùa với hai mùa mưa - khô rõ rệt", "Khí hậu ôn đới lục địa khô hạn"], correct: "B" },
+      { id: "q27", domainId: "dom_soc_sci", domainName: "Khoa học Xã hội (Sử - Địa)", skillId: "sk_hist", skillName: "Phong trào giải phóng dân tộc", bloom: 3, content: "Điểm tương đồng mang tính quy luật giữa Cách mạng tháng Tám (1945) và Kháng chiến chống Mỹ (1975) là:", options: ["Sử dụng chiến tranh du kích làm nòng cốt từ đầu đến cuối", "Dựa hoàn toàn vào viện trợ quân sự của các nước đồng minh", "Kết hợp chặt chẽ giữa đấu tranh chính trị và đấu tranh vũ trang", "Tổ chức tổng tiến công và nổi dậy đồng loạt tại nông thôn trước tiên"], correct: "C" },
+      { id: "q28", domainId: "dom_soc_sci", domainName: "Khoa học Xã hội (Sử - Địa)", skillId: "sk_geo", skillName: "Địa lý kinh tế & Đô thị hóa", bloom: 4, content: "Nguyên nhân chủ yếu khiến vùng Đông Nam Bộ có mật độ tập trung khu công nghiệp cao nhất cả nước là:", options: ["Tài nguyên khoáng sản kim loại và than đá dồi dào nhất", "Lực lượng lao động nông nghiệp đông đảo nhất cả nước", "Địa hình cao nguyên thuận lợi cho việc san lấp mặt bằng", "Hạ tầng phát triển, vị trí địa lý thuận lợi và thu hút mạnh vốn FDI"], correct: "D" },
+      { id: "q29", domainId: "dom_soc_sci", domainName: "Khoa học Xã hội (Sử - Địa)", skillId: "sk_hist_eval", skillName: "Đánh giá sự kiện lịch sử", bloom: 5, content: "Đánh giá tác động quốc tế lớn nhất của chiến thắng Điện Biên Phủ (1954):", options: ["Cổ vũ mạnh mẽ phong trào giải phóng dân tộc thuộc địa trên toàn thế giới", "Làm sụp đổ hoàn toàn hệ thống tư bản chủ nghĩa", "Chấm dứt hoàn toàn sự can thiệp của Mỹ vào khu vực Đông Nam Á", "Buộc Liên Hợp Quốc phải giải thể các khối quân sự"], correct: "A" },
+      { id: "q30", domainId: "dom_soc_sci", domainName: "Khoa học Xã hội (Sử - Địa)", skillId: "sk_geo_strat", skillName: "Quy hoạch không gian kinh tế", bloom: 6, content: "Đề xuất giải pháp chiến lược dài hạn nhằm thích ứng biến đổi khí hậu và xâm nhập mặn tại vùng Đồng bằng sông Cửu Long:", options: ["Đắp đê ngăn mặn khép kín toàn bộ dải bờ biển phía Tây và phía Đông", "Chuyển toàn bộ đất trồng lúa sang khai thác khoáng sản", "Chuyển đổi cơ cấu mùa vụ theo mô hình 'thuận thiên' (nước mặn, lợ, ngọt) và quy hoạch hồ trữ nước ngọt", "Bơm nước ngọt ngầm liên tục với công suất tối đa để đẩy mặn"], correct: "C" },
+    ];
+
+    // State
+    let currentQuestions = [];
+    let currentIndex = 0;
+    let studentAnswers = {}; // { questionId: { option: "A", timeSpent: 24 } }
+    let questionTimer = null;
+    let currentQSeconds = 0;
+    let totalExamSeconds = 0;
+    let globalTimer = null;
+    let latestSubmissionResult = null;
+    let radarChartInstance = null;
+
+    // Initialize
+    window.addEventListener("DOMContentLoaded", () => {
+      // Set default prompt & filters for AI Exam Studio
+      applyPromptPreset("standard_vact");
+
+      // Check if there is an approved exam from a previous session in LocalStorage
+      const savedApproved = localStorage.getItem("veval_approved_student_exam");
+      if (savedApproved) {
+        try {
+          const parsed = JSON.parse(savedApproved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            currentQuestions = parsed;
+            setupExamState();
+            const badge = document.getElementById("badge-exam-loaded");
+            if (badge) {
+              badge.innerText = `${currentQuestions.length} Câu Đã Duyệt (Bộ Nhớ)`;
+              badge.style.background = "rgba(16, 185, 129, 0.25)";
+              badge.style.color = "#6ee7b7";
+            }
+          } else {
+            loadDiagnosticExam();
+          }
+        } catch (e) {
+          loadDiagnosticExam();
+        }
+      } else {
+        loadDiagnosticExam();
+      }
+
+      // Check if there is a saved AI Studio draft in LocalStorage
+      const savedDraft = localStorage.getItem("veval_saved_studio_exam");
+      const restoreBtn = document.getElementById("btn-restore-draft");
+      if (savedDraft && restoreBtn) {
+        restoreBtn.style.display = "inline-flex";
+      }
+
+      // Setup event listeners
+      document.getElementById("btn-load-exam").addEventListener("click", loadDiagnosticExam);
+      document.getElementById("btn-submit-exam").addEventListener("click", submitDiagnosticExam);
+      document.getElementById("btn-rand-student").addEventListener("click", randomizeStudentId);
+      document.getElementById("btn-toggle-config").addEventListener("click", () => {
+        const strip = document.getElementById("config-strip");
+        strip.style.display = strip.style.display === "none" ? "flex" : "none";
+      });
+
+      // Start global timer
+      globalTimer = setInterval(() => {
+        totalExamSeconds++;
+      }, 1000);
+    });
+
+    function randomizeStudentId() {
+      const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+      document.getElementById("cfg-student-id").value = uuid;
+    }
+
+    // -------------------------------------------------------------
+    // API Interaction: Load Diagnostic Test
+    // -------------------------------------------------------------
+    async function loadDiagnosticExam() {
+      const contentUrl = document.getElementById("cfg-content-url").value.trim().replace(/\/$/, "");
+      const endpoint = `${contentUrl}/api/v1/content/diagnostic-test`;
+
+      try {
+        const res = await fetch(endpoint, { method: "GET" });
+        if (res.ok) {
+          const data = await res.json();
+          const qList = data.questions || data.examQuestions || data;
+          if (Array.isArray(qList) && qList.length > 0) {
+            currentQuestions = qList.map((q, idx) => ({
+              id: q.questionId || q.id || `q_${idx+1}`,
+              domainId: q.domainId || "dom_general",
+              domainName: q.domainName || "Miền Năng Lực Chuẩn Hóa",
+              skillId: q.skillId || "sk_general",
+              skillName: q.skillName || "Kỹ Năng Đánh Giá Năng Lực",
+              bloom: q.difficultyLevel || (idx % 6 + 1),
+              content: q.content || q.questionText || `Câu hỏi số ${idx+1}`,
+              options: [q.optionA || "Lựa chọn A", q.optionB || "Lựa chọn B", q.optionC || "Lựa chọn C", q.optionD || "Lựa chọn D"],
+              correct: "A" // Secure test doesn't expose key
+            }));
+            console.log("Loaded questions from real Content Service:", currentQuestions.length);
+          } else {
+            fallbackToMock();
+          }
+        } else {
+          fallbackToMock();
+        }
+      } catch (err) {
+        console.warn("Could not reach Content Service. Using rich mock test bank:", err);
+        fallbackToMock();
+      }
+
+      setupExamState();
+    }
+
+    function fallbackToMock() {
+      currentQuestions = JSON.parse(JSON.stringify(MOCK_30_EXAM));
+      console.log("Loaded fallback 30-question diagnostic exam across 6 Bloom levels.");
+    }
+
+    function setupExamState() {
+      studentAnswers = {};
+      currentIndex = 0;
+      renderNavigator();
+      renderCurrentQuestion();
+      startQuestionTimer();
+    }
+
+    // -------------------------------------------------------------
+    // UI Rendering: Navigator & Current Question
+    // -------------------------------------------------------------
+    function renderNavigator() {
+      const grid = document.getElementById("navigator-grid");
+      grid.innerHTML = "";
+
+      currentQuestions.forEach((q, idx) => {
+        const dot = document.createElement("div");
+        dot.className = "q-dot";
+        dot.id = `nav-dot-${idx}`;
+        dot.innerText = idx + 1;
+
+        if (idx === currentIndex) dot.classList.add("active");
+        if (studentAnswers[q.id]?.option) dot.classList.add("answered");
+        if (studentAnswers[q.id]?.timeSpent < 5 && studentAnswers[q.id]?.option) dot.classList.add("fast-guess");
+
+        dot.addEventListener("click", () => {
+          recordTimeSpent();
+          currentIndex = idx;
+          renderCurrentQuestion();
+        });
+
+        grid.appendChild(dot);
+      });
+
+      updateProgressCount();
+    }
+
+    function updateProgressCount() {
+      const answeredCount = Object.keys(studentAnswers).filter(k => studentAnswers[k]?.option).length;
+      document.getElementById("progress-text").innerText = `${answeredCount}/${currentQuestions.length} đã chọn`;
+    }
+
+    function renderCurrentQuestion() {
+      if (!currentQuestions || currentQuestions.length === 0) return;
+
+      const q = currentQuestions[currentIndex];
+      const bloom = BLOOM_LEVELS[q.bloom] || BLOOM_LEVELS[3];
+
+      // Update question labels
+      document.getElementById("lbl-q-number").innerText = `Câu ${currentIndex + 1}`;
+      document.getElementById("lbl-q-domain").innerText = q.domainName;
+      document.getElementById("lbl-q-skill").innerText = q.skillName;
+
+      // Update Bloom badge
+      const bloomBadge = document.getElementById("lbl-q-bloom");
+      bloomBadge.className = `bloom-badge ${bloom.class}`;
+      bloomBadge.innerText = bloom.name;
+
+      // Update question content with auto LaTeX enclosing
+      const contentEl = document.getElementById("lbl-q-content");
+      contentEl.innerHTML = ensureMathDelimiters(q.content);
+
+      // Render Options with auto LaTeX enclosing
+      const optContainer = document.getElementById("options-container");
+      optContainer.innerHTML = "";
+
+      const keys = ["A", "B", "C", "D"];
+      const currentSelected = studentAnswers[q.id]?.option;
+
+      keys.forEach((key, optIdx) => {
+        const rawOpt = q.options[optIdx] || `Đáp án ${key}`;
+        const optText = ensureMathDelimiters(rawOpt);
+        const isSelected = (currentSelected === key);
+
+        const card = document.createElement("div");
+        card.className = `option-card ${isSelected ? 'selected' : ''}`;
+        card.innerHTML = `
+          <div class="opt-key">${key}</div>
+          <div class="opt-text">${optText}</div>
+          <div class="opt-radio-indicator"></div>
+        `;
+
+        card.addEventListener("click", () => {
+          selectAnswer(q.id, key);
+        });
+
+        optContainer.appendChild(card);
+      });
+
+      // Update Nav Buttons
+      document.getElementById("btn-prev").disabled = (currentIndex === 0);
+      document.getElementById("btn-next").disabled = (currentIndex === currentQuestions.length - 1);
+      document.getElementById("lbl-q-pos").innerText = `${currentIndex + 1} / ${currentQuestions.length}`;
+
+      // Update Active dot
+      document.querySelectorAll(".q-dot").forEach((d, i) => {
+        d.classList.toggle("active", i === currentIndex);
+      });
+
+      // Render Math formulas with KaTeX across entire question card
+      triggerMathRender(document.getElementById("question-card"));
+
+      resetQuestionTimer();
+    }
+
+    function selectAnswer(questionId, optionKey) {
+      if (!studentAnswers[questionId]) {
+        studentAnswers[questionId] = { option: optionKey, timeSpent: 0 };
+      } else {
+        studentAnswers[questionId].option = optionKey;
+      }
+
+      // Add current time spent
+      studentAnswers[questionId].timeSpent += currentQSeconds;
+      currentQSeconds = 0;
+
+      // Refresh option UI
+      renderCurrentQuestion();
+
+      // Refresh navigator dot
+      const dot = document.getElementById(`nav-dot-${currentIndex}`);
+      if (dot) {
+        dot.classList.add("answered");
+        if (studentAnswers[questionId].timeSpent < 5) dot.classList.add("fast-guess");
+        else dot.classList.remove("fast-guess");
+      }
+
+      updateProgressCount();
+    }
+
+    function navigateQuestion(delta) {
+      recordTimeSpent();
+      const next = currentIndex + delta;
+      if (next >= 0 && next < currentQuestions.length) {
+        currentIndex = next;
+        renderCurrentQuestion();
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Timers
+    // -------------------------------------------------------------
+    function startQuestionTimer() {
+      if (questionTimer) clearInterval(questionTimer);
+      currentQSeconds = 0;
+      questionTimer = setInterval(() => {
+        currentQSeconds++;
+        const mins = String(Math.floor(currentQSeconds / 60)).padStart(2, '0');
+        const secs = String(currentQSeconds % 60).padStart(2, '0');
+        document.getElementById("lbl-q-timer").innerText = `${mins}:${secs}`;
+      }, 1000);
+    }
+
+    function resetQuestionTimer() {
+      currentQSeconds = 0;
+      document.getElementById("lbl-q-timer").innerText = "00:00";
+    }
+
+    function recordTimeSpent() {
+      if (currentQuestions && currentQuestions[currentIndex]) {
+        const qId = currentQuestions[currentIndex].id;
+        if (!studentAnswers[qId]) {
+          studentAnswers[qId] = { option: null, timeSpent: currentQSeconds };
+        } else {
+          studentAnswers[qId].timeSpent = (studentAnswers[qId].timeSpent || 0) + currentQSeconds;
+        }
+      }
+      currentQSeconds = 0;
+    }
+
+    // -------------------------------------------------------------
+    // Quick Demo Fillers
+    // -------------------------------------------------------------
+    function quickFill(accuracyTarget, avgSeconds) {
+      const keys = ["A", "B", "C", "D"];
+      currentQuestions.forEach((q, idx) => {
+        const willBeCorrect = Math.random() < accuracyTarget;
+        const chosen = willBeCorrect ? (q.correct || "A") : keys.find(k => k !== (q.correct || "A"));
+        
+        // Randomize seconds around avgSeconds
+        const timeSpent = Math.max(1, Math.round(avgSeconds + (Math.random() * 8 - 4)));
+
+        studentAnswers[q.id] = {
+          option: chosen,
+          timeSpent: timeSpent
+        };
+      });
+
+      renderNavigator();
+      renderCurrentQuestion();
+      console.log(`Quick-filled 30 questions with target accuracy ~${Math.round(accuracyTarget*100)}% and time ~${avgSeconds}s`);
+    }
+
+    function resetAnswers() {
+      studentAnswers = {};
+      renderNavigator();
+      renderCurrentQuestion();
+    }
+
+    // -------------------------------------------------------------
+    // API Interaction: Submit Diagnostic Exam
+    // -------------------------------------------------------------
+    async function submitDiagnosticExam() {
+      recordTimeSpent();
+
+      const answeredCount = Object.keys(studentAnswers).filter(k => studentAnswers[k]?.option).length;
+      if (answeredCount === 0) {
+        alert("Vui lòng chọn ít nhất 1 câu trả lời trước khi nộp bài!");
+        return;
+      }
+
+      const submitBtn = document.getElementById("btn-submit-exam");
+      submitBtn.disabled = true;
+      submitBtn.innerText = "⏳ Đang Phân Tích IRT & BKT...";
+
+      const practiceUrl = document.getElementById("cfg-practice-url").value.trim().replace(/\/$/, "");
+      const studentId = document.getElementById("cfg-student-id").value.trim();
+      const campusId = document.getElementById("cfg-campus-id").value;
+      const targetScore = parseInt(document.getElementById("cfg-target-score").value) || 850;
+
+      // Construct Payload
+      const answersPayload = currentQuestions.map(q => {
+        const record = studentAnswers[q.id] || { option: "A", timeSpent: 20 };
+        return {
+          questionId: q.id,
+          selectedOption: record.option || "A",
+          timeSpentSeconds: record.timeSpent || 15
+        };
+      });
+
+      const requestPayload = {
+        studentId: studentId,
+        examId: "e0000000-0000-0000-0000-000000000001", // Standard Diagnostic Exam ID
+        campusId: campusId,
+        targetScore: targetScore,
+        answers: answersPayload
+      };
+
+      console.log("Sending payload to Practice Service:", requestPayload);
+
+      try {
+        const endpoint = `${practiceUrl}/api/v1/practice/diagnostic-submissions`;
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestPayload)
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          latestSubmissionResult = result.data || result;
+          console.log("Real API Submission succeeded:", latestSubmissionResult);
+          displayResults(latestSubmissionResult, targetScore);
+        } else {
+          const errText = await res.text();
+          console.warn(`Practice Service returned ${res.status}: ${errText}. Running simulated local engine for full UI demo.`);
+          simulateLocalPsychometrics(answersPayload, targetScore);
+        }
+      } catch (err) {
+        console.warn("Could not connect to Practice Service. Running simulated local engine:", err);
+        simulateLocalPsychometrics(answersPayload, targetScore);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "🚀 NỘP BÀI & PHÂN TÍCH";
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Local Psychometrics Engine (Simulation for zero-blocking test)
+    // -------------------------------------------------------------
+    function simulateLocalPsychometrics(answersPayload, targetScore) {
+      let totalCorrect = 0;
+      let totalTime = 0;
+      const domainMap = {};
+      const bloomMap = { 1: { c: 0, t: 0 }, 2: { c: 0, t: 0 }, 3: { c: 0, t: 0 }, 4: { c: 0, t: 0 }, 5: { c: 0, t: 0 }, 6: { c: 0, t: 0 } };
+      const qReviewList = [];
+
+      currentQuestions.forEach(q => {
+        const ans = answersPayload.find(a => a.questionId === q.id) || { selectedOption: "A", timeSpentSeconds: 20 };
+        const isCorrect = (ans.selectedOption === q.correct);
+        if (isCorrect) totalCorrect++;
+        totalTime += ans.timeSpentSeconds;
+
+        // Domain tracking
+        if (!domainMap[q.domainId]) {
+          domainMap[q.domainId] = { id: q.domainId, name: q.domainName, total: 0, correct: 0 };
+        }
+        domainMap[q.domainId].total++;
+        if (isCorrect) domainMap[q.domainId].correct++;
+
+        // Bloom tracking
+        const b = q.bloom || 2;
+        if (bloomMap[b]) {
+          bloomMap[b].t++;
+          if (isCorrect) bloomMap[b].c++;
+        }
+
+        qReviewList.push({
+          questionId: q.id,
+          content: q.content,
+          bloom: q.bloom,
+          selectedOption: ans.selectedOption,
+          correctOption: q.correct,
+          isCorrect: isCorrect,
+          timeSpentSeconds: ans.timeSpentSeconds,
+          domainName: q.domainName,
+          skillName: q.skillName
+        });
+      });
+
+      const accuracy = totalCorrect / currentQuestions.length;
+      // Approximate IRT theta: [-3.0, +3.0]
+      const theta0 = Math.max(-3.0, Math.min(3.0, Math.round((accuracy - 0.5) * 5.0 * 100) / 100));
+
+      const placementClass = theta0 < -0.5 ? "FOUNDATION" : theta0 > 0.5 ? "BREAKTHROUGH" : "ACCELERATION";
+      const campusSelect = document.getElementById("cfg-campus-id");
+      const campusName = campusSelect.options[campusSelect.selectedIndex].text;
+
+      // Radar Axes
+      const radarAxes = Object.values(domainMap).map(d => ({
+        domainId: d.id,
+        domainName: d.name,
+        studentPct: Math.round((d.correct / d.total) * 100),
+        benchmarkPct: Math.round((targetScore / 1200) * 100)
+      }));
+
+      // Difficulty breakdowns
+      const diffBreakdowns = Object.keys(bloomMap).map(k => {
+        const b = parseInt(k);
+        const item = bloomMap[b];
+        return {
+          difficultyLevel: b,
+          levelName: BLOOM_LEVELS[b]?.name || `Mức ${b}`,
+          totalQuestions: item.t,
+          correctCount: item.c,
+          accuracyPercentage: item.t > 0 ? Math.round((item.c / item.t) * 100) : 0
+        };
+      });
+
+      // BKT Priors
+      const skillPriors = currentQuestions.map(q => {
+        const pL0 = Math.max(0.05, Math.min(0.95, 1 / (1 + Math.exp(-theta0))));
+        return {
+          skillId: q.skillId,
+          domainId: q.domainId,
+          domainName: q.domainName,
+          skillName: q.skillName,
+          thetaSkill: theta0,
+          pL0: Math.round(pL0 * 100) / 100,
+          source: "measured"
+        };
+      });
+
+      // Weak skills
+      const weakSkills = [];
+      Object.values(domainMap).forEach(d => {
+        const pct = Math.round((d.correct / d.total) * 100);
+        if (pct < 60) {
+          weakSkills.push({
+            skillId: d.id,
+            skillName: `Kỹ năng thuộc miền ${d.name}`,
+            domainName: d.name,
+            accuracyPercentage: pct
+          });
+        }
+      });
+
+      const simulated = {
+        totalScore: totalCorrect,
+        totalCorrect: totalCorrect,
+        totalQuestions: currentQuestions.length,
+        totalTimeSpentSeconds: totalTime,
+        theta0: theta0,
+        placementClass: placementClass,
+        className: `Lớp ${placementClass === 'BREAKTHROUGH' ? 'Bứt phá (Breakthrough)' : placementClass === 'ACCELERATION' ? 'Tăng tốc (Acceleration)' : 'Nền tảng (Foundation)'} - ${campusName}`,
+        campusName: campusName,
+        aiCommentary: `Học sinh đạt mức năng lực θ₀ = ${theta0.toFixed(2)}, được đề xuất vào lớp ${placementClass}. Cần tập trung củng cố các miền kiến thức có tỷ lệ chính xác dưới ngưỡng kỳ vọng để chinh phục mục tiêu ${targetScore}/1200 điểm V-ACT.`,
+        radarChart: radarAxes,
+        difficultyBreakdown: diffBreakdowns,
+        skillPriors: skillPriors,
+        weakSkills: weakSkills,
+        questionResults: qReviewList
+      };
+
+      latestSubmissionResult = simulated;
+      displayResults(simulated, targetScore);
+    }
+
+    // -------------------------------------------------------------
+    // Display Results & Render Radar Chart
+    // -------------------------------------------------------------
+    function displayResults(res, targetScore) {
+      switchTab("results");
+      document.getElementById("badge-has-result").style.display = "inline";
+
+      // 1. Hero KPIs
+      const score = res.totalScore ?? res.totalCorrect ?? 0;
+      const total = res.totalQuestions ?? 30;
+      const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+      document.getElementById("kpi-score").innerText = `${score} / ${total}`;
+      document.getElementById("kpi-accuracy").innerText = `Tỷ lệ chính xác: ${pct}%`;
+
+      const theta = res.theta0 != null ? Number(res.theta0).toFixed(2) : "--";
+      document.getElementById("kpi-theta").innerText = theta;
+
+      const placement = res.placementClass || "ACCELERATION";
+      const pBadge = document.getElementById("kpi-placement");
+      pBadge.innerText = placement;
+      pBadge.className = `placement-badge ${
+        placement === 'BREAKTHROUGH' ? 'tier-breakthrough' :
+        placement === 'ACCELERATION' ? 'tier-acceleration' : 'tier-foundation'
+      }`;
+
+      document.getElementById("kpi-enrolled-class").innerText = res.className || `Lớp học ${placement}`;
+
+      const totalSecs = res.totalTimeSpentSeconds || totalExamSeconds;
+      const m = String(Math.floor(totalSecs / 60)).padStart(2, '0');
+      const s = String(totalSecs % 60).padStart(2, '0');
+      document.getElementById("kpi-time").innerText = `${m}:${s}`;
+      document.getElementById("kpi-campus").innerText = `Cơ sở: ${res.campusName || "CS Thủ Đức"}`;
+
+      // 2. Socratic Commentary
+      document.getElementById("box-socratic-comment").innerText = res.aiCommentary || "Chưa có nhận xét sư phạm từ AI.";
+
+      // 3. Weak Skills
+      const weakContainer = document.getElementById("weak-skills-container");
+      weakContainer.innerHTML = "";
+      const weakList = res.weakSkills || res.weakSkillIds || [];
+
+      if (weakList.length === 0) {
+        weakContainer.innerHTML = `<div class="alert-banner alert-success">🎉 Xuất sắc! Không có kỹ năng nào dưới ngưỡng 60%.</div>`;
+      } else {
+        weakList.forEach(ws => {
+          const name = ws.skillName || ws;
+          const acc = ws.accuracyPercentage != null ? `(${ws.accuracyPercentage}%)` : "";
+          const dom = ws.domainName ? `• ${ws.domainName}` : "";
+
+          const pill = document.createElement("div");
+          pill.className = "alert-banner alert-warning";
+          pill.style.padding = "8px 12px";
+          pill.innerHTML = `<span>⚠️</span> <span><strong>${name}</strong> ${acc} <span style="font-size:11px; color:var(--text-dim);">${dom}</span></span>`;
+          weakContainer.appendChild(pill);
+        });
+      }
+
+      // 4. Render Radar Chart
+      document.getElementById("lbl-radar-benchmark").innerText = `${targetScore}/1200`;
+      renderRadarChart(res.radarChart || [], targetScore);
+
+      // 5. Render Bloom 6 Levels
+      renderBloomBreakdown(res.difficultyBreakdown || []);
+
+      // 6. Render BKT Table
+      renderBktTable(res.skillPriors || []);
+
+      // 7. Render Review Table
+      renderReviewTable(res.questionResults || []);
+    }
+
+    // -------------------------------------------------------------
+    // Radar Chart (Chart.js)
+    // -------------------------------------------------------------
+    function renderRadarChart(radarData, targetScore) {
+      const ctx = document.getElementById("radarChart").getContext("2d");
+
+      if (radarChartInstance) {
+        radarChartInstance.destroy();
+      }
+
+      let labels = [];
+      let studentScores = [];
+      let benchmarkScores = [];
+      const benchmarkPct = Math.round((targetScore / 1200) * 100);
+
+      if (radarData && radarData.length > 0) {
+        labels = radarData.map(d => d.domainName || d.domainId);
+        studentScores = radarData.map(d => d.studentPct ?? 0);
+        benchmarkScores = radarData.map(d => d.benchmarkPct ?? benchmarkPct);
+      } else {
+        labels = ["Toán học", "Tư duy Logic", "Ngôn ngữ", "Khoa học Tự nhiên", "Khoa học Xã hội"];
+        studentScores = [75, 60, 85, 50, 70];
+        benchmarkScores = [benchmarkPct, benchmarkPct, benchmarkPct, benchmarkPct, benchmarkPct];
+      }
+
+      radarChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Năng Lực Học Sinh (%)',
+              data: studentScores,
+              backgroundColor: 'rgba(99, 102, 241, 0.35)',
+              borderColor: '#6366f1',
+              pointBackgroundColor: '#06b6d4',
+              pointBorderColor: '#fff',
+              pointHoverBackgroundColor: '#fff',
+              pointHoverBorderColor: '#6366f1',
+              borderWidth: 2.5
+            },
+            {
+              label: `Ngưỡng Chuẩn Mục Tiêu (${targetScore}đ - ${benchmarkPct}%)`,
+              data: benchmarkScores,
+              backgroundColor: 'transparent',
+              borderColor: '#f59e0b',
+              borderDash: [6, 6],
+              borderWidth: 2,
+              pointBackgroundColor: '#f59e0b'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+              grid: { color: 'rgba(255, 255, 255, 0.08)' },
+              pointLabels: {
+                color: '#cbd5e1',
+                font: { family: 'Plus Jakarta Sans', size: 12, weight: '600' }
+              },
+              ticks: {
+                color: '#64748b',
+                backdropColor: 'transparent',
+                stepSize: 20
+              },
+              suggestedMin: 0,
+              suggestedMax: 100
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                color: '#e2e8f0',
+                font: { family: 'Plus Jakarta Sans', size: 12 }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // -------------------------------------------------------------
+    // Bloom's 6 Levels Progress Bars
+    // -------------------------------------------------------------
+    function renderBloomBreakdown(breakdowns) {
+      const container = document.getElementById("bloom-progress-container");
+      container.innerHTML = "";
+
+      for (let level = 1; level <= 6; level++) {
+        const def = BLOOM_LEVELS[level];
+        const match = breakdowns.find(b => b.difficultyLevel === level) || { totalQuestions: 5, correctCount: 0, accuracyPercentage: 0 };
+        const acc = match.accuracyPercentage ?? (match.totalQuestions > 0 ? Math.round((match.correctCount / match.totalQuestions) * 100) : 0);
+
+        const row = document.createElement("div");
+        row.className = "bloom-row";
+        row.innerHTML = `
+          <div class="bloom-label-row">
+            <span><span class="bloom-badge ${def.class}" style="padding:2px 8px;">${def.short}</span> ${def.name}</span>
+            <span style="font-family:'JetBrains Mono';">${match.correctCount}/${match.totalQuestions} (${acc}%)</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: ${acc}%; background: ${def.color};"></div>
+          </div>
+        `;
+        container.appendChild(row);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // BKT Master Table
+    // -------------------------------------------------------------
+    function renderBktTable(priors) {
+      const tbody = document.getElementById("bkt-table-body");
+      tbody.innerHTML = "";
+
+      if (!priors || priors.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Không có dữ liệu BKT</td></tr>`;
+        return;
+      }
+
+      priors.forEach(p => {
+        const tr = document.createElement("tr");
+        const pl0 = p.pL0 ?? p.p_l0 ?? 0.5;
+        const statusText = pl0 >= 0.75 ? "🟢 Thành thạo cao" : pl0 >= 0.5 ? "🟡 Mức trung bình" : "🔴 Cần bồi dưỡng";
+
+        tr.innerHTML = `
+          <td style="font-family:'JetBrains Mono'; font-weight:600;">${p.skillId}</td>
+          <td>${p.domainName || p.domainId}</td>
+          <td style="font-family:'JetBrains Mono';">${(p.thetaSkill ?? 0).toFixed(2)}</td>
+          <td style="font-family:'JetBrains Mono'; font-weight:700; color:var(--accent-cyan);">${pl0.toFixed(2)}</td>
+          <td><span style="font-size:11px; padding:2px 6px; border-radius:4px; background:rgba(255,255,255,0.06);">${p.source || 'measured'}</span></td>
+          <td>${statusText}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // -------------------------------------------------------------
+    // Review 30 Questions Table
+    // -------------------------------------------------------------
+    let cachedQuestionResults = [];
+
+    function renderReviewTable(qResults) {
+      cachedQuestionResults = qResults;
+      filterReviewTable('ALL');
+    }
+
+    function filterReviewTable(filter) {
+      const tbody = document.getElementById("review-table-body");
+      tbody.innerHTML = "";
+
+      const filtered = cachedQuestionResults.filter(q => {
+        if (filter === 'CORRECT') return q.isCorrect;
+        if (filter === 'WRONG') return !q.isCorrect;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Không có câu hỏi thỏa mãn bộ lọc.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach((q, idx) => {
+        const tr = document.createElement("tr");
+        const b = BLOOM_LEVELS[q.bloom] || BLOOM_LEVELS[2];
+        const statusHtml = q.isCorrect 
+          ? `<span style="color:var(--accent-emerald); font-weight:700;">✓ ĐÚNG</span>`
+          : `<span style="color:var(--accent-rose); font-weight:700;">✗ SAI</span>`;
+
+        tr.innerHTML = `
+          <td style="font-weight:700;">${idx + 1}</td>
+          <td style="max-width:320px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${q.content}">${ensureMathDelimiters(q.content)}</td>
+          <td><span class="bloom-badge ${b.class}" style="padding:2px 6px; font-size:10px;">${b.short}</span></td>
+          <td style="font-family:'JetBrains Mono'; font-weight:700;">${ensureMathDelimiters(q.selectedOption || '--')}</td>
+          <td style="font-family:'JetBrains Mono'; color:var(--accent-emerald); font-weight:700;">${ensureMathDelimiters(q.correctOption || 'A')}</td>
+          <td style="font-family:'JetBrains Mono';">${q.timeSpentSeconds || 0}s</td>
+          <td>${statusHtml}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      triggerMathRender(tbody);
+    }
+
+    // -------------------------------------------------------------
+    // AI Exam Studio: Presets & Controls
+    // -------------------------------------------------------------
+    const STUDIO_PROMPT_PRESETS = {
+      standard_vact: {
+        prompt: "Đề thi khảo sát năng lực chuẩn hóa V-ACT tích hợp 5 lĩnh vực: Giải tích & Thống kê ứng dụng, Suy luận logic suy diễn, Đọc hiểu văn bản học thuật và Khoa học ứng dụng thực tiễn.",
+        domain: "ALL",
+        bloom: "ALL",
+        count: 30
+      },
+      deep_math: {
+        prompt: "Đề thi chuyên sâu Toán học & Phân tích số liệu: Tập trung Giải tích cực trị hàm số, Hình học không gian đa diện và Bài toán tối ưu hóa ứng dụng thực tiễn.",
+        domain: "dom_math",
+        bloom: "ALL",
+        count: 10
+      },
+      deep_logic: {
+        prompt: "Đề thi chuyên sâu Tư duy Logic & Suy luận: Tập trung vào quy tắc suy diễn Modus Tollens, sắp xếp thứ tự logic, bảng ma trận số liệu và nhận diện ngụy biện lập luận.",
+        domain: "dom_logic",
+        bloom: "ALL",
+        count: 10
+      },
+      deep_nat_sci: {
+        prompt: "Đề thi chuyên sâu Khoa học Tự nhiên: Tích hợp Vật lý dao động cơ, Hóa học cân bằng Le Chatelier và Sinh học di truyền đột biến ứng dụng công nghệ gen.",
+        domain: "dom_nat_sci",
+        bloom: "ALL",
+        count: 10
+      },
+      deep_lang: {
+        prompt: "Đề thi chuyên sâu Sử dụng Ngôn ngữ & Văn học: Đọc hiểu văn bản học thuật, chuẩn hóa ngữ pháp cấu trúc câu và các tác phẩm văn học.",
+        domain: "dom_lang",
+        bloom: "ALL",
+        count: 10
+      },
+      deep_soc_sci: {
+        prompt: "Đề thi chuyên sâu Khoa học Xã hội (Lịch sử & Địa lý): Tập trung Địa lý tự nhiên, địa lý kinh tế - xã hội Việt Nam và các giai đoạn Lịch sử trọng tâm.",
+        domain: "dom_soc_sci",
+        bloom: "ALL",
+        count: 10
+      }
+    };
+
+    let studioGeneratedExam = null;
+    let savedDbExamId = null;
+
+    function applyPromptPreset(presetKey) {
+      const preset = STUDIO_PROMPT_PRESETS[presetKey];
+      if (!preset) return;
+
+      document.getElementById("studio-prompt").value = preset.prompt;
+      document.getElementById("studio-domain").value = preset.domain;
+      document.getElementById("studio-bloom").value = preset.bloom;
+      setStudioCount(preset.count);
+      showToast(`🎯 Đã áp dụng mẫu: ${presetKey}`);
+    }
+
+    function setStudioCount(count) {
+      document.getElementById("studio-count").value = count;
+      [10, 20, 30].forEach(c => {
+        const pill = document.getElementById(`pill-cnt-${c}`);
+        if (pill) {
+          pill.classList.toggle("active", c === count);
+        }
+      });
+    }
+
+    function showToast(message, isSuccess = true) {
+      const box = document.getElementById("toast-box");
+      const msg = document.getElementById("toast-msg");
+      if (!box || !msg) return;
+
+      msg.innerText = message;
+      box.style.borderColor = isSuccess ? "#10b981" : "#f43f5e";
+      box.classList.add("show");
+
+      setTimeout(() => {
+        box.classList.remove("show");
+      }, 3500);
+    }
+
+    async function generateExamFromStudio() {
+      const btn = document.getElementById("btn-studio-generate");
+      const statusEl = document.getElementById("studio-status");
+      const promptVal = document.getElementById("studio-prompt").value.trim();
+      let domainVal = document.getElementById("studio-domain").value;
+      const bloomVal = document.getElementById("studio-bloom").value;
+      const countVal = parseInt(document.getElementById("studio-count").value) || 30;
+      const engineEl = document.getElementById("studio-engine");
+      const engineVal = engineEl ? engineEl.value : "gemini";
+
+      // Domain Selection Priority:
+      // If the teacher explicitly selected a specific domain from the dropdown (e.g. dom_soc_sci), ALWAYS respect it!
+      // ONLY infer domain from prompt if domainVal is "ALL" (User left dropdown at All 5 domains):
+      if (domainVal === "ALL") {
+        const pLower = promptVal.toLowerCase();
+        if (pLower.includes("full văn") || pLower.includes("full van") || pLower.includes("chuyên sâu văn") || pLower.includes("môn văn") || pLower.includes("môn ngữ văn")) {
+          domainVal = "dom_lang";
+        } else if (pLower.includes("full toán") || pLower.includes("full toan") || pLower.includes("chuyên sâu toán") || pLower.includes("môn toán")) {
+          domainVal = "dom_math";
+        } else if (pLower.includes("full logic") || pLower.includes("chuyên sâu logic") || pLower.includes("môn logic")) {
+          domainVal = "dom_logic";
+        } else if (pLower.includes("full khtn") || pLower.includes("chuyên sâu khtn") || pLower.includes("khoa học tự nhiên")) {
+          domainVal = "dom_nat_sci";
+        } else if (pLower.includes("full khxh") || pLower.includes("chuyên sâu khxh") || pLower.includes("khoa học xã hội") || pLower.includes("địa lý") || pLower.includes("địa lí") || pLower.includes("lịch sử")) {
+          domainVal = "dom_soc_sci";
+        }
+      }
+
+      btn.disabled = true;
+      if (engineVal === "gemini") {
+        btn.innerHTML = `🧠 Gemini Đang Suy Nghĩ & Viết Câu Hỏi...`;
+        statusEl.innerHTML = `<span style="color:var(--accent-cyan);">⏳</span> <span>Mô hình Google Gemini đang suy nghĩ và sáng tác ${countVal} câu hỏi mới 100% (khoảng 3-6s)...</span>`;
+      } else {
+        btn.innerHTML = `⚡ Đang Tải Từ Kho Calibrated RAM...`;
+        statusEl.innerHTML = `<span style="color:var(--accent-amber);">⚡</span> <span>Đang trích xuất và tổ hợp ${countVal} câu hỏi chuẩn hóa từ RAM...</span>`;
+      }
+
+      const payload = {
+        prompt: promptVal || "Đề thi khảo sát năng lực chuẩn hóa V-ACT 5 lĩnh vực",
+        domain_id: domainVal,
+        question_count: countVal,
+        bloom_level: (!isNaN(parseInt(bloomVal)) && parseInt(bloomVal) >= 1 && parseInt(bloomVal) <= 6) ? parseInt(bloomVal) : null,
+        difficulty_style: bloomVal,
+        generator_mode: engineVal
+      };
+
+      try {
+        let data = null;
+        try {
+          const res = await fetch("http://localhost:8000/api/v1/diagnostic/generate-exam", {
+            method: "POST",
+            headers: { "Content-Type": "application/json; charset=utf-8" },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            data = await res.json();
+          }
+        } catch (netErr) {
+          console.warn("Could not reach FastAPI on 8000 directly:", netErr);
+        }
+
+        if (!data || !data.questions) {
+          data = generateLocalCalibratedExam(payload);
+        }
+
+        studioGeneratedExam = data;
+        savedDbExamId = null; // Reset for new exam
+
+        // AUTO-SAVE to localStorage immediately!
+        try {
+          localStorage.setItem("veval_saved_studio_exam", JSON.stringify(data));
+          const restoreBtn = document.getElementById("btn-restore-draft");
+          if (restoreBtn) restoreBtn.style.display = "inline-flex";
+        } catch (e) {
+          console.warn("Could not save to localStorage:", e);
+        }
+        renderStudioReview(data);
+
+        const engineLabel = data.engine_used === "gemini_cloud" ? "Google Gemini Cloud" : "Siêu Tốc Calibrated Bank";
+        const timeDisplay = data.generation_time_ms ? ` (${(data.generation_time_ms / 1000).toFixed(1)}s)` : "";
+        statusEl.innerHTML = `<span style="color:var(--accent-emerald);">✅</span> <span>Đã sinh thành công ${data.total_questions} câu hỏi qua ${engineLabel}${timeDisplay}! <b>Đã tự động lưu vào trình duyệt.</b> Thầy cô có thể <b>Lưu Vào Database (Chờ Duyệt)</b> hoặc bấm <b>Accept</b> để phát hành đề.</span>`;
+        showToast(`🎉 Đã tạo xong & TỰ ĐỘNG LƯU ${data.total_questions} câu hỏi (${engineLabel})!`);
+      } catch (err) {
+        console.error("Failed to generate exam:", err);
+        statusEl.innerHTML = `<span style="color:var(--accent-rose);">❌</span> <span>Lỗi khi tạo đề: ${err.message}</span>`;
+        showToast("Không thể tạo đề thi từ AI: " + err.message, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `🚀 AI Sinh Đề Thi Theo Yêu Cầu`;
+      }
+    }
+
+    function renderStudioReview(examData) {
+      const panel = document.getElementById("studio-review-panel");
+      panel.style.display = "flex";
+
+      document.getElementById("lbl-review-title").innerText = examData.title;
+      document.getElementById("lbl-review-prompt").innerText = `Yêu cầu Prompt: "${examData.prompt_used}"`;
+
+      // Render stats chips
+      const chipsContainer = document.getElementById("review-stats-chips");
+      chipsContainer.innerHTML = "";
+
+      chipsContainer.innerHTML += `<div class="stat-chip" style="border-color:#10b981; background:rgba(16,185,129,0.12); color:#6ee7b7;">💾 <b>Tự Động Lưu:</b> Đã lưu an toàn trong trình duyệt (LocalStorage)</div>`;
+
+      // Database Save Status Chip
+      const currentDbId = examData.saved_db_exam_id || savedDbExamId;
+      if (currentDbId) {
+        chipsContainer.innerHTML += `<div class="stat-chip" id="chip-db-status" style="border-color:#f59e0b; background:rgba(245,158,11,0.15); color:#fde68a;">⏳ <b>Database:</b> Đã lưu thành công (Mã: <code>${currentDbId.slice(0, 8)}...</code>) • Trạng thái: <b>Chờ Duyệt (Pending)</b></div>`;
+      }
+
+      // Update save to DB button appearance
+      const saveDbBtn = document.getElementById("btn-studio-save-db");
+      if (saveDbBtn) {
+        if (currentDbId) {
+          saveDbBtn.innerHTML = `✅ Đã Lưu Database (Chờ Duyệt)`;
+          saveDbBtn.style.borderColor = "#10b981";
+          saveDbBtn.style.color = "#6ee7b7";
+          saveDbBtn.style.background = "rgba(16, 185, 129, 0.12)";
+        } else {
+          saveDbBtn.innerHTML = `💾 Lưu Vào Database (Chờ Duyệt)`;
+          saveDbBtn.style.borderColor = "#f59e0b";
+          saveDbBtn.style.color = "#fbbf24";
+          saveDbBtn.style.background = "rgba(245, 158, 11, 0.08)";
+        }
+      }
+
+      if (examData.engine_used === "gemini_cloud") {
+        const timeSec = examData.generation_time_ms ? (examData.generation_time_ms / 1000).toFixed(1) : "3.5";
+        chipsContainer.innerHTML += `<div class="stat-chip" style="border-color:#38bdf8; background:rgba(56,189,248,0.12); color:#7dd3fc;">🧠 Engine: <b>Google Gemini Cloud AI</b> (${timeSec}s)</div>`;
+      } else {
+        const timeMs = examData.generation_time_ms || 15;
+        chipsContainer.innerHTML += `<div class="stat-chip" style="border-color:#f59e0b; background:rgba(245,158,11,0.12); color:#fde68a;">⚡ Engine: <b>Siêu Tốc Calibrated RAM</b> (${timeMs}ms)</div>`;
+      }
+
+      chipsContainer.innerHTML += `<div class="stat-chip">📝 Tổng số câu: <b>${examData.total_questions}</b></div>`;
+
+      const opts = examData.option_distribution || {};
+      chipsContainer.innerHTML += `<div class="stat-chip">⚖️ Phân bổ đáp án: <b>A: ${opts.A || 0} | B: ${opts.B || 0} | C: ${opts.C || 0} | D: ${opts.D || 0}</b></div>`;
+
+      const blooms = examData.bloom_distribution || {};
+      for (let b = 1; b <= 6; b++) {
+        const count = blooms[String(b)] || 0;
+        if (count > 0) {
+          const def = BLOOM_LEVELS[b];
+          chipsContainer.innerHTML += `<div class="stat-chip" style="border-color:${def.color}33;"><span class="bloom-badge ${def.class}" style="padding:1px 6px; font-size:10px;">${def.short}</span> <b>${count} câu</b></div>`;
+        }
+      }
+
+      // Render question list
+      const listEl = document.getElementById("studio-questions-list");
+      listEl.innerHTML = "";
+
+      examData.questions.forEach((q, idx) => {
+        const def = BLOOM_LEVELS[q.bloom] || BLOOM_LEVELS[2];
+        const card = document.createElement("div");
+        card.className = "review-q-card";
+
+        const optKeys = ["A", "B", "C", "D"];
+        const optHtml = optKeys.map((key, i) => {
+          const isCorrect = (key === q.correct);
+          const rawText = q.options[i] || `Đáp án ${key}`;
+          const formattedText = ensureMathDelimiters(rawText);
+          return `
+            <div class="review-opt ${isCorrect ? 'is-correct' : ''}">
+              <span style="font-weight:700; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.1); font-size:12px;">${key}</span>
+              <span style="flex:1;">${formattedText}</span>
+              ${isCorrect ? '<span style="font-size:14px;">✓</span>' : ''}
+            </div>
+          `;
+        }).join("");
+
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-weight:800; font-size:15px; color:#fff;">Câu ${idx + 1}</span>
+              <span class="domain-tag">${q.domain_name || q.domainName || 'Tổng hợp'}</span>
+              <span class="domain-tag" style="color:#cbd5e1;">${q.skill_name || q.skillName || ''}</span>
+              <span class="bloom-badge ${def.class}">${def.name}</span>
+            </div>
+            <div style="font-size:12px; color:var(--accent-emerald); font-weight:700;">
+              Đáp án chuẩn: Option ${q.correct}
+            </div>
+          </div>
+
+          <div style="font-size:15px; line-height:1.65; color:#f1f5f9;">
+            ${ensureMathDelimiters(q.content)}
+          </div>
+
+          <div class="review-options-grid">
+            ${optHtml}
+          </div>
+
+          ${q.explanation ? `<div class="review-explanation">💡 <b>Lời giải chi tiết:</b> ${ensureMathDelimiters(q.explanation)}</div>` : ''}
+        `;
+
+        listEl.appendChild(card);
+      });
+
+      triggerMathRender(listEl);
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function saveExamToDatabase() {
+      if (!studioGeneratedExam || !studioGeneratedExam.questions || studioGeneratedExam.questions.length === 0) {
+        showToast("Chưa có đề thi nào để lưu vào Database!", false);
+        return;
+      }
+
+      const btn = document.getElementById("btn-studio-save-db");
+      const origText = btn ? btn.innerHTML : "💾 Lưu Vào Database (Chờ Duyệt)";
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `💾 Đang Lưu Xuống Database (Supabase)...`;
+      }
+
+      const contentUrl = document.getElementById("cfg-content-url")?.value?.trim() || "http://localhost:5249";
+      
+      let subjectCode = "VACT";
+      const dom = studioGeneratedExam.domain_id || document.getElementById("studio-domain")?.value;
+      if (dom === "dom_lang") subjectCode = "VIET";
+      else if (dom === "dom_math") subjectCode = "MATH";
+      else if (dom === "dom_logic") subjectCode = "LOGIC";
+      else if (dom === "dom_nat_sci") subjectCode = "NAT_SCI";
+      else if (dom === "dom_soc_sci") subjectCode = "SOC_SCI";
+
+      const singleQuestions = studioGeneratedExam.questions.map((q, idx) => {
+        const opts = q.options || [];
+        return {
+          questionNumber: idx + 1,
+          pageNumber: 1,
+          content: q.content,
+          options: {
+            a: opts[0] || "",
+            b: opts[1] || "",
+            c: opts[2] || "",
+            d: opts[3] || ""
+          },
+          correctOption: (q.correct || "A").toUpperCase(),
+          explanation: q.explanation || "Lời giải chuẩn hóa V-Eval.",
+          difficultyLevel: (q.bloom && q.bloom >= 1 && q.bloom <= 6) ? Math.min(Math.max(Math.ceil(q.bloom / 2), 1), 3) : 2,
+          suggestedSkillName: q.skill_name || q.domain_name || "Kiến thức trọng tâm"
+        };
+      });
+
+      const payload = {
+        title: studioGeneratedExam.title || "Đề Khảo Sát Năng Lực AI Sinh",
+        durationMinutes: Math.round(singleQuestions.length * 2),
+        examCategory: singleQuestions.length >= 30 ? "FULL_MOCK" : "SUBJECT_PRACTICE",
+        subjectCode: subjectCode,
+        difficultyLevel: 2,
+        passages: [],
+        singleQuestions: singleQuestions
+      };
+
+      try {
+        const res = await fetch(`${contentUrl}/api/v1/content/exams/import`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+
+        const data = await res.json();
+        savedDbExamId = data.exam_id;
+        studioGeneratedExam.saved_db_exam_id = savedDbExamId;
+        try {
+          localStorage.setItem("veval_last_db_exam_id", savedDbExamId);
+          localStorage.setItem("veval_saved_studio_exam", JSON.stringify(studioGeneratedExam));
+        } catch (storageErr) {
+          console.warn("Storage warning:", storageErr);
+        }
+
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `✅ Đã Lưu Database (Chờ Duyệt)`;
+          btn.style.borderColor = "#10b981";
+          btn.style.color = "#6ee7b7";
+          btn.style.background = "rgba(16, 185, 129, 0.12)";
+        }
+
+        let chip = document.getElementById("chip-db-status");
+        if (!chip) {
+          chip = document.createElement("div");
+          chip.id = "chip-db-status";
+          chip.className = "stat-chip";
+          document.getElementById("review-stats-chips")?.appendChild(chip);
+        }
+        chip.style.borderColor = "#f59e0b";
+        chip.style.background = "rgba(245, 158, 11, 0.15)";
+        chip.style.color = "#fde68a";
+        chip.innerHTML = `⏳ <b>Database:</b> Đã lưu thành công (Mã: <code>${savedDbExamId.slice(0, 8)}...</code>) • Trạng thái: <b>Chờ Duyệt (Pending)</b>`;
+
+        showToast(`💾 Đã lưu đề thi thành công vào Database (PostgreSQL)! Trạng thái: Chờ duyệt (Pending Approval)`);
+      } catch (err) {
+        console.error("Save to DB failed:", err);
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
+        showToast(`❌ Không thể lưu vào Database: ${err.message}`, false);
+      }
+    }
+
+    async function acceptStudioExam() {
+      if (!studioGeneratedExam || !studioGeneratedExam.questions || studioGeneratedExam.questions.length === 0) {
+        showToast("Chưa có đề thi nào được tạo để phê duyệt!", false);
+        return;
+      }
+
+      // If saved in DB, call publish endpoint to switch status to Published (Đã duyệt)
+      const contentUrl = document.getElementById("cfg-content-url")?.value?.trim() || "http://localhost:5249";
+      const dbId = savedDbExamId || studioGeneratedExam.saved_db_exam_id;
+      if (dbId) {
+        try {
+          const pubRes = await fetch(`${contentUrl}/api/v1/content/exams/${dbId}/publish`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" }
+          });
+          if (pubRes.ok) {
+            let chip = document.getElementById("chip-db-status");
+            if (chip) {
+              chip.style.borderColor = "#10b981";
+              chip.style.background = "rgba(16, 185, 129, 0.15)";
+              chip.style.color = "#6ee7b7";
+              chip.innerHTML = `✅ <b>Database:</b> Đã Phê Duyệt & Xuất Bản (Mã: <code>${dbId.slice(0, 8)}...</code>)`;
+            }
+          }
+        } catch (e) {
+          console.warn("Could not publish to Content_Service:", e);
+        }
+      }
+
+      currentQuestions = studioGeneratedExam.questions.map((q, idx) => ({
+        id: q.id || `q${idx + 1}`,
+        domainId: q.domain_id || q.domainId || "dom_math",
+        domainName: q.domain_name || q.domainName || "Toán học & Phân tích số liệu",
+        skillId: q.skill_id || q.skillId || "sk_calc",
+        skillName: q.skill_name || q.skillName || "Kỹ năng chuyên môn",
+        bloom: q.bloom || 2,
+        content: q.content,
+        options: q.options,
+        correct: q.correct,
+        explanation: q.explanation || ""
+      }));
+
+      setupExamState();
+
+      // AUTO-SAVE APPROVED EXAM FOR STUDENTS
+      try {
+        localStorage.setItem("veval_approved_student_exam", JSON.stringify(currentQuestions));
+        localStorage.setItem("veval_approved_meta", JSON.stringify({
+          title: studioGeneratedExam.title,
+          prompt: studioGeneratedExam.prompt_used,
+          total: currentQuestions.length,
+          savedAt: new Date().toLocaleString('vi-VN'),
+          dbExamId: dbId || null
+        }));
+      } catch (e) {
+        console.warn("Could not save to localStorage:", e);
+      }
+
+      const badge = document.getElementById("badge-exam-loaded");
+      if (badge) {
+        badge.innerText = `${currentQuestions.length} Câu Đã Duyệt`;
+        badge.style.background = "rgba(16, 185, 129, 0.25)";
+        badge.style.color = "#6ee7b7";
+      }
+
+      showToast(`✅ Đã phê duyệt đề thi${dbId ? ' & cập nhật Database thành ĐÃ DUYỆT' : ''}! Đang chuyển học sinh vào phòng thi...`);
+      switchTab("exam");
+    }
+
+    function restoreSavedDraft() {
+      const saved = localStorage.getItem("veval_saved_studio_exam");
+      if (!saved) {
+        showToast("Không tìm thấy bản lưu đề thi nào trong trình duyệt!", false);
+        return;
+      }
+      try {
+        const data = JSON.parse(saved);
+        studioGeneratedExam = data;
+        if (data.saved_db_exam_id) {
+          savedDbExamId = data.saved_db_exam_id;
+        }
+        renderStudioReview(data);
+        showToast(`📂 Đã khôi phục thành công: "${data.title}"!`);
+      } catch (e) {
+        showToast("Lỗi khi mở bản lưu: " + e.message, false);
+      }
+    }
+
+    function downloadExamJson() {
+      if (!studioGeneratedExam) {
+        showToast("Chưa có dữ liệu đề thi để tải về!", false);
+        return;
+      }
+
+      const jsonStr = JSON.stringify(studioGeneratedExam, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `V-Eval_Exam_${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("📥 Đã tải file JSON đề thi thành công!");
+    }
+
+    function generateLocalCalibratedExam(payload) {
+      const count = Math.min(Math.max(payload.question_count || 30, 5), 50);
+      const questions = [];
+      const opts = { A: 0, B: 0, C: 0, D: 0 };
+      const blooms = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+
+      for (let i = 0; i < count; i++) {
+        const item = MOCK_30_EXAM[i % MOCK_30_EXAM.length];
+        opts[item.correct] = (opts[item.correct] || 0) + 1;
+        blooms[item.bloom] = (blooms[item.bloom] || 0) + 1;
+
+        questions.push({
+          id: `q${String(i + 1).padStart(2, '0')}`,
+          domain_id: item.domainId,
+          domain_name: item.domainName,
+          skill_id: item.skillId,
+          skill_name: item.skillName,
+          bloom: item.bloom,
+          content: item.content,
+          options: item.options,
+          correct: item.correct,
+          explanation: "Lời giải chuẩn xác theo phương pháp chuẩn hóa V-ACT."
+        });
+      }
+
+      return {
+        title: `Đề Khảo Sát Năng Lực AI Sinh (${count} câu)`,
+        prompt_used: payload.prompt || "Chuẩn V-ACT 5 lĩnh vực",
+        total_questions: count,
+        questions: questions,
+        bloom_distribution: blooms,
+        option_distribution: opts
+      };
+    }
+
+    // -------------------------------------------------------------
+    // Tabs Navigation (3 Tabs)
+    // -------------------------------------------------------------
+    function switchTab(tab) {
+      const studioSec = document.getElementById("view-studio-section");
+      const examSec = document.getElementById("view-exam-section");
+      const resultsSec = document.getElementById("view-results-section");
+
+      const tabStudio = document.getElementById("tab-studio");
+      const tabExam = document.getElementById("tab-exam");
+      const tabResults = document.getElementById("tab-results");
+
+      if (tab === "studio") {
+        if (studioSec) studioSec.style.display = "flex";
+        if (examSec) examSec.style.display = "none";
+        if (resultsSec) resultsSec.style.display = "none";
+
+        if (tabStudio) tabStudio.classList.add("active");
+        if (tabExam) tabExam.classList.remove("active");
+        if (tabResults) tabResults.classList.remove("active");
+      } else if (tab === "exam") {
+        if (studioSec) studioSec.style.display = "none";
+        if (examSec) examSec.style.display = "grid";
+        if (resultsSec) resultsSec.style.display = "none";
+
+        if (tabExam) tabExam.classList.add("active");
+        if (tabStudio) tabStudio.classList.remove("active");
+        if (tabResults) tabResults.classList.remove("active");
+        triggerMathRender(document.getElementById("question-card"));
+      } else {
+        if (studioSec) studioSec.style.display = "none";
+        if (examSec) examSec.style.display = "none";
+        if (resultsSec) resultsSec.style.display = "flex";
+
+        if (tabResults) tabResults.classList.add("active");
+        if (tabStudio) tabStudio.classList.remove("active");
+        if (tabExam) tabExam.classList.remove("active");
+      }
+    }
+
+    // Initialize UI on load
+    document.addEventListener("DOMContentLoaded", () => {
+      // Check if draft exists to show restore button
+      if (localStorage.getItem("veval_saved_studio_exam")) {
+        const restoreBtn = document.getElementById("btn-restore-draft");
+        if (restoreBtn) restoreBtn.style.display = "inline-flex";
+      }
+    });
+  </script>
+</body>
+</html>

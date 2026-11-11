@@ -1,0 +1,26 @@
+# Git
+.git
+.gitignore
+
+# Python Virtual Environments & Bytecode
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables (Do not bake secrets into image)
+.env
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Documentation & Scratch
+scratch/
+*.log

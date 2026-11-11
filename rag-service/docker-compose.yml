@@ -1,0 +1,60 @@
+services:
+  # -------------------------------------------------------------------------
+  # PostgreSQL 16 + pgvector Vector Database
+  # -------------------------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: v-act-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rag_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rag_password}
+      POSTGRES_DB: ${POSTGRES_DB:-rag_db}
+    ports:
+      # Expose to host port 5433 for pgAdmin and host database clients
+      - "5433:5432"
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rag_user} -d ${POSTGRES_DB:-rag_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - v-act-network
+
+  # -------------------------------------------------------------------------
+  # FastAPI AI RAG Backend Service
+  # -------------------------------------------------------------------------
+  ai-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: v-act-ai-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      # Internal Docker DNS points directly to the 'postgres' container
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-rag_user}:${POSTGRES_PASSWORD:-rag_password}@postgres:5432/${POSTGRES_DB:-rag_db}
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+    ports:
+      # Expose FastAPI Swagger UI and REST endpoints to host port 8000
+      - "8000:8000"
+    networks:
+      - v-act-network
+
+# ---------------------------------------------------------------------------
+# Persistent Storage Volumes & Networks
+# ---------------------------------------------------------------------------
+volumes:
+  pgvector_data:
+    name: v_act_pgvector_data
+
+networks:
+  v-act-network:
+    name: v_act_network
+    driver: bridge

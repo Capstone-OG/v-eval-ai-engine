@@ -772,7 +772,11 @@
   <header>
     <div style="display: flex; align-items: center; gap: 15px;">
       <h1>V-Eval <span class="badge">AI Engine</span></h1>
-      <span style="color: var(--text-muted); font-size: 13.5px; border-left: 1px solid var(--border); padding-left: 15px;">Trình Trực Quan Hóa Đề Thi ĐGNL</span>
+      <span style="color: var(--text-muted); font-size: 13.5px; border-left: 1px solid var(--border); padding-left: 15px;">Trình Trực Quan Hóa Đề Thi</span>
+      <div style="display: flex; gap: 8px; margin-left: 10px;">
+        <a href="/api/ai-engine/view-exam" style="color: #ffffff; background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(59, 130, 246, 0.3)); border: 1px solid rgba(6, 182, 212, 0.5); text-decoration: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; font-size: 0.88rem; box-shadow: 0 2px 10px rgba(6, 182, 212, 0.2);">📝 Ngân Hàng Đề Thi</a>
+        <a href="/api/ai-engine/view-textbook" style="color: #94a3b8; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); text-decoration: none; padding: 6px 14px; border-radius: 8px; font-weight: 500; font-size: 0.88rem; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.color='#94a3b8'; this.style.background='rgba(255,255,255,0.05)';">📚 Nạp Tri Thức SGK Local</a>
+      </div>
     </div>
     <div style="display: flex; align-items: center; gap: 12px;">
       <button class="btn-header" onclick="openDbExamsModal()" title="Xem tất cả đề thi đã lưu trong Supabase Database">
