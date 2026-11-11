@@ -932,10 +932,18 @@
      - Decommissioned uppercase prefix splitting regex `(?<![\$\w])([A-Z][a-zA-Z0-9_+-]+)\$` that broke leading hyphen functional groups like `$-OH$` and `$-COOH$` into `$-$OH$`, preventing dollar parity inversion.
   3. **Line-by-Line Reaction Equation Wrapping**:
      - Isolated reaction arrow auto-wrapping (`\xrightarrow`, `\rightleftharpoons`, `\longrightarrow`) strictly to standalone single lines devoid of natural Vietnamese prose, guaranteeing clean block math rendering without multiline entanglement.
-  4. **Verification**:
-     - Added comprehensive regression test `NormalizeCurriculumLatex_WithChemistryFormulas_ShouldNotCorruptVietnameseOrDollarPlacement`.
-     - 18/18 automated unit tests passed in 415 ms (`dotnet test`).
-     - Solution built cleanly with 0 errors and 0 warnings.
+  4. **Multi-Model Priority Cascade & Elimination of 503 Outages**:
+     - Verified live connectivity across all 4 production API keys (`GEMINI_KEY_1` to `GEMINI_KEY_4`). Confirmed `gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.1-flash-lite`, and `gemini-flash-lite-latest` all respond with HTTP 200 OK.
+     - Confirmed `gemini-3.8-flash` consistently throws HTTP 503 Service Unavailable / timeouts across all keys.
+     - Reconfigured `AiSettings:GeminiModels` to prioritize `gemini-3.6-flash` (flagship model) and `gemini-3.5-flash-lite`, removing `gemini-3.8-flash` to eliminate high-demand stalls.
+  5. **Labeled Reaction Equation Extraction & Subscript Normalization**:
+     - Upgraded `NormalizeCurriculumLatex`: Disambiguates prefix labels (`Phương trình:`, `PTHH:`) and formats reaction equations with arrows as display block math `$$ ... $$`.
+     - Normalizes subscript spaces `(OH)_ 3` -> `(OH)_3` and wraps complex organic formulas `C_{15}H_{31}COOH` in `$...$`.
+  6. **Verification**:
+     - Added comprehensive regression tests `NormalizeCurriculumLatex_WithChemistryFormulas_ShouldNotCorruptVietnameseOrDollarPlacement` and `NormalizeCurriculumLatex_WithLabeledReactionAndSpacedSubscripts_NormalizesCleanly`.
+     - 19/19 automated unit tests passed in 294 ms (`dotnet test`).
+     - Docker container `v_eval_ai_engine` successfully rebuilt and deployed.
+
 
 
 

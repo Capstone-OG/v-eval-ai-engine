@@ -332,4 +332,23 @@ public class PromptTemplateServiceTests
         // Assert 4: Plain Vietnamese text is never corrupted by stray formulas
         out4.Should().Contain("Do đó công thức cấu tạo của ester là");
     }
+
+    [Fact]
+    public void NormalizeCurriculumLatex_WithLabeledReactionAndSpacedSubscripts_NormalizesCleanly()
+    {
+        string t1 = "Chất béo là triester của glycerol với các acid béo (C_{15}H_{31} COOH , C_{17}H_{35} COOH , C_{17}H_{33} COOH ).\nPhương trình: (RCOO)_3C_3H_5 + 3NaOH \\xrightarrow{t^\\circ} 3RCOONa + C_3H_5 (OH)_ 3 .";
+        string out1 = CurriculumAiService.NormalizeCurriculumLatex(t1);
+
+        // Assert 1: Chemical formulas with space before functional groups are normalized and wrapped
+        out1.Should().Contain("$C_{15}H_{31}COOH$");
+        out1.Should().Contain("$C_{17}H_{35}COOH$");
+        out1.Should().Contain("$C_{17}H_{33}COOH$");
+
+        // Assert 2: Underscore followed by space and digit is fixed (OH)_ 3 -> (OH)_3
+        out1.Should().Contain("(OH)_3");
+        out1.Should().NotContain("(OH)_ 3");
+
+        // Assert 3: Labeled reaction equation is formatted with display math $$ ... $$
+        out1.Should().Contain("Phương trình:\n$$(RCOO)_3C_3H_5 + 3NaOH \\xrightarrow{t^\\circ} 3RCOONa + C_3H_5 (OH)_3$$");
+    }
 }

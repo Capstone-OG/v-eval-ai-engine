@@ -17,6 +17,27 @@
   - Bổ sung unit test `NormalizeCurriculumLatex_WithChemistryFormulas_ShouldNotCorruptVietnameseOrDollarPlacement` kiểm chứng toàn diện các trường hợp: công thức hóa học có dấu chấm phía sau (`$C_{17}H_{33}$.`), nhóm chức (`-OH`), phương trình phản ứng mũi tên và bảo vệ tuyệt đối văn bản tiếng Việt giải thích không bị nuốt vào math mode.
   - Toàn bộ **18/18 unit tests** vượt qua thành công 100% trong 415 ms. Solution biên dịch sạch với 0 Error.
 
+- **Khảo Sát Thực Tế Bể 4 Khóa Gemini & Tái Cấu Trúc Thứ Tự Mô Hình (Ưu Tiên Gemini-3.6-Flash, Loại Bỏ 3.8-Flash 503) ([`appsettings.json`](../V-Eval-Ai_Engine.API/appsettings.json), [`docker-compose.yml`](../../docker-compose.yml))**:
+  - **Kiểm thử trực tiếp trên cả 4 API keys (`GEMINI_KEY_1` đến `GEMINI_KEY_4`)**:
+    - `gemini-3.6-flash`: **HTTP 200 OK** trên cả 4/4 keys (phản hồi siêu tốc, độ ổn định tuyệt đối).
+    - `gemini-3.5-flash-lite`: **HTTP 200 OK** trên cả 4/4 keys (~1.0s).
+    - `gemini-3.5-flash`: **HTTP 200 OK** trên cả 4/4 keys.
+    - `gemini-3.1-flash-lite`: **HTTP 200 OK** trên cả 4/4 keys.
+    - `gemini-flash-lite-latest`: **HTTP 200 OK** trên cả 4/4 keys.
+    - `gemini-3.8-flash`: **HTTP 503 Service Unavailable / Timeout** trên cả 4 keys (xác nhận chính xác nguyên nhân gây chậm và lỗi 503 như log của người dùng).
+  - **Tái cấu trúc cấu hình `GeminiModels`**:
+    - Đưa `gemini-3.6-flash` lên làm mô hình chủ lực ưu tiên số 1.
+    - Tiếp nối bởi `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.1-flash-lite`, `gemini-flash-lite-latest`.
+    - Loại bỏ triệt để `gemini-3.8-flash` khỏi danh sách xoay vòng.
+
+- **Nâng Cấp Backend NormalizeCurriculumLatex: Tách Nhãn Phương Trình & Chuẩn Hóa Công Thức Phức ([`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
+  - Bổ sung cơ chế bóc tách nhãn dẫn `Phương trình: ...` hoặc `PTHH: ...`, đưa phương trình hóa học có mũi tên thành display math `$$...$$` độc lập.
+  - Sửa lỗi khoảng trắng sau dấu gạch dưới `_\s+(\d+)` biến `(OH)_ 3` thành `(OH)_3`.
+  - Tự động bọc công thức có chỉ số dưới `C_{15}H_{31}COOH` thành `$C_{15}H_{31}COOH$`.
+  - Ghép nối công thức ester gãy dòng `$C_nH_{2n}\nO_2` thành `$C_nH_{2n}O_2$`.
+  - Bổ sung unit test `NormalizeCurriculumLatex_WithLabeledReactionAndSpacedSubscripts_NormalizesCleanly`, nâng tổng số test lên **19/19 unit tests pass 100% trong 294 ms**. Rebuild và khởi động container `v_eval_ai_engine`.
+
+
 ## [11/11/2026] - Khắc Phục Lỗi Deserialization JSON Bóc Tách Khung Tri Thức (Root Array & Preamble Fence), Tối Ưu Hóa Giảm Mật Độ Điểm Ảnh (DPI 72 / 720px) & Ưu Tiên Chuỗi Mô Hình Flash-Lite Siêu Tốc
 
 - **Khắc Phục Lỗi Deserialization JSON Bóc Tách Khung Tri Thức (Root Array & Preamble Fence) ([`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`PromptTemplateServiceTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/PromptTemplateServiceTests.cs))**:

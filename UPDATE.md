@@ -1,18 +1,28 @@
 # NHẬT KÝ CẬP NHẬT (UPDATE LOG) - AI ENGINE SERVICE
 
-## [12/11/2026] - Chuẩn Hóa Regex NormalizeCurriculumLatex: Bảo Toàn Dấu Đóng Đô La Trước Dấu Câu & Cô Lập Phương Trình Phản Ứng Độc Lập Theo Dòng
+## [12/11/2026] - Khảo Sát Bể 4 Khóa Gemini, Ưu Tiên Chuỗi Mô Hình Gemini-3.6-Flash Chống 503 & Chuẩn Hóa Phương Trình Hóa Học Backend
 
-- **Bảo Toàn Dấu Đóng Đô La ($) Trước Dấu Chấm Câu ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
-  - **Phát hiện & Bản chất lỗi**:
-    - Khi bóc tách dạng bài Hóa học từ tài liệu SGK, chuỗi văn bản chứa công thức có dấu chấm câu liền kề như `$C_{17}H_{33}$.` hoặc `$-CH = CH_2.$`.
-    - Regex cũ `Regex.Replace(s, @"(?<=[.,;])\$|\$(?=[.,;])", "")` đã xóa nhầm dấu `$` đóng trước dấu chấm câu, biến `$C_{17}H_{33}$.` thành `$C_{17}H_{33}.`. Hệ quả là dấu mở `$` không được đóng, khiến toàn bộ câu văn tiếng Việt phía sau (ví dụ: `1 mol triolein phản ứng tối đa 3 mol H_2...`) bị nuốt trọn vào math mode KaTeX, hiển thị thành chuỗi chữ nghiêng dính liền không dấu cách.
-  - **Giải pháp xử lý triệt để**:
-    - Gỡ bỏ hoàn toàn regex xóa dấu `$` trước/sau dấu chấm câu; thay thế bằng cơ chế kiểm tra và cân bằng dấu đô la an toàn `EnsureBalancedDollars(s)` chỉ thêm `$` ở cuối chuỗi nếu số lượng dấu `$` là lẻ.
-    - Gỡ bỏ regex `(?<![\$\w])([A-Z][a-zA-Z0-9_+-]+)\$` từng gây chia tách các nhóm chức phân tử `$-OH$` hay `$-COOH$` thành `$-$OH$`, chấm dứt triệt để hiện tượng đảo lộn tính chẵn lẻ của dấu đô la.
+- **Khảo Sát Thực Tế Bể 4 Khóa Gemini & Tái Cấu Trúc GeminiModels ([`appsettings.json`](./V-Eval-Ai_Engine.API/appsettings.json))**:
+  - **Kiểm thử trực tiếp trên cả 4 API keys (`GEMINI_KEY_1` đến `GEMINI_KEY_4`)**:
+    - `gemini-3.6-flash`: **HTTP 200 OK** trên cả 4/4 keys (phản hồi siêu tốc, độ ổn định tuyệt đối).
+    - `gemini-3.5-flash-lite`: **HTTP 200 OK** trên cả 4/4 keys (~1.0s).
+    - `gemini-3.5-flash`: **HTTP 200 OK** trên cả 4/4 keys.
+    - `gemini-3.1-flash-lite`: **HTTP 200 OK** trên cả 4/4 keys.
+    - `gemini-flash-lite-latest`: **HTTP 200 OK** trên cả 4/4 keys.
+    - `gemini-3.8-flash`: **HTTP 503 Service Unavailable / Timeout** trên cả 4 keys (xác nhận chính xác nguyên nhân gây chậm và lỗi 503 như log của người dùng).
+  - **Cập nhật danh sách mô hình ưu tiên**:
+    - Đưa `gemini-3.6-flash` lên làm mô hình chủ lực ưu tiên số 1.
+    - Tiếp nối bởi `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.1-flash-lite`, `gemini-flash-lite-latest`.
+    - Loại bỏ triệt để `gemini-3.8-flash` khỏi danh sách xoay vòng.
 
-- **Cô Lập Phương Trình Phản Ứng Độc Lập Từng Dòng (Line-by-Line Reaction Isolation)**:
-  - Chỉ tự động bọc `$$ ... $$` cho các dòng phương trình hóa học độc lập có chứa mũi tên phản ứng (`\xrightarrow`, `\rightleftharpoons`, `\longrightarrow`) khi dòng đó hoàn toàn không chứa văn bản Tiếng Việt, loại bỏ triệt để hiện tượng kẹp nhầm nhiều dòng văn bản vào khối công thức lớn.
+- **Nâng Cấp Backend NormalizeCurriculumLatex: Tách Nhãn Phương Trình & Chuẩn Hóa Công Thức Phức ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
+  - Bổ sung cơ chế bóc tách nhãn dẫn `Phương trình: ...` hoặc `PTHH: ...`, đưa phương trình hóa học có mũi tên thành display math `$$...$$` độc lập.
+  - Sửa lỗi khoảng trắng sau dấu gạch dưới `_\s+(\d+)` biến `(OH)_ 3` thành `(OH)_3`.
+  - Tự động bọc công thức có chỉ số dưới `C_{15}H_{31}COOH` thành `$C_{15}H_{31}COOH$`.
+  - Ghép nối công thức ester bị ngắt dòng `$C_nH_{2n}\nO_2` thành `$C_nH_{2n}O_2$`.
+  - Cân bằng dấu `$` an toàn từng dòng `EnsureBalancedDollars(s)` và bảo vệ dấu `$` trước dấu chấm câu (`$C_{17}H_{33}$.`).
 
 - **Kiểm Thử & Đảm Bảo Vận Hành ([`PromptTemplateServiceTests.cs`](./V-Eval-Ai_Engine.Tests/Infrastructure/PromptTemplateServiceTests.cs))**:
-  - Bổ sung unit test `NormalizeCurriculumLatex_WithChemistryFormulas_ShouldNotCorruptVietnameseOrDollarPlacement` kiểm chứng toàn diện các trường hợp: công thức hóa học có dấu chấm phía sau (`$C_{17}H_{33}$.`), nhóm chức (`-OH`), phương trình phản ứng mũi tên và bảo vệ tuyệt đối văn bản tiếng Việt giải thích không bị nuốt vào math mode.
-  - Toàn bộ **18/18 unit tests** vượt qua thành công 100% trong 415 ms. Solution biên dịch sạch với 0 Error.
+  - Bổ sung unit test `NormalizeCurriculumLatex_WithLabeledReactionAndSpacedSubscripts_NormalizesCleanly`.
+  - Toàn bộ **19/19 unit tests** trong AI Engine vượt qua thành công 100% trong 294 ms.
+  - Rebuild và triển khai container `v_eval_ai_engine` trên Docker.

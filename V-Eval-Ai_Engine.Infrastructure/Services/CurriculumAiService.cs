@@ -2067,6 +2067,12 @@ Suy ra ngay: $n_{Br_2} = (n_{CO_2} - n_{H_2O}) - 2n_{\text{chất béo}}$. Bấm
         if (string.IsNullOrWhiteSpace(text)) return string.Empty;
         var s = text;
 
+        // Khắc phục khoảng trắng sai vị trí sau dấu gạch dưới chỉ số e.g. (OH)_ 3 -> (OH)_3
+        s = Regex.Replace(s, @"_\s+(\d+|[a-zA-Z]|\{[^}]+\})", "_$1");
+
+        // Chuẩn hóa khoảng trắng giữa gốc hydrocarbon và nhóm chức hữu cơ e.g. C_{15}H_{31} COOH -> C_{15}H_{31}COOH
+        s = Regex.Replace(s, @"([A-Z][a-zA-Z0-9_\\\{\}\^]*_\{\d+\})\s+(COOH|OH|CHO|COONa|NH_2|COOCH_3)\b", "$1$2");
+
         // 1. Phục hồi công thức tính hiệu suất phản ứng nếu bị lỗi undefined
         s = Regex.Replace(s, @"(?i)H\\?%\s*undefined\s*%?\s*\$*", @"H\% = \frac{m_{\text{thực tế}}}{m_{\text{lí thuyết}}} \times 100\%");
         s = Regex.Replace(s, @"(?i)H\\?%\s*=\s*undefined\s*%?\s*\$*", @"H\% = \frac{m_{\text{thực tế}}}{m_{\text{lí thuyết}}} \times 100\%");
@@ -2096,6 +2102,7 @@ Suy ra ngay: $n_{Br_2} = (n_{CO_2} - n_{H_2O}) - 2n_{\text{chất béo}}$. Bấm
 
         // Sửa điều kiện bất đẳng thức có dấu $ bị đặt nhầm: (n \ge 2$) hoặc ($n$ \ge 4$) hoặc (n \ge 2)
         s = Regex.Replace(s, @"\(\s*\$?([a-zA-Z])\$?\s*\\(?:ge|le|gt|lt)\s*(\d+)\s*\$?\s*\)", "($$$1 \\ge $2$$)");
+        s = Regex.Replace(s, @"\(\s*([a-zA-Z])\s*\\(?:ge|le|gt|lt)\s*(\d+)\s*\$\s*\)", "($$$1 \\ge $2$$)");
 
         // Sửa lỗi dấu $ đóng nhầm trước số thập phân: \times$ 0,5 -> \times 0,5$
         s = Regex.Replace(s, @"\\times\s*\$\s*(\d+[,\.]?\d*)", @"\times $1$");
@@ -2177,28 +2184,41 @@ Suy ra ngay: $n_{Br_2} = (n_{CO_2} - n_{H_2O}) - 2n_{\text{chất béo}}$. Bấm
         for (int i = 0; i < eqLines.Length; i++)
         {
             var trimmedLine = eqLines[i].Trim();
-            if (!trimmedLine.Contains("$"))
+            if (Regex.IsMatch(trimmedLine, @"\\(?:rightleftharpoons|xrightarrow|longrightarrow|rightarrow|leftrightharpoons|leftrightarrow)\b"))
             {
-                // Kiểm tra phương trình phản ứng hóa học (có mũi tên phản ứng và không chứa từ tiếng Việt)
-                if (Regex.IsMatch(trimmedLine, @"\\(?:rightleftharpoons|xrightarrow|longrightarrow|rightarrow|leftrightharpoons|leftrightarrow)\b") &&
-                    !Regex.IsMatch(trimmedLine, @"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]", RegexOptions.IgnoreCase))
+                // Tách nhãn mở đầu như "Phương trình: ..." hoặc "PTHH: ..."
+                int colonIdx = trimmedLine.IndexOf(':');
+                if (colonIdx > 0 && colonIdx < 30)
                 {
-                    eqLines[i] = "$" + trimmedLine + "$";
-                    continue;
+                    string label = trimmedLine.Substring(0, colonIdx + 1).Trim();
+                    string eq = trimmedLine.Substring(colonIdx + 1).Trim().TrimEnd('.').Trim();
+                    if (!eq.StartsWith("$$"))
+                    {
+                        eq = eq.Replace("$", "");
+                        eqLines[i] = label + "\n$$" + eq + "$$";
+                    }
                 }
-
+                else if (!trimmedLine.Contains("$") && !Regex.IsMatch(trimmedLine, @"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]", RegexOptions.IgnoreCase))
+                {
+                    eqLines[i] = "$" + trimmedLine.TrimEnd('.').Trim().Replace("$", "") + "$";
+                }
+            }
+            else if (!trimmedLine.Contains("$"))
+            {
                 // Kiểm tra công thức toán/hóa chứa dấu = và \frac hoặc \sqrt (không chứa từ tiếng Việt)
                 if (trimmedLine.Contains("=") && Regex.IsMatch(trimmedLine, @"\\(?:frac|sqrt|lim|sum|prod|int)\b") &&
                     !Regex.IsMatch(trimmedLine, @"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]", RegexOptions.IgnoreCase))
                 {
-                    eqLines[i] = "$" + trimmedLine + "$";
-                    continue;
+                    eqLines[i] = "$" + trimmedLine.Trim() + "$";
                 }
             }
         }
         s = string.Join("\n", eqLines);
 
-        // 7. Cân bằng dấu $ đơn lẻ bị cô lập trên từng dòng
+        // 7. Tự động bọc công thức có chỉ số dưới dạng C_{15}H_{31}COOH trong văn bản thường
+        s = Regex.Replace(s, @"(?<![\$\\\w])([A-Z][a-zA-Z0-9]*_\{[0-9a-zA-Z\+\-]+\}[A-Za-z0-9_\{\}\(\)]*)(?![\$\w])", "$$$1$");
+
+        // 8. Cân bằng dấu $ đơn lẻ bị cô lập trên từng dòng
         var finalLines = s.Split('\n');
         for (int i = 0; i < finalLines.Length; i++)
         {
@@ -2207,7 +2227,7 @@ Suy ra ngay: $n_{Br_2} = (n_{CO_2} - n_{H_2O}) - 2n_{\text{chất béo}}$. Bấm
             if (dollarCount % 2 != 0)
             {
                 // Nếu kết thúc bằng $ thừa thì bỏ $ cuối
-                if (l.TrimEnd().EndsWith("$"))
+                if (l.TrimEnd().EndsWith("$.") || l.TrimEnd().EndsWith("$"))
                 {
                     int lastIdx = l.LastIndexOf('$');
                     l = l.Remove(lastIdx, 1);
