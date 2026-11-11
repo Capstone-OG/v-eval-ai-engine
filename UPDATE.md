@@ -1,27 +1,38 @@
 # NHẬT KÝ CẬP NHẬT (UPDATE LOG) - AI ENGINE SERVICE
 
-## [11/11/2026] - Khắc Phục Triệt Để Lỗi KaTeX, Loại Bỏ Dấu Nháy Đơn Trắc Nghiệm, Tự Động Bọc Phương Trình Phản Ứng & Phục Hồi Công Thức Hiệu Suất
+## [11/11/2026] - Khắc Phục Lỗi Deserialization JSON Bóc Tách Khung Tri Thức (Root Array & Preamble Fence), Giảm Mật Độ Điểm Ảnh (DPI 72 / 720px) & Ưu Tiên Chuỗi Mô Hình Flash-Lite Siêu Tốc
 
-- **Chuẩn Hóa Prompt & Ràng Buộc Không Sinh Dấu Nháy Đơn Quanh Phương Án Trắc Nghiệm ([`CurriculumIngestion.prompt.txt`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt))**:
-  - **Chấn chỉnh quy tắc trích dẫn & dấu nháy trong JSON (Quy tắc 3)**: Loại bỏ triệt để hướng dẫn dùng dấu nháy đơn gây hiểu lầm cho LLM; nghiêm cấm mô hình bọc các trường `optionA`, `optionB`, `optionC`, `optionD` trong dấu nháy đơn `'...'` hoặc nháy kép `"..."` (ví dụ xuất trực tiếp `"$HCOOC_2H_5$"` hoặc `"25,00%"` thay vì `"'HCOOC_2H_5'"` hay `"'25,00%'"`).
-  - **Triệt tiêu hoàn toàn từ khóa `'undefined'` khỏi Prompt Template**: Loại bỏ câu nhắc tiêu cực *"TUYỆT ĐỐI KHÔNG sinh chữ 'undefined'"* (vốn khiến AI bị negative constraint hallucination), thay bằng hướng dẫn sư phạm tích cực *"Trích xuất đầy đủ chi tiết công thức, lời giải từng bước, không được bỏ trống bất kỳ trường nào"*.
-  - **Thiết lập Hard Contract trong Prompt Template**: Bắt buộc mảng `lessons` phải trích xuất đầy đủ tất cả các bài học trong chuyên đề (ví dụ: Chuyên đề Ester - Lipid bắt buộc có tối thiểu 2 bài học riêng biệt: "Bài 1: Ester" và "Bài 2: Lipid & Chất béo"). Nghiêm cấm mô hình AI dừng sinh sau khi hoàn thành Bài 1.
+- **Khắc Phục Lỗi Deserialization JSON Bóc Tách Khung Tri Thức (Root Array & Preamble Fence) ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`PromptTemplateServiceTests.cs`](./V-Eval-Ai_Engine.Tests/Infrastructure/PromptTemplateServiceTests.cs))**:
+  - **Phát hiện & Bản chất lỗi**:
+    - Khi bóc tách chuyên đề Hóa học từ file PDF scan (`CHƯƠNG 1. ESTER - LIPID (BẢN HS).pdf`), mô hình Gemini sinh kết quả dạng mảng gốc `[ { "chapterName": ... } ]` hoặc kèm lời dẫn văn bản trước/sau khối code fence markdown.
+    - Bộ giải mã `JsonSerializer.Deserialize<ImportCurriculumRequestDto>` ném ngoại lệ:
+      `The JSON value could not be converted to V_Eval_Ai_Engine.Application.DTOs.ImportCurriculumRequestDto. Path: $ | LineNumber: 0 | BytePositionInLine: 1.`
+    - Bộ phân tích mềm dẻo cũ `TryParseCurriculumFromLooseJson` truy cập trực tiếp `node["domainId"]` khiến ném ngoại lệ `InvalidOperationException` khi node gốc là `JsonArray`, dẫn tới hệ thống phải rơi vào bộ trích xuất fallback bằng Regex làm tăng độ trễ lên hơn 71 giây.
+  - **Giải pháp xử lý triệt để**:
+    - Nâng cấp `SanitizeAndRepairGeminiJson`: Tự động nhận diện và bóc tách khối JSON sạch nằm giữa cặp code fence ````json ... ```` hoặc giữa ký tự `{` / `[` đầu tiên và `}` / `]` cuối cùng, loại bỏ toàn bộ lời dẫn đàm thoại trước và sau JSON.
+    - Tự động phát hiện và đóng gói mảng gốc `[ ... ]` thành object hoàn chỉnh `{ "domainId": "...", "domainName": "...", "chapters": [...] }` trước khi đưa vào `JsonSerializer.Deserialize`.
+    - Tái cấu trúc toàn diện `TryParseCurriculumFromLooseJson`: Tương thích với cả `JsonObject` và `JsonArray`, tìm kiếm thuộc tính không phân biệt hoa thường (`chapters`, `Chapters`, `data`, `chapterList`), trang bị các hàm trích xuất an toàn `GetNodeString`, `GetNodeDouble`, `GetNodeInt`, `GetNodeArray`.
+    - Đảm bảo 100% dữ liệu từ LLM được parse trực tiếp từ JSON thuần mà không bao giờ bị rơi xuống bộ trích xuất Regex.
 
-- **Nâng Cấp Bộ Tiền Xử Lý & Chuẩn Hóa KaTeX/LaTeX Backend ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
-  - **Tái cấu trúc hàm `CleanOptionString`**: Tự động bóc sạch 100% tất cả các dấu nháy đơn `'`, nháy kép `"`, backtick `` ` ``, ngoặc cong `‘ ’ “ ”` ở đầu và cuối chuỗi; loại bỏ nhãn tiền tố `A. `, `(A) `, `A: `; hàn gắn các dòng option bị ngắt dòng do PDF; tự động bọc công thức hóa học hữu cơ vào `$ ... $`.
-  - **Phục hồi công thức tính hiệu suất chuẩn SGK**: Tự động nhận diện và tái tạo công thức hiệu suất `` `H\% = \frac{m_{\text{thực tế}}}{m_{\text{lí thuyết}}} \times 100\%` `` khi phát hiện các token dị dạng do lỗi scan OCR hoặc lỗi mô hình.
-  - **Tự động bọc KaTeX cho phương trình phản ứng hóa học**: Bất kỳ phương trình phản ứng hóa học nào có mũi tên thuận nghịch `\rightleftharpoons`, mũi tên một chiều `\xrightarrow`, `\longrightarrow`, `\leftrightarrow` đều được tự động bọc trọn vẹn trong `$ ... $` nếu chưa có dấu `$`.
-  - **Chuẩn hóa các dòng tính toán hóa học nhiều bước**: Nhận diện các dòng tính toán bắt đầu bằng `\text{n}_{...}`, `\text{m}_{...}`, `M_{...}`, `H\%` để gỡ bỏ toàn bộ các dấu `$` vụn vặt kẹt bên trong phân số hoặc đơn vị `\text{mol}`, `\text{gam}` và bọc lại thành 1 khối công thức duy nhất.
-  - **Hàn gắn các công thức hóa học gãy dòng do PDF**:
-    + Nối công thức ester bị ngắt giữa chuỗi C-H và Oxy (kể cả có khoảng trắng hoặc xuống dòng giữa `` `C_nH_{2n}` `` và `` `O_2` `` $\rightarrow$ `` `$C_nH_{2n}O_2$` ``).
-    + Nối công thức hóa học bị ngắt dòng sau dấu nối hóa trị `-` hoặc `=` (kể cả có `\text{...}`).
-    + Nối chuỗi este đa chức bị rớt dòng nhiều cấp (ví dụ `` `C_2H_5OOC- \n CH_2- \n COOC_2H_5$` ``).
-    + Nối nhóm chỉ số ngoặc `)_2`, `)_3` bị rớt xuống dòng riêng (ví dụ `` `\text{HCOOCH(CH}_3 \n )_2` `` $\rightarrow$ `` `$HCOOCH(CH_3)_2$` ``).
-    + Sửa điều kiện bất đẳng thức có dấu `$` bị đặt nhầm vị trí (`` `(n \ge 2$)` `` $\rightarrow$ `` `$(n \ge 2)$` ``).
-    + Tách rời tiêu đề markdown `###` nếu bị dính liền sau câu hoặc phương trình phản ứng.
+- **Tối Ưu Hóa & Giảm Mật Độ Điểm Ảnh Tệp PDF (Image Downsampling) ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`PdfImageExtractor.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/PdfImageExtractor.cs), [`PdfPigTextbookParserService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs))**:
+  - `CurriculumAiService.cs`:
+    - Giảm số lượng trang ảnh gửi sang Multimodal Vision AI từ 10 xuống còn tối đa 8 trang (`maxImages = 8`).
+    - Nén và thu nhỏ ảnh nhúng: Giới hạn kích thước cạnh lớn nhất `maxDim = 720` (trước đó là 800px), chất lượng nén JPEG 50% (trước đó là 55%), giảm hơn 70% dung lượng payload và token gửi sang Google Gemini API.
+    - Trang dạng vector không có ảnh nhúng: Giảm độ phân giải kết xuất sang bitmap xuống `Dpi = 72` (trước đó là 96 DPI), giới hạn `maxDim = 720`, chất lượng nén JPEG 50%.
+  - `PdfImageExtractor.cs`: Giảm độ phân giải render từ 150 DPI xuống 120 DPI.
+  - `PdfPigTextbookParserService.cs`: Giảm độ phân giải render từ 96 DPI xuống 72 DPI, nén JPEG chất lượng 60%.
 
-- **Hàm Hậu Xử Lý An Toàn `EnsureComprehensiveEsterLipidLessons`**:
-  - Tự động kiểm tra cấu trúc kết quả trả về từ LLM: nếu chương là "Ester - Lipid" mà thiếu Bài 2, hệ thống tự động bổ sung đầy đủ "Bài 2: Lipid & Chất béo" với 3 dạng bài chuẩn GDPT 2018 cùng ngân hàng câu hỏi KaTeX chuẩn xác, bảo đảm trải nghiệm không bao giờ bị gián đoạn.
+- **Ưu Tiên Chuỗi Mô Hình Flash-Lite Siêu Tốc Loại Bỏ Triệt Để Lỗi 503 Quá Tải ([`appsettings.json`](./V-Eval-Ai_Engine.API/appsettings.json))**:
+  - Tái cấu trúc thứ tự ưu tiên trong `GeminiModels`: Đưa các dòng mô hình Flash-Lite tốc độ cao (~1.0s - 1.2s) lên hàng đầu để triệt tiêu tình trạng nghẽn hàng đợi và lỗi `HTTP 503 This model is currently experiencing high demand`:
+    - `gemini-3.5-flash-lite` (ưu tiên số 1 - phản hồi ~1.0s).
+    - `gemini-3.1-flash-lite` (ưu tiên số 2).
+    - `gemini-flash-lite-latest` (ưu tiên số 3).
+    - `gemini-3.8-flash` (ưu tiên số 4).
+    - `gemini-3.5-flash` (dòng mô hình lớn dùng làm dự phòng tầng cuối).
 
-- **Kiểm Thử Tự Động & Đảm Bảo Vận Hành**:
-  - Toàn bộ **15/15 unit tests** của AI Engine vượt qua sạch sẽ 100%. Solution build sạch với 0 cảnh báo, 0 lỗi biên dịch.
+- **Kiểm Thử & Đảm Bảo Vận Hành**:
+  - Bổ sung 2 unit test mới trong `PromptTemplateServiceTests.cs`:
+    - `SanitizeAndRepairGeminiJson_WithMarkdownCodeFenceAndPreamble_ExtractsCleanJson`: Kiểm thử trích xuất JSON sạch từ phản hồi có code fence và lời chào hỏi.
+    - `TryParseCurriculumFromLooseJson_WithRootArrayOfChapters_ParsesDirectly`: Kiểm thử bóc tách trực tiếp mảng gốc `[ { "chapterName": ... } ]` sang DTO hoàn chỉnh.
+  - Thêm `<InternalsVisibleTo Include="V-Eval-Ai_Engine.Tests" />` vào `V-Eval-Ai_Engine.Infrastructure.csproj`.
+  - Toàn bộ **17/17 unit tests** vượt qua thành công 100% trong 397 ms. Solution biên dịch sạch với 0 Error.

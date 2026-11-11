@@ -218,4 +218,86 @@ public class PromptTemplateServiceTests
         cleaned.Should().NotContain("/*");
         cleaned.Should().NotContain("*/");
     }
+
+    [Fact]
+    public void SanitizeAndRepairGeminiJson_WithMarkdownCodeFenceAndPreamble_ExtractsCleanJson()
+    {
+        string input = """
+        Dưới đây là kết quả trích xuất cấu trúc tri thức theo chuẩn SGK GDPT 2018:
+        ```json
+        {
+          "domainId": "dom_chem",
+          "domainName": "Hóa học",
+          "chapters": [
+            {
+              "chapterName": "Chương 1: Ester - Lipid",
+              "weight": 0.4,
+              "lessons": []
+            }
+          ]
+        }
+        ```
+        Hy vọng kết quả này hữu ích!
+        """;
+
+        string cleaned = CurriculumAiService.SanitizeAndRepairGeminiJson(input);
+        var doc = System.Text.Json.JsonDocument.Parse(cleaned);
+        doc.Should().NotBeNull();
+        cleaned.Should().StartWith("{");
+        cleaned.Should().EndWith("}");
+        cleaned.Should().NotContain("Dưới đây");
+        cleaned.Should().NotContain("Hy vọng");
+    }
+
+    [Fact]
+    public void TryParseCurriculumFromLooseJson_WithRootArrayOfChapters_ParsesDirectly()
+    {
+        string input = """
+        [
+          {
+            "chapterName": "Chương 1: Ester - Lipid",
+            "weight": 0.4,
+            "lessons": [
+              {
+                "lessonName": "Bài 1: Ester",
+                "weight": 0.2,
+                "patterns": [
+                  {
+                    "pattern_name": "Dạng 1: Đồng phân danh pháp",
+                    "weight": 0.05,
+                    "theory_recap": "Khái niệm este",
+                    "solution_method": "Bước 1: Viết đồng phân",
+                    "duration_seconds": 600,
+                    "questions": [
+                      {
+                        "difficulty_level": 1,
+                        "content_latex": "Chất nào sau đây là este?",
+                        "option_a": "$HCOOCH_3$",
+                        "option_b": "$CH_3COOH$",
+                        "option_c": "$C_2H_5OH$",
+                        "option_d": "$CH_3CHO$",
+                        "correct_option": "A",
+                        "explanation": "HCOOCH3 là este metyl fomat"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+        """;
+
+        var result = CurriculumAiService.TryParseCurriculumFromLooseJson(input, "dom_chem", "Hóa học");
+        result.Should().NotBeNull();
+        result!.Chapters.Should().HaveCount(1);
+        result.Chapters[0].ChapterName.Should().Be("Chương 1: Ester - Lipid");
+        result.Chapters[0].Lessons.Should().HaveCount(1);
+        result.Chapters[0].Lessons[0].LessonName.Should().Be("Bài 1: Ester");
+        result.Chapters[0].Lessons[0].Patterns.Should().HaveCount(1);
+        result.Chapters[0].Lessons[0].Patterns[0].PatternName.Should().Be("Dạng 1: Đồng phân danh pháp");
+        result.Chapters[0].Lessons[0].Patterns[0].Questions.Should().HaveCount(1);
+        result.Chapters[0].Lessons[0].Patterns[0].Questions[0].OptionA.Should().Be("$HCOOCH_3$");
+        result.Chapters[0].Lessons[0].Patterns[0].Questions[0].CorrectOption.Should().Be("A");
+    }
 }

@@ -96,10 +96,10 @@ public class CurriculumAiService : ICurriculumAiService
 
         return new List<string> { 
             "gemini-3.5-flash-lite",
-            "gemini-3.8-flash",
-            "gemini-3.6-flash",
             "gemini-3.1-flash-lite",
-            "gemini-flash-lite-latest"
+            "gemini-flash-lite-latest",
+            "gemini-3.8-flash",
+            "gemini-3.5-flash"
         };
     }
 
@@ -239,7 +239,7 @@ public class CurriculumAiService : ICurriculumAiService
         byte[] pdfBytes,
         int targetStart,
         int targetEnd,
-        int maxImages = 10)
+        int maxImages = 8)
     {
         var result = new List<string>();
         try
@@ -302,27 +302,33 @@ public class CurriculumAiService : ICurriculumAiService
                         if (originalBitmap != null)
                         {
                             int maxDim = Math.Max(originalBitmap.Width, originalBitmap.Height);
-                            float scale = maxDim > 800 ? 800f / maxDim : 1.0f;
+                            float scale = maxDim > 720 ? 720f / maxDim : 1.0f;
                             int targetW = (int)(originalBitmap.Width * scale);
                             int targetH = (int)(originalBitmap.Height * scale);
 
                             using var resized = originalBitmap.Resize(new SKImageInfo(targetW, targetH), SKSamplingOptions.Default);
                             using var skImage = SKImage.FromBitmap(resized);
-                            using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, 55);
+                            using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, 50);
                             jpegBytes = encoded.ToArray();
                         }
                     }
                 }
 
-                // 2. Nếu trang dạng vector không có ảnh nhúng, dùng PDFtoImage kết xuất sang bitmap
+                // 2. Nếu trang dạng vector không có ảnh nhúng, dùng PDFtoImage kết xuất sang bitmap độ phân giải tối ưu Dpi = 72
                 if (jpegBytes == null)
                 {
                     using var ms = new MemoryStream(pdfBytes);
-                    using var renderedBitmap = Conversion.ToImage(ms, page: page.Number - 1, options: new RenderOptions { Dpi = 96 });
+                    using var renderedBitmap = Conversion.ToImage(ms, page: page.Number - 1, options: new RenderOptions { Dpi = 72 });
                     if (renderedBitmap != null)
                     {
-                        using var skImage = SKImage.FromBitmap(renderedBitmap);
-                        using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, 55);
+                        int maxDim = Math.Max(renderedBitmap.Width, renderedBitmap.Height);
+                        float scale = maxDim > 720 ? 720f / maxDim : 1.0f;
+                        int targetW = (int)(renderedBitmap.Width * scale);
+                        int targetH = (int)(renderedBitmap.Height * scale);
+
+                        using var resized = renderedBitmap.Resize(new SKImageInfo(targetW, targetH), SKSamplingOptions.Default);
+                        using var skImage = SKImage.FromBitmap(resized);
+                        using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, 50);
                         jpegBytes = encoded.ToArray();
                     }
                 }
@@ -399,7 +405,7 @@ public class CurriculumAiService : ICurriculumAiService
                 if (actualTextChars < 300 && pdfBytes != null)
                 {
                     _logger.LogInformation("Phát hiện tài liệu PDF dạng ảnh scan / không có lớp text số hóa ({Chars} ký tự). Kích hoạt động cơ trích xuất Multimodal Vision AI...", actualTextChars);
-                    pageImagesBase64 = ExtractDownscaledPageImages(pdfBytes, targetStart, targetEnd, maxImages: 10);
+                    pageImagesBase64 = ExtractDownscaledPageImages(pdfBytes, targetStart, targetEnd, maxImages: 8);
                     _logger.LogInformation("Đã trích xuất và tối ưu hóa {Count} trang ảnh scan chất lượng cao cho Multimodal Vision.", pageImagesBase64.Count);
                     extractedText = $"[Tài liệu PDF ảnh scan gồm {totalPagesProcessed} trang. Dữ liệu các trang đã được trích xuất tối ưu hóa hình ảnh và truyền trực tiếp qua kênh Multimodal Vision AI.]";
                 }
@@ -585,6 +591,11 @@ public class CurriculumAiService : ICurriculumAiService
                             if (!string.IsNullOrEmpty(contentText))
                             {
                                 contentText = SanitizeAndRepairGeminiJson(contentText);
+                                if (contentText.TrimStart().StartsWith("["))
+                                {
+                                    contentText = $"{{\"domainId\": \"{domainId}\", \"domainName\": \"{domainName}\", \"chapters\": {contentText}}}";
+                                }
+
                                 ImportCurriculumRequestDto? parsed = null;
 
                                 try
@@ -668,6 +679,11 @@ public class CurriculumAiService : ICurriculumAiService
                     if (!string.IsNullOrWhiteSpace(gptResult))
                     {
                         string contentText = SanitizeAndRepairGeminiJson(gptResult);
+                        if (contentText.TrimStart().StartsWith("["))
+                        {
+                            contentText = $"{{\"domainId\": \"{domainId}\", \"domainName\": \"{domainName}\", \"chapters\": {contentText}}}";
+                        }
+
                         ImportCurriculumRequestDto? parsed = null;
 
                         try
@@ -1177,15 +1193,37 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
         if (string.IsNullOrWhiteSpace(rawJson)) return "{}";
 
         string cleaned = rawJson.Trim();
-        if (cleaned.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
-            cleaned = cleaned.Substring(7);
-        else if (cleaned.StartsWith("```"))
-            cleaned = cleaned.Substring(3);
 
-        if (cleaned.EndsWith("```"))
-            cleaned = cleaned.Substring(0, cleaned.Length - 3);
+        // -0.0 Bóc tách khối JSON từ code block markdown ```json ... ``` hoặc giữa { / [ và } / ]
+        var matchFence = Regex.Match(cleaned, @"```(?:json)?\s*([\s\S]*?)\s*```", RegexOptions.IgnoreCase);
+        if (matchFence.Success)
+        {
+            cleaned = matchFence.Groups[1].Value.Trim();
+        }
+        else
+        {
+            int firstBrace = cleaned.IndexOf('{');
+            int firstBracket = cleaned.IndexOf('[');
+            int startIdx = -1;
+            if (firstBrace >= 0 && firstBracket >= 0) startIdx = Math.Min(firstBrace, firstBracket);
+            else if (firstBrace >= 0) startIdx = firstBrace;
+            else if (firstBracket >= 0) startIdx = firstBracket;
 
-        cleaned = cleaned.Trim();
+            if (startIdx >= 0)
+            {
+                int lastBrace = cleaned.LastIndexOf('}');
+                int lastBracket = cleaned.LastIndexOf(']');
+                int endIdx = Math.Max(lastBrace, lastBracket);
+                if (endIdx > startIdx)
+                {
+                    cleaned = cleaned.Substring(startIdx, endIdx - startIdx + 1).Trim();
+                }
+                else
+                {
+                    cleaned = cleaned.Substring(startIdx).Trim();
+                }
+            }
+        }
 
         // -0.1 Xóa sạch chú thích kiểu C-style (/* ... */) và C++ line comments (// ...) nếu AI sinh vào JSON
         cleaned = Regex.Replace(cleaned, @"/\*[\s\S]*?\*/", "");
@@ -1517,7 +1555,7 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
         return true;
     }
 
-    private static ImportCurriculumRequestDto? TryParseCurriculumFromLooseJson(string rawJson, string domainId, string domainName)
+    internal static ImportCurriculumRequestDto? TryParseCurriculumFromLooseJson(string rawJson, string domainId, string domainName)
     {
         try
         {
@@ -1526,11 +1564,31 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
 
             var result = new ImportCurriculumRequestDto
             {
-                DomainId = node["domainId"]?.GetValue<string>() ?? domainId,
-                DomainName = node["domainName"]?.GetValue<string>() ?? domainName
+                DomainId = GetNodeString(node, "domainId", "domain_id") ?? domainId,
+                DomainName = GetNodeString(node, "domainName", "domain_name") ?? domainName
             };
 
-            var chaptersNode = node["chapters"] as JsonArray;
+            JsonArray? chaptersNode = null;
+
+            if (node is JsonArray rootArr)
+            {
+                chaptersNode = rootArr;
+            }
+            else if (node is JsonObject rootObj)
+            {
+                chaptersNode = GetNodeArray(rootObj, "chapters", "Chapters", "chapterList", "chapter_list", "data", "curriculum");
+                if (chaptersNode == null)
+                {
+                    // Nếu rootObj không có mảng chapters nhưng chính nó là một chapter
+                    string? chName = GetNodeString(rootObj, "chapterName", "chapter_name", "name", "title");
+                    var lessons = GetNodeArray(rootObj, "lessons", "Lessons", "lessonList");
+                    if (!string.IsNullOrWhiteSpace(chName) || lessons != null)
+                    {
+                        chaptersNode = new JsonArray { rootObj.DeepClone() };
+                    }
+                }
+            }
+
             if (chaptersNode == null) return null;
 
             foreach (var chNode in chaptersNode)
@@ -1538,12 +1596,12 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
                 if (chNode == null) continue;
                 var ch = new ImportChapterDto
                 {
-                    ChapterName = chNode["chapterName"]?.GetValue<string>() ?? "Chương học thuật",
-                    Weight = chNode["weight"] != null ? chNode["weight"]!.GetValue<double>() : 0.25,
-                    Description = chNode["description"]?.GetValue<string>()
+                    ChapterName = GetNodeString(chNode, "chapterName", "chapter_name", "name", "title") ?? "Chương học thuật",
+                    Weight = GetNodeDouble(chNode, 0.25, "weight", "Weight"),
+                    Description = GetNodeString(chNode, "description", "summary")
                 };
 
-                var lessonsNode = chNode["lessons"] as JsonArray;
+                var lessonsNode = GetNodeArray(chNode, "lessons", "Lessons", "lessonList", "lesson_list");
                 if (lessonsNode != null)
                 {
                     foreach (var lesNode in lessonsNode)
@@ -1551,12 +1609,12 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
                         if (lesNode == null) continue;
                         var les = new ImportLessonDto
                         {
-                            LessonName = lesNode["lessonName"]?.GetValue<string>() ?? "Bài học",
-                            Weight = lesNode["weight"] != null ? lesNode["weight"]!.GetValue<double>() : 0.1,
-                            Summary = lesNode["summary"]?.GetValue<string>()
+                            LessonName = GetNodeString(lesNode, "lessonName", "lesson_name", "name", "title") ?? "Bài học",
+                            Weight = GetNodeDouble(lesNode, 0.1, "weight", "Weight"),
+                            Summary = GetNodeString(lesNode, "summary", "description")
                         };
 
-                        var patternsNode = lesNode["patterns"] as JsonArray;
+                        var patternsNode = GetNodeArray(lesNode, "patterns", "Patterns", "patternList", "pattern_list");
                         if (patternsNode != null)
                         {
                             foreach (var patNode in patternsNode)
@@ -1564,17 +1622,17 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
                                 if (patNode == null) continue;
                                 var pat = new ImportPatternDto
                                 {
-                                    PatternName = patNode["patternName"]?.GetValue<string>() ?? patNode["pattern_name"]?.GetValue<string>() ?? "Dạng bài",
-                                    Weight = patNode["weight"] != null ? patNode["weight"]!.GetValue<double>() : 0.05,
-                                    Classification = patNode["classification"]?.GetValue<string>(),
-                                    CoreSkill = patNode["coreSkill"]?.GetValue<string>() ?? patNode["core_skill"]?.GetValue<string>(),
-                                    TheoryRecap = patNode["theoryRecap"]?.GetValue<string>() ?? patNode["theory_recap"]?.GetValue<string>() ?? string.Empty,
-                                    SolutionMethod = patNode["solutionMethod"]?.GetValue<string>() ?? patNode["solution_method"]?.GetValue<string>() ?? string.Empty,
-                                    VideoUrl = patNode["videoUrl"]?.GetValue<string>() ?? patNode["video_url"]?.GetValue<string>(),
-                                    DurationSeconds = patNode["durationSeconds"] != null ? patNode["durationSeconds"]!.GetValue<int>() : (patNode["duration_seconds"] != null ? patNode["duration_seconds"]!.GetValue<int>() : 600)
+                                    PatternName = GetNodeString(patNode, "patternName", "pattern_name", "name", "title") ?? "Dạng bài",
+                                    Weight = GetNodeDouble(patNode, 0.05, "weight", "Weight"),
+                                    Classification = GetNodeString(patNode, "classification"),
+                                    CoreSkill = GetNodeString(patNode, "coreSkill", "core_skill"),
+                                    TheoryRecap = GetNodeString(patNode, "theoryRecap", "theory_recap", "theory") ?? string.Empty,
+                                    SolutionMethod = GetNodeString(patNode, "solutionMethod", "solution_method", "method") ?? string.Empty,
+                                    VideoUrl = GetNodeString(patNode, "videoUrl", "video_url"),
+                                    DurationSeconds = GetNodeInt(patNode, 600, "durationSeconds", "duration_seconds")
                                 };
 
-                                var questionsNode = patNode["questions"] as JsonArray;
+                                var questionsNode = GetNodeArray(patNode, "questions", "Questions", "questionList", "question_list");
                                 if (questionsNode != null)
                                 {
                                     foreach (var qNode in questionsNode)
@@ -1582,14 +1640,14 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
                                         if (qNode == null) continue;
                                         pat.Questions.Add(new ImportQuestionDto
                                         {
-                                            DifficultyLevel = qNode["difficultyLevel"] != null ? qNode["difficultyLevel"]!.GetValue<int>() : 2,
-                                            ContentLatex = qNode["contentLatex"]?.GetValue<string>() ?? string.Empty,
-                                            OptionA = qNode["optionA"]?.GetValue<string>() ?? string.Empty,
-                                            OptionB = qNode["optionB"]?.GetValue<string>() ?? string.Empty,
-                                            OptionC = qNode["optionC"]?.GetValue<string>() ?? string.Empty,
-                                            OptionD = qNode["optionD"]?.GetValue<string>() ?? string.Empty,
-                                            CorrectOption = NormalizeCorrectOption(ExtractJsonNodeAsString(qNode["correctOption"] ?? qNode["correct_option"])),
-                                            Explanation = qNode["explanation"]?.GetValue<string>()
+                                            DifficultyLevel = GetNodeInt(qNode, 2, "difficultyLevel", "difficulty_level", "level"),
+                                            ContentLatex = GetNodeString(qNode, "contentLatex", "content_latex", "content", "question") ?? string.Empty,
+                                            OptionA = GetNodeString(qNode, "optionA", "option_a", "a") ?? string.Empty,
+                                            OptionB = GetNodeString(qNode, "optionB", "option_b", "b") ?? string.Empty,
+                                            OptionC = GetNodeString(qNode, "optionC", "option_c", "c") ?? string.Empty,
+                                            OptionD = GetNodeString(qNode, "optionD", "option_d", "d") ?? string.Empty,
+                                            CorrectOption = NormalizeCorrectOption(GetNodeString(qNode, "correctOption", "correct_option", "answer")),
+                                            Explanation = GetNodeString(qNode, "explanation", "solution")
                                         });
                                     }
                                 }
@@ -1611,6 +1669,93 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
         {
             return null;
         }
+    }
+
+    private static string? GetNodeString(JsonNode? node, params string[] propertyNames)
+    {
+        if (node is JsonObject obj)
+        {
+            foreach (var prop in propertyNames)
+            {
+                foreach (var kvp in obj)
+                {
+                    if (kvp.Key.Equals(prop, StringComparison.OrdinalIgnoreCase) && kvp.Value != null)
+                    {
+                        try { return kvp.Value.GetValue<string>(); }
+                        catch { return kvp.Value.ToString(); }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private static double GetNodeDouble(JsonNode? node, double fallback, params string[] propertyNames)
+    {
+        if (node is JsonObject obj)
+        {
+            foreach (var prop in propertyNames)
+            {
+                foreach (var kvp in obj)
+                {
+                    if (kvp.Key.Equals(prop, StringComparison.OrdinalIgnoreCase) && kvp.Value != null)
+                    {
+                        try { return kvp.Value.GetValue<double>(); }
+                        catch 
+                        { 
+                            if (double.TryParse(kvp.Value.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var d))
+                                return d;
+                        }
+                    }
+                }
+            }
+        }
+        return fallback;
+    }
+
+    private static int GetNodeInt(JsonNode? node, int fallback, params string[] propertyNames)
+    {
+        if (node is JsonObject obj)
+        {
+            foreach (var prop in propertyNames)
+            {
+                foreach (var kvp in obj)
+                {
+                    if (kvp.Key.Equals(prop, StringComparison.OrdinalIgnoreCase) && kvp.Value != null)
+                    {
+                        try { return kvp.Value.GetValue<int>(); }
+                        catch 
+                        { 
+                            if (int.TryParse(kvp.Value.ToString(), out var i))
+                                return i;
+                        }
+                    }
+                }
+            }
+        }
+        return fallback;
+    }
+
+    private static JsonArray? GetNodeArray(JsonNode? node, params string[] propertyNames)
+    {
+        if (node is JsonObject obj)
+        {
+            foreach (var prop in propertyNames)
+            {
+                foreach (var kvp in obj)
+                {
+                    if (kvp.Key.Equals(prop, StringComparison.OrdinalIgnoreCase) && kvp.Value is JsonArray arr)
+                    {
+                        return arr;
+                    }
+                }
+            }
+        }
+        else if (node is JsonArray arr)
+        {
+            return arr;
+        }
+        return null;
     }
 
     private static void FinalizeAndCleanParsedCurriculum(ImportCurriculumRequestDto parsed, string domainId, string domainName)

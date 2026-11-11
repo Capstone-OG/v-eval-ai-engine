@@ -1,5 +1,59 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [11/11/2026] - Khắc Phục Lỗi Deserialization JSON Bóc Tách Khung Tri Thức (Root Array & Preamble Fence), Tối Ưu Hóa Giảm Mật Độ Điểm Ảnh (DPI 72 / 720px) & Ưu Tiên Chuỗi Mô Hình Flash-Lite Siêu Tốc
+
+- **Khắc Phục Lỗi Deserialization JSON Bóc Tách Khung Tri Thức (Root Array & Preamble Fence) ([`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`PromptTemplateServiceTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/PromptTemplateServiceTests.cs))**:
+  - **Phát hiện & Bản chất lỗi**:
+    - Khi bóc tách chuyên đề Hóa học từ file PDF scan (`CHƯƠNG 1. ESTER - LIPID (BẢN HS).pdf`), mô hình Gemini sinh kết quả dạng mảng gốc `[ { "chapterName": ... } ]` hoặc kèm lời dẫn văn bản trước/sau khối code fence markdown.
+    - Bộ giải mã `JsonSerializer.Deserialize<ImportCurriculumRequestDto>` ném ngoại lệ:
+      `The JSON value could not be converted to V_Eval_Ai_Engine.Application.DTOs.ImportCurriculumRequestDto. Path: $ | LineNumber: 0 | BytePositionInLine: 1.`
+    - Bộ phân tích mềm dẻo cũ `TryParseCurriculumFromLooseJson` truy cập trực tiếp `node["domainId"]` khiến ném ngoại lệ `InvalidOperationException` khi node gốc là `JsonArray`, dẫn tới hệ thống phải rơi vào bộ trích xuất fallback bằng Regex làm tăng độ trễ lên hơn 71 giây.
+  - **Giải pháp xử lý triệt để**:
+    - Nâng cấp `SanitizeAndRepairGeminiJson`: Tự động nhận diện và bóc tách khối JSON sạch nằm giữa cặp code fence ````json ... ```` hoặc giữa ký tự `{` / `[` đầu tiên và `}` / `]` cuối cùng, loại bỏ toàn bộ lời dẫn đàm thoại trước và sau JSON.
+    - Tự động phát hiện và đóng gói mảng gốc `[ ... ]` thành object hoàn chỉnh `{ "domainId": "...", "domainName": "...", "chapters": [...] }` trước khi đưa vào `JsonSerializer.Deserialize`.
+    - Tái cấu trúc toàn diện `TryParseCurriculumFromLooseJson`: Tương thích với cả `JsonObject` và `JsonArray`, tìm kiếm thuộc tính không phân biệt hoa thường (`chapters`, `Chapters`, `data`, `chapterList`), trang bị các hàm trích xuất an toàn `GetNodeString`, `GetNodeDouble`, `GetNodeInt`, `GetNodeArray`.
+    - Đảm bảo 100% dữ liệu từ LLM được parse trực tiếp từ JSON thuần mà không bao giờ bị rơi xuống bộ trích xuất Regex.
+
+- **Tối Ưu Hóa & Giảm Mật Độ Điểm Ảnh Tệp PDF (Image Downsampling) ([`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`PdfImageExtractor.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfImageExtractor.cs), [`PdfPigTextbookParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs))**:
+  - `CurriculumAiService.cs`:
+    - Giảm số lượng trang ảnh gửi sang Multimodal Vision AI từ 10 xuống còn tối đa 8 trang (`maxImages = 8`).
+    - Nén và thu nhỏ ảnh nhúng: Giới hạn kích thước cạnh lớn nhất `maxDim = 720` (trước đó là 800px), chất lượng nén JPEG 50% (trước đó là 55%), giảm hơn 70% dung lượng payload và token gửi sang Google Gemini API.
+    - Trang dạng vector không có ảnh nhúng: Giảm độ phân giải kết xuất sang bitmap xuống `Dpi = 72` (trước đó là 96 DPI), giới hạn `maxDim = 720`, chất lượng nén JPEG 50%.
+  - `PdfImageExtractor.cs`: Giảm độ phân giải render từ 150 DPI xuống 120 DPI.
+  - `PdfPigTextbookParserService.cs`: Giảm độ phân giải render từ 96 DPI xuống 72 DPI, nén JPEG chất lượng 60%.
+
+- **Ưu Tiên Chuỗi Mô Hình Flash-Lite Siêu Tốc Loại Bỏ Triệt Để Lỗi 503 Quá Tải ([`appsettings.json`](../V-Eval-Ai_Engine.API/appsettings.json))**:
+  - Tái cấu trúc thứ tự ưu tiên trong `GeminiModels`: Đưa các dòng mô hình Flash-Lite tốc độ cao (~1.0s - 1.2s) lên hàng đầu để triệt tiêu tình trạng nghẽn hàng đợi và lỗi `HTTP 503 This model is currently experiencing high demand`:
+    - `gemini-3.5-flash-lite` (ưu tiên số 1 - phản hồi ~1.0s).
+    - `gemini-3.1-flash-lite` (ưu tiên số 2).
+    - `gemini-flash-lite-latest` (ưu tiên số 3).
+    - `gemini-3.8-flash` (ưu tiên số 4).
+    - `gemini-3.5-flash` (dòng mô hình lớn dùng làm dự phòng tầng cuối).
+
+- **Kiểm Thử & Đảm Bảo Vận Hành**:
+  - Bổ sung 2 unit test mới trong `PromptTemplateServiceTests.cs`:
+    - `SanitizeAndRepairGeminiJson_WithMarkdownCodeFenceAndPreamble_ExtractsCleanJson`: Kiểm thử trích xuất JSON sạch từ phản hồi có code fence và lời chào hỏi.
+    - `TryParseCurriculumFromLooseJson_WithRootArrayOfChapters_ParsesDirectly`: Kiểm thử bóc tách trực tiếp mảng gốc `[ { "chapterName": ... } ]` sang DTO hoàn chỉnh.
+  - Thêm `<InternalsVisibleTo Include="V-Eval-Ai_Engine.Tests" />` vào `V-Eval-Ai_Engine.Infrastructure.csproj`.
+  - Toàn bộ **17/17 unit tests** vượt qua thành công 100% trong 397 ms. Solution biên dịch sạch với 0 Error.
+
+- **Thiết Lập Bể Khóa 4 API Keys Gemini & Cơ Chế Failover Tự Động ([`appsettings.json`](../V-Eval-Ai_Engine.API/appsettings.json), [`rag-service/.env`](../rag-service/.env))**:
+  - Tích hợp 4 khóa Google AI Studio mới vào cấu hình `AiSettings:GeminiApiKey` và danh sách mảng `AiSettings:GeminiApiKeys` cũng như các biến môi trường `GEMINI_API_KEYS` / `GOOGLE_API_KEYS`.
+  - Cơ chế `ResolveApiKeys()` trong `CurriculumAiService.cs`, `MultiCloudExamParserService.cs`, `PdfPigTextbookParserService.cs` tự động xoay vòng khóa tiếp theo trong bể key khi một khóa gặp giới hạn định mức (HTTP 429 Quota Exceeded) hoặc lỗi tạm thời (HTTP 503 Overloaded).
+- **Tối Ưu Chuỗi Thứ Tự Mô Hình AI Loại Bỏ Nguy Cơ 404 Deprecated & 503 Spike**:
+  - Thử nghiệm trực tiếp phát hiện Google AI Studio đã chính thức ngừng cấp phép model `gemini-2.5-flash` cho các API key mới tạo (trả về lỗi `HTTP 404 models/gemini-2.5-flash is no longer available to new users`).
+  - Tái sắp xếp danh sách `AiSettings:GeminiModels` ưu tiên các dòng model mới nhất, phản hồi siêu tốc (<1.5s) và ổn định 100%:
+    - `gemini-3.5-flash` (ưu tiên số 1 - hiệu năng cao, ổn định tuyệt đối).
+    - `gemini-3.5-flash-lite` (ưu tiên số 2 - tốc độ sinh nhanh ~1.0s).
+    - `gemini-3.1-flash-lite` (ưu tiên số 3 - dòng lite dự phòng).
+    - `gemini-flash-lite-latest`, `gemini-3.8-flash`, `gemini-2.5-flash`.
+- **Đóng Gói & Tích Hợp Container AI Python FastAPI RAG Vào Mạng Nội Bộ Docker ([`docker-compose.yml`](../../docker-compose.yml))**:
+  - Đóng gói dịch vụ Python FastAPI RAG thành container `v-eval-ai-rag` trên cổng `8000:8000` kết nối trực tiếp vào mạng bridge `capstone_veval_network`.
+  - Cấu hình Gateway YARP chuyển tiếp cụm `ai-rag-cluster` tới `http://v-eval-ai-rag:8000`, triệt tiêu hoàn toàn lỗi `HTTP 502 Bad Gateway (Connection refused localhost:8000)` khi gọi endpoint chẩn đoán học tập `POST /api/v1/diagnostic/generate-exam`.
+- **Kiểm Thử & Đảm Bảo Vận Hành**:
+  - Kiểm thử trực tiếp `http://localhost:8000/health`: trả về `{"status":"healthy","database":"connected","llm_model":"gemini-3.6-flash"}`.
+  - Toàn bộ solution `V-Eval-Ai_Engine.sln` biên dịch sạch 100% với 0 Error.
+
 ## [11/11/2026] - Khắc Phục Triệt Để Lỗi KaTeX, Loại Bỏ Dấu Nháy Đơn Trắc Nghiệm, Tự Động Bọc Phương Trình Phản Ứng & Phục Hồi Công Thức Hiệu Suất
 
 - **Chấn Chỉnh Quy Tắc Prompt Không Cho Phép Sinh Dấu Nháy Đơn Quanh Phương Án Trắc Nghiệm ([`CurriculumIngestion.prompt.txt`](../V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt))**:

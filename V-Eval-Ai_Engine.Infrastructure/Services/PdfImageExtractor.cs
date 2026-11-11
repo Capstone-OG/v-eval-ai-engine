@@ -70,9 +70,9 @@ public class PdfImageExtractor
 
                 if (validImages.Count == 0) continue;
 
-                // Kết xuất trang này bằng PDFtoImage (PDFium C++ Core) ở độ phân giải cao (150 DPI)
+                // Kết xuất trang này bằng PDFtoImage (PDFium C++ Core) ở độ phân giải tối ưu (120 DPI)
                 using var pdfStream = new MemoryStream(pdfBytes);
-                using var pageBitmap = Conversion.ToImage(pdfStream, page: page.Number - 1, options: new RenderOptions { Dpi = 150 });
+                using var pageBitmap = Conversion.ToImage(pdfStream, page: page.Number - 1, options: new RenderOptions { Dpi = 120 });
                 if (pageBitmap == null) continue;
 
                 double scaleX = (double)pageBitmap.Width / page.Width;

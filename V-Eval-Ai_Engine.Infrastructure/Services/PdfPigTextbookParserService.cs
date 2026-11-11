@@ -249,12 +249,12 @@ public class PdfPigTextbookParserService : ITextbookParserService
         {
             using var pdfStream = new MemoryStream(pdfBytes);
             
-            // TỐI ƯU HÓA: Render ở 96 DPI (vừa vặn nét cho OCR chữ/công thức mà kích thước chỉ ~800x1100 px, <80KB)
-            using var skBitmap = Conversion.ToImage(pdfStream, page: pageNumber - 1, options: new RenderOptions { Dpi = 96 });
+            // TỐI ƯU HÓA: Render ở 72 DPI (vừa vặn nét cho OCR chữ/công thức mà kích thước chỉ ~600x800 px, dung lượng <40KB)
+            using var skBitmap = Conversion.ToImage(pdfStream, page: pageNumber - 1, options: new RenderOptions { Dpi = 72 });
             if (skBitmap == null) return string.Empty;
 
             using var imageStream = new MemoryStream();
-            skBitmap.Encode(imageStream, SKEncodedImageFormat.Jpeg, quality: 70);
+            skBitmap.Encode(imageStream, SKEncodedImageFormat.Jpeg, quality: 60);
             byte[] imageBytes = imageStream.ToArray();
             string base64Image = Convert.ToBase64String(imageBytes);
 
