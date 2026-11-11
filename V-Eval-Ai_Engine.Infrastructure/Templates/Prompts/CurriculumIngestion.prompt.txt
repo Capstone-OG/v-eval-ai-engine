@@ -18,11 +18,11 @@ QUY TẮC BẮT BUỘC VỀ BÀI HỌC, DẠNG BÀI, VÍ DỤ MINH HỌA & BÀI 
        + "Bài 1: Ester" (Este)
        + "Bài 2: Lipid & Chất béo" (Lipit - Chất béo)
      * TUYỆT ĐỐI KHÔNG gộp các bài học khác nhau thành 1 bài duy nhất!
-   - TỐI ĐA HÓA SỐ LƯỢNG DẠNG BÀI (PATTERNS):
-     * Nếu là chế độ Chuyên sâu ĐGNL (TỐI ĐA HÓA CÁC DẠNG BÀI): Bóc tách tối đa các dạng bài thực chiến độc lập (từ 6 đến 12+ dạng bài cho tài liệu 10-50+ trang), đặt tên rõ ràng 'Dạng [Số]: [Tên dạng bài chi tiết]'.
-       + Bài 1 (Ester): Bóc tách từ 4 đến 5 dạng bài thực chiến (Đồng phân - Danh pháp, Tính chất vật lý & hóa học, Phản ứng thủy phân & xà phòng hóa, Phản ứng đốt cháy ester, Bài toán điều chế & hiệu suất este hóa).
-       + Bài 2 (Lipid & Chất béo): BẮT BUỘC bóc tách đủ 6 đến 8 dạng bài chi tiết (Khái niệm & Cấu tạo lipid/triglyceride, Tính chất vật lý & trạng thái chất béo, Phản ứng xà phòng hóa chất béo, Bảo toàn khối lượng xà phòng hóa, Chỉ số xà phòng hóa/chỉ số acid/chỉ số iot, Đốt cháy chất béo & bảo toàn nguyên tố, Phản ứng hydro hóa chất béo lỏng, Ứng dụng & vai trò dinh dưỡng).
-     * Nếu là chế độ Tiêu chuẩn: Tinh gọn thành các Dạng bài trọng tâm lớn theo mục lục, NHƯNG phần lý thuyết `theoryRecap` phải cực kỳ đầy đủ, sâu sắc và toàn diện (100% định nghĩa, công thức tổng quát, danh pháp, tính chất vật lý, cơ chế phản ứng, phương trình hóa học bằng LaTeX chuẩn), và phần phương pháp giải `solutionMethod` bắt buộc phân rã chi tiết thành nhiều Dạng con (Dạng 1.1, Dạng 1.2...).
+   - NGUYÊN TẮC BÓC TÁCH CỐT LÕI & CÂN BẰNG HIỆU NĂNG (CORE PATTERNS & BALANCED PERFORMANCE):
+     * Mỗi Bài học nhận diện từ 2 đến 3 Dạng bài (`patterns`) cốt lõi (tổng cộng 4 đến 6 dạng bài cho toàn chuyên đề), đặt tên rõ ràng 'Dạng [Số]: [Tên dạng bài chi tiết]'.
+       + Ví dụ Bài 1 (Ester): Bóc tách 2-3 dạng bài trọng tâm (Đồng phân - Danh pháp - Tính chất, Phản ứng thủy phân & xà phòng hóa, Đốt cháy & Điều chế este).
+       + Ví dụ Bài 2 (Lipid & Chất béo): Bóc tách 2-3 dạng bài trọng tâm (Khái niệm & Cấu tạo lipid/triglyceride, Phản ứng xà phòng hóa & bảo toàn khối lượng, Bài toán đốt cháy & hydro hóa chất béo lỏng).
+     * Phần lý thuyết `theoryRecap` phải đầy đủ, rõ ràng (100% định nghĩa, công thức tổng quát, danh pháp, tính chất, phương trình hóa học bằng LaTeX chuẩn), và phần phương pháp giải `solutionMethod` nêu rõ quy trình giải từng bước và bài toán mẫu chi tiết có số liệu rõ ràng.
 2. BẮT BUỘC ĐỦ 4 KHỐI NỘI DUNG SƯ PHẠM KÈM VÍ DỤ VÀ BÀI TOÁN MẪU:
    - `theoryRecap`: Lý thuyết nền tảng SGK toàn diện, định lý/khái niệm cốt lõi, công thức KaTeX đặt trong $...$, phương trình hóa học viết bằng LaTeX chuẩn. Kèm theo '### 📌 Ví dụ minh họa SGK:' (Trích xuất ví dụ/ngữ liệu từ tài liệu có phân tích và lời giải ngắn gọn).
    - `solutionMethod`: Quy trình 3-4 bước giải / làm bài: 'Bước 1: ...', 'Bước 2: ...', 'Bước 3: ...'. Kèm theo:

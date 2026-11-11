@@ -462,39 +462,31 @@ public class MultiCloudExamParserService : IExamParserService
             _logger.LogInformation("Tiến hành chạy Google Gemini: {ModelCount} mô hình, {KeyCount} API Key dự phòng (còn lại {Remaining} lần thử)...", 
                 geminiModels.Count, apiKeys.Count, maxAttempts - attemptCount);
 
-            foreach (var modelName in geminiModels)
+            foreach (var currentKey in apiKeys)
             {
-                if (attemptCount >= maxAttempts)
-                {
-                    _logger.LogWarning("Đã đạt giới hạn tối đa {MaxAttempts} lần thử. Dừng gọi thêm mô hình.", maxAttempts);
-                    break;
-                }
+                if (attemptCount >= maxAttempts || isSuccess) break;
+                bool keyInvalidOrQuotaExceeded = false;
+                string maskedKey = MaskKey(currentKey);
 
-                // gemini-3.1-flash-lite mặc định bật suy luận ngầm (thinking), cần tắt thinkingBudget để in thẳng JSON câu hỏi
-                if (modelName.Contains("3.1", StringComparison.OrdinalIgnoreCase))
+                foreach (var modelName in geminiModels)
                 {
-                    genConfig["thinkingConfig"] = new JsonObject
+                    if (attemptCount >= maxAttempts || keyInvalidOrQuotaExceeded || isSuccess) break;
+
+                    // gemini-3.1-flash-lite mặc định bật suy luận ngầm (thinking), cần tắt thinkingBudget để in thẳng JSON câu hỏi
+                    if (modelName.Contains("3.1", StringComparison.OrdinalIgnoreCase))
                     {
-                        ["thinkingBudget"] = 0
-                    };
-                }
-                else
-                {
-                    genConfig.Remove("thinkingConfig");
-                }
-
-                var payloadJson = requestPayload.ToJsonString();
-
-                foreach (var currentKey in apiKeys)
-                {
-                    if (attemptCount >= maxAttempts)
+                        genConfig["thinkingConfig"] = new JsonObject
+                        {
+                            ["thinkingBudget"] = 0
+                        };
+                    }
+                    else
                     {
-                        _logger.LogWarning("Đã đạt giới hạn tối đa {MaxAttempts} lần thử. Dừng gọi thêm mô hình.", maxAttempts);
-                        break;
+                        genConfig.Remove("thinkingConfig");
                     }
 
+                    var payloadJson = requestPayload.ToJsonString();
                     attemptCount++;
-                    string maskedKey = MaskKey(currentKey);
                     string geminiBaseUrl = _configuration["AiSettings:GeminiBaseUrl"] ?? "https://generativelanguage.googleapis.com/v1beta";
                     string requestUrl = $"{geminiBaseUrl.TrimEnd('/')}/models/{modelName}:generateContent?key={currentKey}";
                     using var requestMessage = new HttpRequestMessage(HttpMethod.Post, requestUrl)
@@ -507,8 +499,12 @@ public class MultiCloudExamParserService : IExamParserService
 
                     try
                     {
-                        var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+                        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
+
+                        var response = await _httpClient.SendAsync(requestMessage, linkedCts.Token);
                         var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                        var statusCode = (int)response.StatusCode;
 
                         if (response.IsSuccessStatusCode)
                         {
@@ -542,7 +538,7 @@ public class MultiCloudExamParserService : IExamParserService
                                                 _logger.LogInformation("Mô hình '{ModelName}' với API Key [{MaskedKey}] trích xuất thành công xuất sắc {Total} câu hỏi (vượt ngưỡng {MinThreshold})!", modelName, maskedKey, totalQ, minQuestionThreshold);
                                                 rawJsonText = textVal;
                                                 isSuccess = true;
-                                                break; // Thoát vòng lặp key
+                                                break; // Thành công, thoát vòng lặp model
                                             }
                                             else
                                             {
@@ -564,29 +560,34 @@ public class MultiCloudExamParserService : IExamParserService
                             continue;
                         }
 
-                        if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                        if (statusCode == 401 || statusCode == 403 || statusCode == 429)
                         {
-                            _logger.LogWarning("API Key [{MaskedKey}] chạm hạn mức (HTTP 429 Too Many Requests). Tự động fallback sang API Key dự phòng...", maskedKey);
+                            _logger.LogWarning("API Key [{MaskedKey}] gặp lỗi xác thực/hạn mức (HTTP {StatusCode}). Chuyển sang API Key dự phòng...", maskedKey, statusCode);
+                            keyInvalidOrQuotaExceeded = true;
+                            break; // Thoát vòng lặp model, thử key tiếp theo
+                        }
+                        else if (statusCode == 503 || statusCode == 500 || statusCode == 504 || statusCode == 404 || statusCode == 400)
+                        {
+                            _logger.LogWarning("Mô hình '{ModelName}' gặp lỗi máy chủ/yêu cầu (HTTP {StatusCode}). Chuyển ngay sang MODEL tiếp theo với cùng API key [{MaskedKey}]...",
+                                modelName, statusCode, maskedKey);
+                            continue; // Thử ngay model tiếp theo với cùng key
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Mô hình '{ModelName}' với Key [{MaskedKey}] trả về HTTP {StatusCode}. Thử lựa chọn kế tiếp...", modelName, maskedKey, statusCode);
                             continue;
                         }
-
-                        if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
-                        {
-                            _logger.LogWarning("Mô hình '{ModelName}' bị quá tải phía Google (HTTP 503 Service Unavailable). Thử key khác hoặc mô hình kế tiếp...", modelName);
-                            continue;
-                        }
-
-                        _logger.LogWarning("Mô hình '{ModelName}' với Key [{MaskedKey}] trả về HTTP {StatusCode}. Thử lựa chọn kế tiếp...", modelName, maskedKey, response.StatusCode);
+                    }
+                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        _logger.LogWarning("Mô hình '{ModelName}' với API Key [{MaskedKey}] bị timeout sau 45s. Chuyển ngay sang MODEL tiếp theo.", modelName, maskedKey);
+                        continue;
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
                         _logger.LogWarning(ex, "Lỗi kết nối tới '{ModelName}' bằng Key [{MaskedKey}]. Thử lựa chọn kế tiếp...", modelName, maskedKey);
+                        continue;
                     }
-                }
-
-                if (isSuccess)
-                {
-                    break; // Thoát vòng lặp model
                 }
             }
         }

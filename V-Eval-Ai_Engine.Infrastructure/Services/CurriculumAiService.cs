@@ -458,18 +458,14 @@ public class CurriculumAiService : ICurriculumAiService
         bool isDeep = string.IsNullOrWhiteSpace(extractionDepth) || extractionDepth.Equals("deep", StringComparison.OrdinalIgnoreCase);
 
         string depthDirective = isDeep
-            ? $@"YÊU CẦU BÓC TÁCH CẤU TRÚC TRI THỨC VÀ TỐI ĐA HÓA CÁC DẠNG BÀI (MAXIMIZE PEDAGOGICAL PATTERNS DIRECTIVE - CHUYÊN SÂU ĐGNL):
+            ? $@"YÊU CẦU BÓC TÁCH CẤU TRÚC TRI THỨC VÀ CÁC DẠNG BÀI TRỌNG TÂM (CURRICULUM INGESTION DIRECTIVE - CHUYÊN SÂU ĐGNL):
 - Phân tích quét TOÀN BỘ nội dung thực tế từ tài liệu thuộc lĩnh vực: {domainName} (Bao gồm cả các môn Khoa học tự nhiên như Hóa học, Vật lý, Sinh học và Toán học).
 - NGUYÊN TẮC BẮT BUỘC PHÂN TÁCH BÀI HỌC (MULTI-LESSON EXTRACTION):
   + Quét toàn bộ tài liệu để nhận diện TẤT CẢ các Bài học riêng biệt trong chương/chuyên đề.
   + Ví dụ chuyên đề Ester - Lipid: BẮT BUỘC phân tách thành 2 bài học riêng biệt: 'Bài 1: Ester' và 'Bài 2: Lipid & Chất béo'. TUYỆT ĐỐI KHÔNG gộp thành 1 bài học duy nhất!
-- NGUYÊN TẮC TỐI ĐA HÓA SỐ LƯỢNG DẠNG BÀI (PATTERNS) - TUYỆT ĐỐI KHÔNG BỎ SÓT NỘI DUNG:
-  + Quét từ trang đầu đến trang cuối để nhận diện ĐẦY ĐỦ TẤT CẢ các dạng bài xuất hiện trong tài liệu.
-  + TUYỆT ĐỐI KHÔNG được tóm tắt gộp hoặc chỉ tạo 2-3 dạng bài sơ sài.
-  + Đối với tài liệu chuyên đề toàn diện / tài liệu dày (từ 10 đến 50+ trang như chuyên đề Ester - Lipid, Hàm số...), BẮT BUỘC nhận diện và bóc tách từ 6 đến 12+ Dạng bài (`patterns`) chuyên biệt:
-    * Bài 1 (Ester): Bóc tách từ 4 đến 5 dạng bài thực chiến (Đồng phân & Danh pháp, Tính chất vật lý & hóa học, Phản ứng thủy phân/xà phòng hóa, Phản ứng đốt cháy, Bài toán điều chế & hiệu suất este hóa).
-    * Bài 2 (Lipid & Chất béo): BẮT BUỘC bóc tách đủ 6 đến 8 dạng bài chi tiết (Khái niệm & Cấu tạo lipid/triglyceride, Tính chất vật lý & trạng thái chất béo, Phản ứng xà phòng hóa chất béo, Bảo toàn khối lượng xà phòng hóa, Chỉ số xà phòng hóa/chỉ số acid/chỉ số iot, Đốt cháy chất béo & bảo toàn nguyên tố, Phản ứng hydro hóa chất béo lỏng, Ứng dụng & vai trò dinh dưỡng).
-  + Mỗi Dạng bài BẮT BUỘC có đủ 4 khối nội dung: `theoryRecap` (lý thuyết đầy đủ, phương trình LaTeX chuẩn), `solutionMethod` (thuật toán từng bước, bài mẫu chi tiết, không sinh chữ 'undefined'), `durationSeconds: 600`, và từ 2 đến 3 câu hỏi bài mẫu `questions` (L1/L2 -> L3/L4) kèm KaTeX chuẩn, đáp án và giải chi tiết."
+- NGUYÊN TẮC BÓC TÁCH CỐT LÕI & CÂN BẰNG HIỆU NĂNG:
+  + Mỗi Bài học nhận diện từ 2 đến 3 Dạng bài (`patterns`) cốt lõi (tổng cộng 4 đến 6 dạng bài cho toàn chuyên đề).
+  + Mỗi Dạng bài BẮT BUỘC có đủ 4 khối nội dung: `theoryRecap` (lý thuyết SGK đầy đủ, công thức/phương trình LaTeX chuẩn), `solutionMethod` (quy trình từng bước, bài toán mẫu chi tiết có số liệu, không sinh chữ 'undefined'), `durationSeconds: 600`, và từ 2 đến 3 câu hỏi bài mẫu `questions` (L1/L2 -> L3/L4) kèm KaTeX chuẩn, đáp án và giải chi tiết."
             : $@"YÊU CẦU BÓC TÁCH TIÊU CHUẨN - TRỌNG TÂM CỐT LÕI, ĐẦY ĐỦ LÝ THUYẾT & NHIỀU DẠNG CON (STANDARD DEEP-THEORY & SUB-PATTERNS DIRECTIVE):
 - Phân tích quét nội dung theo cấu trúc mục lục và các đề mục bài học lớn của tài liệu: {domainName}.
 - NGUYÊN TẮC BẮT BUỘC PHÂN TÁCH BÀI HỌC (MULTI-LESSON EXTRACTION):
@@ -519,7 +515,7 @@ public class CurriculumAiService : ICurriculumAiService
 
         if (apiKeys.Count > 0)
         {
-            foreach (var modelName in geminiModels)
+            foreach (var key in apiKeys)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -527,9 +523,12 @@ public class CurriculumAiService : ICurriculumAiService
                     break;
                 }
 
-                foreach (var key in apiKeys)
+                bool keyInvalidOrQuotaExceeded = false;
+                string maskedKey = key.Length > 8 ? key[..8] + "..." : "key";
+
+                foreach (var modelName in geminiModels)
                 {
-                    if (cancellationToken.IsCancellationRequested) break;
+                    if (cancellationToken.IsCancellationRequested || keyInvalidOrQuotaExceeded) break;
 
                     try
                     {
@@ -578,10 +577,12 @@ public class CurriculumAiService : ICurriculumAiService
                             Content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json")
                         };
 
-                        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(35));
                         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
 
                         var response = await _httpClient.SendAsync(requestMessage, linkedCts.Token);
+                        var statusCode = (int)response.StatusCode;
+
                         if (response.IsSuccessStatusCode)
                         {
                             string respJson = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -639,9 +640,33 @@ public class CurriculumAiService : ICurriculumAiService
                         {
                             string errBody = await response.Content.ReadAsStringAsync(cancellationToken);
                             if (errBody.Length > 200) errBody = errBody.Substring(0, 200) + "...";
-                            _logger.LogWarning("Gemini API model '{Model}' trả về HTTP {StatusCode} ({ErrorBody}), tiếp tục chuyển đổi model/key tiếp theo.", 
-                                modelName, (int)response.StatusCode, errBody);
+
+                            if (statusCode == 401 || statusCode == 403 || statusCode == 429)
+                            {
+                                _logger.LogWarning("Gemini API Key '{MaskedKey}' gặp lỗi Key/Quota HTTP {StatusCode} ({ErrorBody}). Chuyển sang API Key tiếp theo.", 
+                                    maskedKey, statusCode, errBody);
+                                keyInvalidOrQuotaExceeded = true;
+                                break;
+                            }
+                            else if (statusCode == 503 || statusCode == 500 || statusCode == 504 || statusCode == 404 || statusCode == 400)
+                            {
+                                _logger.LogWarning("Gemini API model '{Model}' gặp lỗi Model/Server HTTP {StatusCode} ({ErrorBody}). Chuyển ngay sang MODEL tiếp theo với cùng API key.", 
+                                    modelName, statusCode, errBody);
+                                continue;
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Gemini API model '{Model}' trả về HTTP {StatusCode} ({ErrorBody}). Thử model tiếp theo.", 
+                                    modelName, statusCode, errBody);
+                                continue;
+                            }
                         }
+                    }
+                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        _logger.LogWarning("Gemini API model '{Model}' với key '{MaskedKey}' bị timeout sau 35s. Chuyển ngay sang MODEL tiếp theo.",
+                            modelName, maskedKey);
+                        continue;
                     }
                     catch (Exception ex)
                     {
@@ -650,7 +675,8 @@ public class CurriculumAiService : ICurriculumAiService
                             _logger.LogWarning("Tiến trình bóc tách đã bị hủy từ phía Client/Gateway ({Message}). Dừng toàn bộ các model dự phòng.", ex.Message);
                             break;
                         }
-                        _logger.LogWarning("Gọi Gemini API model '{Model}' thất bại ({Message}), tiếp tục kiểm tra key/model tiếp theo.", modelName, ex.Message);
+                        _logger.LogWarning("Gọi Gemini API model '{Model}' thất bại ({Message}), tiếp tục kiểm tra model tiếp theo.", modelName, ex.Message);
+                        continue;
                     }
                 }
             }
@@ -770,13 +796,15 @@ public class CurriculumAiService : ICurriculumAiService
 
         if (apiKeys.Count > 0)
         {
-            foreach (var modelName in geminiModels)
+            foreach (var key in apiKeys)
             {
                 if (cancellationToken.IsCancellationRequested) break;
+                bool keyInvalidOrQuotaExceeded = false;
+                string maskedKey = key.Length > 8 ? key[..8] + "..." : "key";
 
-                foreach (var key in apiKeys)
+                foreach (var modelName in geminiModels)
                 {
-                    if (cancellationToken.IsCancellationRequested) break;
+                    if (cancellationToken.IsCancellationRequested || keyInvalidOrQuotaExceeded) break;
 
                     try
                     {
@@ -808,10 +836,12 @@ public class CurriculumAiService : ICurriculumAiService
                             Content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json")
                         };
 
-                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(35));
                         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
 
                         var response = await _httpClient.SendAsync(requestMessage, linkedCts.Token);
+                        var statusCode = (int)response.StatusCode;
+
                         if (response.IsSuccessStatusCode)
                         {
                             string respJson = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -853,14 +883,41 @@ public class CurriculumAiService : ICurriculumAiService
                         }
                         else
                         {
-                            _logger.LogWarning("Gemini AI pattern analysis model '{Model}' trả về HTTP {StatusCode}, tiếp tục chuyển đổi model/key tiếp theo.", 
-                                modelName, (int)response.StatusCode);
+                            string errBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                            if (errBody.Length > 200) errBody = errBody.Substring(0, 200) + "...";
+
+                            if (statusCode == 401 || statusCode == 403 || statusCode == 429)
+                            {
+                                _logger.LogWarning("Gemini API Key '{MaskedKey}' gặp lỗi Key/Quota HTTP {StatusCode} ({ErrorBody}). Chuyển sang API Key tiếp theo.",
+                                    maskedKey, statusCode, errBody);
+                                keyInvalidOrQuotaExceeded = true;
+                                break;
+                            }
+                            else if (statusCode == 503 || statusCode == 500 || statusCode == 504 || statusCode == 404 || statusCode == 400)
+                            {
+                                _logger.LogWarning("Gemini API model '{Model}' gặp lỗi tải máy chủ/không khả dụng HTTP {StatusCode} ({ErrorBody}). Chuyển ngay sang MODEL tiếp theo với cùng API key.",
+                                    modelName, statusCode, errBody);
+                                continue;
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Gemini API pattern analysis model '{Model}' trả về HTTP {StatusCode} ({ErrorBody}). Thử model tiếp theo.",
+                                    modelName, statusCode, errBody);
+                                continue;
+                            }
                         }
+                    }
+                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        _logger.LogWarning("Gemini API pattern analysis model '{Model}' với key '{MaskedKey}' bị timeout sau 35s. Chuyển sang MODEL tiếp theo.",
+                            modelName, maskedKey);
+                        continue;
                     }
                     catch (Exception ex)
                     {
                         if (cancellationToken.IsCancellationRequested) break;
-                        _logger.LogWarning("Gemini AI pattern analysis model '{Model}' error: {Message}", modelName, ex.Message);
+                        _logger.LogWarning("Gemini AI pattern analysis model '{Model}' error: {Message}. Thử model tiếp theo.", modelName, ex.Message);
+                        continue;
                     }
                 }
             }
@@ -976,13 +1033,15 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
 
         if (apiKeys.Count > 0)
         {
-            foreach (var modelName in geminiModels)
+            foreach (var key in apiKeys)
             {
                 if (cancellationToken.IsCancellationRequested) break;
+                bool keyInvalidOrQuotaExceeded = false;
+                string maskedKey = key.Length > 8 ? key[..8] + "..." : "key";
 
-                foreach (var key in apiKeys)
+                foreach (var modelName in geminiModels)
                 {
-                    if (cancellationToken.IsCancellationRequested) break;
+                    if (cancellationToken.IsCancellationRequested || keyInvalidOrQuotaExceeded) break;
 
                     try
                     {
@@ -1014,10 +1073,12 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
                             Content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json")
                         };
 
-                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(35));
                         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
 
                         var response = await _httpClient.SendAsync(requestMessage, linkedCts.Token);
+                        var statusCode = (int)response.StatusCode;
+
                         if (response.IsSuccessStatusCode)
                         {
                             string respJson = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -1080,14 +1141,41 @@ BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn c
                         }
                         else
                         {
-                            _logger.LogWarning("Gemini AI generate pattern questions model '{Model}' trả về HTTP {StatusCode}, tiếp tục chuyển đổi model/key tiếp theo.", 
-                                modelName, (int)response.StatusCode);
+                            string errBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                            if (errBody.Length > 200) errBody = errBody.Substring(0, 200) + "...";
+
+                            if (statusCode == 401 || statusCode == 403 || statusCode == 429)
+                            {
+                                _logger.LogWarning("Gemini API Key '{MaskedKey}' gặp lỗi Key/Quota HTTP {StatusCode} ({ErrorBody}). Chuyển sang API Key tiếp theo.",
+                                    maskedKey, statusCode, errBody);
+                                keyInvalidOrQuotaExceeded = true;
+                                break;
+                            }
+                            else if (statusCode == 503 || statusCode == 500 || statusCode == 504 || statusCode == 404 || statusCode == 400)
+                            {
+                                _logger.LogWarning("Gemini API model '{Model}' gặp lỗi tải máy chủ/không khả dụng HTTP {StatusCode} ({ErrorBody}). Chuyển ngay sang MODEL tiếp theo với cùng API key.",
+                                    modelName, statusCode, errBody);
+                                continue;
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Gemini API generate questions model '{Model}' trả về HTTP {StatusCode} ({ErrorBody}). Thử model tiếp theo.",
+                                    modelName, statusCode, errBody);
+                                continue;
+                            }
                         }
+                    }
+                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        _logger.LogWarning("Gemini API generate questions model '{Model}' với key '{MaskedKey}' bị timeout sau 35s. Chuyển sang MODEL tiếp theo.",
+                            modelName, maskedKey);
+                        continue;
                     }
                     catch (Exception ex)
                     {
                         if (cancellationToken.IsCancellationRequested) break;
-                        _logger.LogWarning("Gemini AI generate pattern questions model '{Model}' error: {Message}", modelName, ex.Message);
+                        _logger.LogWarning("Gemini AI generate pattern questions model '{Model}' error: {Message}. Thử model tiếp theo.", modelName, ex.Message);
+                        continue;
                     }
                 }
             }
@@ -2111,6 +2199,12 @@ Suy ra ngay: $n_{Br_2} = (n_{CO_2} - n_{H_2O}) - 2n_{\text{chất béo}}$. Bấm
         s = Regex.Replace(s, @"([A-Za-z0-9_]+)\$\s*=\s*\$([A-Za-z0-9_]+)", "$1=$2");
         s = Regex.Replace(s, @"\$\s*(-[A-Za-z0-9]+-)\s*,?", "$1,");
 
+        // Sửa lỗi dấu $ đặt ngay trước hoặc sau dấu bằng trong công thức e.g. n_{\text{triglyceride}} $=\frac{...} -> n_{\text{triglyceride}} = \frac{...}
+        s = Regex.Replace(s, @"\$\s*=\s*\$?|(?<=\w|\})\s*\$\s*=", " = ");
+
+        // Sửa lỗi đóng mở $ giữa công thức có dấu chấm/phẩy kết thúc trước chữ tiếng Việt e.g. $C_{17}H_{33}. 1 mol -> $C_{17}H_{33}$. 1 mol
+        s = Regex.Replace(s, @"(\$(?:[A-Za-z0-9_\\\{\}\^]+))\.\s+([0-9a-zA-Zàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ])", "$1$. $2");
+
         // Sửa phương trình phản ứng bị đóng mở $ vụn vặt: RCOOH$+ R'OH -> RCOOH + R'OH
         s = Regex.Replace(s, @"([A-Za-z0-9_\x27]+)\s*\$\s*([+=])\s*\$?\s*([A-Za-z0-9_\x27]+)", "$1 $2 $3");
 
@@ -2192,24 +2286,32 @@ Suy ra ngay: $n_{Br_2} = (n_{CO_2} - n_{H_2O}) - 2n_{\text{chất béo}}$. Bấm
                 {
                     string label = trimmedLine.Substring(0, colonIdx + 1).Trim();
                     string eq = trimmedLine.Substring(colonIdx + 1).Trim().TrimEnd('.').Trim();
-                    if (!eq.StartsWith("$$"))
+                    if (!Regex.IsMatch(eq, @"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]", RegexOptions.IgnoreCase))
                     {
+                        eq = Regex.Replace(eq, @"^\${1,2}", "");
+                        eq = Regex.Replace(eq, @"\${1,2}$", "").Trim();
                         eq = eq.Replace("$", "");
                         eqLines[i] = label + "\n$$" + eq + "$$";
                     }
                 }
-                else if (!trimmedLine.Contains("$") && !Regex.IsMatch(trimmedLine, @"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]", RegexOptions.IgnoreCase))
+                else if (!Regex.IsMatch(trimmedLine, @"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]", RegexOptions.IgnoreCase))
                 {
-                    eqLines[i] = "$" + trimmedLine.TrimEnd('.').Trim().Replace("$", "") + "$";
+                    string eq = Regex.Replace(trimmedLine.TrimEnd('.').Trim(), @"^\${1,2}", "");
+                    eq = Regex.Replace(eq, @"\${1,2}$", "").Trim();
+                    eq = eq.Replace("$", "");
+                    eqLines[i] = "$" + eq + "$";
                 }
             }
-            else if (!trimmedLine.Contains("$"))
+            else
             {
                 // Kiểm tra công thức toán/hóa chứa dấu = và \frac hoặc \sqrt (không chứa từ tiếng Việt)
                 if (trimmedLine.Contains("=") && Regex.IsMatch(trimmedLine, @"\\(?:frac|sqrt|lim|sum|prod|int)\b") &&
                     !Regex.IsMatch(trimmedLine, @"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]", RegexOptions.IgnoreCase))
                 {
-                    eqLines[i] = "$" + trimmedLine.Trim() + "$";
+                    string eq = Regex.Replace(trimmedLine.TrimEnd('.').Trim(), @"^\${1,2}", "");
+                    eq = Regex.Replace(eq, @"\${1,2}$", "").Trim();
+                    eq = eq.Replace("$", "");
+                    eqLines[i] = "$" + eq + "$";
                 }
             }
         }

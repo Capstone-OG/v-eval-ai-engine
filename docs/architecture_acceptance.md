@@ -918,31 +918,32 @@
 
 ---
 
-### [12/11/2026] - Architecture Acceptance: KaTeX Math Normalization Robustness, Punctuation Dollar Preservation & Natural Language Isolation
+### [12/11/2026] - Architecture Acceptance: Smart Key-First Failover, Model Error Classification & Balanced Pedagogical Ingestion
 - **Architecture Acceptor**: ThinhTran2412 (Lead Reviewer / Architect).
 - **Acceptance Status**: 🟢 **APPROVED / ACCEPTED**.
 - **Target Files**:
   - `CurriculumAiService.cs`
+  - `MultiCloudExamParserService.cs`
+  - `CurriculumIngestion.prompt.txt`
+  - `appsettings.json`
   - `PromptTemplateServiceTests.cs`
 - **Key Architectural Deliverables**:
-  1. **Preservation of Closing Dollars Preceding Punctuation**:
-     - Removed legacy regex `(?<=[.,;])\$|\$(?=[.,;])` that inadvertently stripped valid closing dollar delimiters immediately preceding periods or commas (`$C_{17}H_{33}$.`), which previously caused KaTeX math-mode leakage into succeeding Vietnamese explanatory prose.
-     - Implemented safe dollar parity balancer `EnsureBalancedDollars(s)` that strictly appends missing delimiters only when the count of raw dollar signs is odd.
-  2. **Chemical Radical & Functional Group Boundary Protection**:
-     - Decommissioned uppercase prefix splitting regex `(?<![\$\w])([A-Z][a-zA-Z0-9_+-]+)\$` that broke leading hyphen functional groups like `$-OH$` and `$-COOH$` into `$-$OH$`, preventing dollar parity inversion.
-  3. **Line-by-Line Reaction Equation Wrapping**:
-     - Isolated reaction arrow auto-wrapping (`\xrightarrow`, `\rightleftharpoons`, `\longrightarrow`) strictly to standalone single lines devoid of natural Vietnamese prose, guaranteeing clean block math rendering without multiline entanglement.
-  4. **Multi-Model Priority Cascade & Elimination of 503 Outages**:
-     - Verified live connectivity across all 4 production API keys (`GEMINI_KEY_1` to `GEMINI_KEY_4`). Confirmed `gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.1-flash-lite`, and `gemini-flash-lite-latest` all respond with HTTP 200 OK.
-     - Confirmed `gemini-3.8-flash` consistently throws HTTP 503 Service Unavailable / timeouts across all keys.
-     - Reconfigured `AiSettings:GeminiModels` to prioritize `gemini-3.6-flash` (flagship model) and `gemini-3.5-flash-lite`, removing `gemini-3.8-flash` to eliminate high-demand stalls.
-  5. **Labeled Reaction Equation Extraction & Subscript Normalization**:
-     - Upgraded `NormalizeCurriculumLatex`: Disambiguates prefix labels (`Phương trình:`, `PTHH:`) and formats reaction equations with arrows as display block math `$$ ... $$`.
-     - Normalizes subscript spaces `(OH)_ 3` -> `(OH)_3` and wraps complex organic formulas `C_{15}H_{31}COOH` in `$...$`.
-  6. **Verification**:
-     - Added comprehensive regression tests `NormalizeCurriculumLatex_WithChemistryFormulas_ShouldNotCorruptVietnameseOrDollarPlacement` and `NormalizeCurriculumLatex_WithLabeledReactionAndSpacedSubscripts_NormalizesCleanly`.
-     - 19/19 automated unit tests passed in 294 ms (`dotnet test`).
-     - Docker container `v_eval_ai_engine` successfully rebuilt and deployed.
+  1. **Smart Key-First Outer Loop & Rapid Model Switching**:
+     - Inverted retry loop: Keys now form the outer loop (`foreach (var key in apiKeys)`), and Models form the inner loop (`foreach (var modelName in geminiModels)`).
+     - Distinct status code branching:
+       - Status `401`, `403`, `429` (Key errors / Quota limits): Marked as Key failure; breaks model loop to advance immediately to the next API key.
+       - Status `503`, `500`, `504`, `404`, `400` (Server capacity / Model demand spikes): Retains current API key; continues inner loop to switch immediately to the next model (`gemini-3.5-flash-lite` -> `gemini-3.6-flash` -> `gemini-3.5-flash`...). Prevents retrying a 503-failing model across all 4 keys.
+     - Per-request timeout tightened to 35 seconds, eliminating multi-minute gateway cancellations.
+  2. **Model Priority & Demand Shielding**:
+     - Configured `gemini-3.5-flash-lite` as #1 primary model for ultra-low latency (~1.0s) and resilience against 503 spikes, followed by `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3.1-flash-lite`, and `gemini-flash-lite-latest`.
+  3. **Balanced Pedagogical Ingestion Directive**:
+     - Preserves mandatory multi-lesson extraction (e.g. Chapter "Ester - Lipid" partitioned into distinct lessons "Bài 1: Ester" and "Bài 2: Lipid & Chất béo").
+     - Rebalances patterns to 2-3 core patterns per lesson (4-6 patterns total for the chapter) and 2-3 exemplar questions per pattern, preventing token output explosions that trigger 503 errors.
+  4. **KaTeX Post-Processing Integrity**:
+     - Neutralized stray `$` adjacent to equality operators (`\$\s*=\s*\$?`).
+     - Enforces closing `$` preceding punctuation before Vietnamese explanatory prose (`$C_{17}H_{33}$. 1 mol`).
+     - 19/19 unit tests passed in 309 ms. Container `v_eval_ai_engine` deployed.
+
 
 
 

@@ -1,5 +1,33 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [12/11/2026] - Khắc Phục Triệt Để Vòng Lặp Retry 503 (Key-First Smart Failover), Tinh Gọn Prompt & Đồng Bộ KaTeX Hóa Học Chuẩn Xác
+
+- **Khắc Phục Triệt Để Cơ Chế Vòng Lặp Thử Lại (Smart Key-Outer & Model-Inner Failover) ([`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`MultiCloudExamParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/MultiCloudExamParserService.cs))**:
+  - **Phát hiện & Bản chất lỗi**:
+    - Trước đó vòng lặp bên ngoài là duyệt theo mô hình (`geminiModels`), vòng lặp bên trong là duyệt theo danh sách API key (`apiKeys`).
+    - Khi một mô hình (ví dụ `gemini-3.6-flash`) bị quá tải tải trọng phía Google AI Studio trả về `HTTP 503 Service Unavailable`, hệ thống thử lại lần lượt trên cả 4 API keys với cùng một mô hình đó (tốn 8s + 20s + 22s + 20s = hơn 70s) khiến Gateway/Client quá hạn hủy kết nối (`The operation was canceled`) mà không kịp chuyển sang các mô hình dự phòng còn sống khác.
+  - **Giải pháp tái cấu trúc kiến trúc xoay vòng**:
+    - **Đảo ngược thứ tự vòng lặp**: Vòng lặp ngoài duyệt theo từng `key` trong `apiKeys`, vòng lặp trong duyệt qua danh sách các `modelName` trong `geminiModels`.
+    - **Phân loại mã lỗi phản hồi thông minh**:
+      - Nếu gặp lỗi phía Key / Quota (`HTTP 401 Unauthorized`, `HTTP 403 Forbidden`, `HTTP 429 Too Many Requests`): Đánh dấu `keyInvalidOrQuotaExceeded = true` và `break` ngay vòng lặp model để chuyển sang **API KEY TIẾP THEO**.
+      - Nếu gặp lỗi phía Model / Server quá tải (`HTTP 503 Service Unavailable`, `HTTP 500 InternalServerError`, `HTTP 504 GatewayTimeout`, `HTTP 404 NotFound`, `HTTP 400 BadRequest`): Giữ nguyên API Key hiện tại và `continue` để **CHUYỂN NGAY SANG MÔ HÌNH TIẾP THEO** (`gemini-3.5-flash-lite` -> `gemini-3.6-flash` -> `gemini-3.5-flash`...). Tuyệt đối không retry một model 503 trên các key khác.
+    - **Rút ngắn Timeout từng lượt**: Hạ thời gian timeout của từng HTTP request xuống còn `35 giây` (`TimeSpan.FromSeconds(35)`), đảm bảo nếu một mô hình bị treo hoặc lag thì hệ thống tự động chuyển vùng mô hình ngay lập tức.
+
+- **Tinh Gọn Directive Bóc Tách & Prompt Theo Thực Nghiệm Nhánh Main ([`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`CurriculumIngestion.prompt.txt`](../V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt))**:
+  - Giữ vững nguyên tắc đa bài học (Multi-Lesson Extraction): Chương "Ester - Lipid" bắt buộc tách thành 2 bài học độc lập ("Bài 1: Ester" và "Bài 2: Lipid & Chất béo").
+  - Điều chỉnh `depthDirective` và prompt mẫu: Mỗi bài học trích xuất từ 2 đến 3 dạng bài cốt lõi (tổng 4-6 dạng bài cho cả chuyên đề), mỗi dạng bài gồm 2-3 câu hỏi trắc nghiệm kèm giải thích chi tiết, đầy đủ 4 khối nội dung sư phạm (`theoryRecap`, `solutionMethod`, bẫy đề thi và mẹo làm bài). Tránh tình trạng yêu cầu bóc tách quá tải 12+ dạng bài và 36+ câu hỏi làm bùng nổ token khiến Google API từ chối với lỗi 503.
+
+- **Cấu Hình Thứ Tự Ưu Tiên Mô Hình Ổn Định Cao ([`appsettings.json`](../V-Eval-Ai_Engine.API/appsettings.json), [`Configs/V-Eval-Ai_Engine/appsettings.json`](../../Configs/V-Eval-Ai_Engine/appsettings.json))**:
+  - Đặt `gemini-3.5-flash-lite` làm mô hình số 1 nhờ độ trễ cực thấp (~1.0s) và khả năng chịu tải tốt không bị 503.
+  - Tiếp nối bởi: `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3.1-flash-lite`, `gemini-flash-lite-latest`.
+  - Loại bỏ hoàn toàn `gemini-3.8-flash` (gây 503 liên tục).
+
+- **Nâng Cấp Chuẩn Hóa Công Thức KaTeX & Phương Trình Hóa Học ([`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
+  - Xóa bỏ dấu `$` đặt nhầm cạnh dấu bằng `\$\s*=\s*\$?` trong các công thức tính toán (như `$n_{\text{triglyceride}} = \frac{...}{...}$`).
+  - Tự động đóng dấu `$` trước dấu chấm câu khi theo sau là từ tiếng Việt giải thích: `$C_{17}H_{33}$. 1 mol` thay vì nuốt vào math mode.
+  - Chuẩn hóa các phương trình phản ứng hóa học độc lập theo dòng.
+  - **19/19 unit tests pass 100%** trong 309 ms. Rebuild và triển khai thành công container `v_eval_ai_engine`.
+
 ## [12/11/2026] - Chuẩn Hóa Regex NormalizeCurriculumLatex: Bảo Toàn Dấu Đóng Đô La Trước Dấu Câu & Cô Lập Phương Trình Phản Ứng Độc Lập Theo Dòng
 
 - **Bảo Toàn Dấu Đóng Đô La ($) Trước Dấu Chấm Câu ([`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
