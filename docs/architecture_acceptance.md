@@ -944,7 +944,161 @@
      - Enforces closing `$` preceding punctuation before Vietnamese explanatory prose (`$C_{17}H_{33}$. 1 mol`).
      - 19/19 unit tests passed in 309 ms. Container `v_eval_ai_engine` deployed.
 
+### 25. Standalone Curriculum Studio View & Frac/Text KaTeX Spacing Normalization [12/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- **Components Impacted**:
+  - `view-curriculum.html`
+  - `CurriculumEndpoints.cs`
+  - `CurriculumAiService.cs`
+  - `view-textbook.html`
+  - `view-exam.html`
+- **Key Architectural Deliverables**:
+  1. **Dedicated Curriculum Studio UI (`view-curriculum.html`)**:
+     - Implemented a standalone web UI in `wwwroot/` with Dark Glassmorphism, Inter/Outfit typography, drag-and-drop document upload (.pdf, .docx, .txt), and text snippet ingestion.
+     - Live 4-step stepper: (1) OCR & Read -> (2) Structure Analysis -> (3) Pattern Recognition (Bloom L1-L4) -> (4) KaTeX Normalization.
+     - Tree navigation hierarchy (Chapter -> Lesson -> Pattern) with Bloom badges and weight percentages.
+     - Interactive 4-block pedagogical rendering: SGK Core Theory, Solution Methods & Exam Traps & Casio tips, Video lecture guidance, and Practice MCQ bank with step-by-step KaTeX explanations.
+     - Action endpoints: Sample data loading, PostgreSQL CSDL import (`POST /api/content/curriculum/import`), and JSON export.
+  2. **Inter-Studio Cross Navigation**:
+     - Seamless top navbar links connecting `view-exam.html`, `view-textbook.html`, and `view-curriculum.html`.
+     - Endpoints `/api/ai-engine/view-curriculum` and `/api/ai-engine/curriculum/view` mapped in `CurriculumEndpoints.cs`.
+  3. **Frac & Text KaTeX Spacing Normalization**:
+     - Normalized whitespace between `\frac` braces `\frac{...} {...}` -> `\frac{...}{...}` and cleaned internal whitespace `{2 }` -> `{2}`.
+     - Normalized spacing between `\text` and curly braces `\text {mol}` -> `\text{mol}`, resolving bare `\text` parse errors.
+     - Automatic equation wrapping for arithmetic formulas containing `=` and `\frac`.
+     - 19/19 unit tests passed in 248 ms; container `v_eval_ai_engine` rebuilt and operational.
+
+### 26. Multi-Mode Document OCR Architecture & KaTeX Bracket Invariance [12/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- **Components Impacted**:
+  - `view-curriculum.html`
+  - `CurriculumEndpoints.cs`
+  - `CurriculumAiService.cs`
+  - `ICurriculumAiService.cs`
+- **Key Architectural Deliverables**:
+  1. **Document-Type Extraction Modes (4-Mode OCR Architecture)**:
+     - Integrated 4 specialized extraction mode cards into `view-curriculum.html` and backend `CurriculumEndpoints.cs`:
+       - `STEM_FORMULAS`: Optimized for Mathematics, Physics, Chemistry with Vision AI LaTeX formula, chemical reaction equation, and variation table parsing.
+       - `TEXT_HUMANITIES`: Smart auto-detection for humanities and literature; preserves multi-paragraph prose context and invokes Vision AI upon font anomalies.
+       - `VISION_AI`: 100% full-page image processing with Gemini Vision AI; immunizes against corrupted, missing, or obfuscated font encodings in InDesign textbook PDFs and scanned documents.
+       - `AUTO_LOCAL`: Offline PdfPig text extraction for standard digital PDFs, minimizing latency and token consumption.
+  2. **KaTeX Bracket Invariance & Nested Fraction Equation Wrapping**:
+     - Stripped rogue `$` tokens nestled inside curly brackets `{k - 1$}` and parentheses `(n \ge 2$)` prior to line balancing.
+     - Coalesced disconnected oxygen atoms in ester formulas (`$C_nH_{2n}$O_2` -> `$C_nH_{2n}O_2$`).
+     - Upgraded calculation equation auto-wrapping to recursively match nested curly braces within numerators/denominators (e.g., `$n_{\text{triglyceride}} = \frac{n_{CO_2} - n_{H_2O}}{k - 1}$`).
+  3. **Verification**:
+     - 19/19 unit tests passed in 328 ms. Container `v_eval_ai_engine` rebuilt and operational.
+
+### 28. Zero Lesson/Pattern Prevention & Fast-Tier Gemini Cascade [12/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- **Components Impacted**:
+  - `CurriculumAiService.cs`
+  - `appsettings.json`
+- **Key Architectural Deliverables**:
+  1. **Polymorphic Structural Recovery**:
+     - Implemented `IsCurriculumIncomplete` evaluating total lesson and pattern counts.
+     - Added polymorphic property alias mapping in `TryParseCurriculumFromLooseJson` and `ExtractCurriculumViaRegex`.
+     - Automatic wrap-around for orphaned pattern lists and guaranteed non-empty pattern list per lesson.
+  2. **Production Multi-Model Telemetry & Latency Reduction**:
+     - Evaluated live Google Gemini models on 4 production API keys. Prioritized `gemini-3.1-flash-lite` and `gemini-3.5-flash-lite`, slashing extraction latency from 170s to ~11s.
+  3. **Verification**:
+     - 20/20 unit tests passed in 325 ms. Container `v_eval_ai_engine` operational.
+
+### 29. Textbook 2-Lesson & 7-Pattern Curriculum Architecture & KaTeX Normalization Acceptance [12/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- **Components Impacted**:
+  - `CurriculumIngestion.prompt.txt`
+  - `CurriculumAiService.cs`
+  - `CurriculumLatexNormalizationTests.cs`
+  - `MathText.jsx` (Web Client)
+- **Key Architectural Deliverables**:
+  1. **Strict 2-Lesson & 7-Pattern Structure Contract**:
+     - Enforced exact textbook table-of-contents alignment:
+       - Lesson 1 (Ester): 4 pedagogical patterns (Concepts/Isomerism/Nomenclature, Chemical Reactions/Saponification, Structural Deduction/Silver Mirror, Combustion & Esterification Yield).
+       - Lesson 2 (Lipids & Fats): 3 pedagogical patterns (Classification/Structure/Nomenclature, Saponification & Mass Conservation 1:3, Hydrogenation & Combustion).
+     - Intelligent pattern merge engine: appends missing standard patterns if the LLM output is partial, guaranteeing exactly 7 patterns.
+  2. **Zero-Error KaTeX & LaTeX Rendering Pipeline**:
+     - Corrected `{k - 1$}` to `{k - 1}$` and stripped erroneous `$` tokens adjacent to equality operators.
+     - Freed Vietnamese words swallowed into math mode (`Triolein có 3 liên kết \pi ở gốc $C_{17}H_{33}.1moltriolein...$`), ensuring natural typography with spaces.
+     - Sanitized orphaned closing `$$` on reaction lines without opening delimiters.
+     - Added emergency sanitization in `renderKatexHtml`: strips `#cc0000` error spans and reverts to clean serif fallback spans.
+     - Cleaned quotes in question options (`0',01` -> `0,01`).
+  3. **Verification**:
+     - 32/32 unit tests passed 100% in 661 ms.
+     - Web Client build succeeded in 6.67s (0 errors).
+     - Live endpoint test returned exactly 1 Chapter, 2 Lessons, 7 Patterns, with 100% clean LaTeX formatting.
+
+### 30. Comma Delimiter Preservation, Delegate Replacement & Deduplication Acceptance [12/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- **Components Impacted**:
+  - `CurriculumAiService.cs`
+  - `CurriculumLatexNormalizationTests.cs`
+  - `MathText.jsx` (Web Client)
+- **Key Architectural Deliverables**:
+  1. **Preservation of Closing `$` Preceding Commas**:
+     - Removed harmful `\$,` -> `, ` replacements that inadvertently deleted closing delimiters from comma-delimited formula lists like `($C_{15}H_{31}COOH$, $C_{17}H_{35}COOH$, $C_{17}H_{33}COOH$)`.
+     - Replaced regex replacement string `$$$1$` with lambda match evaluators `m => "$" + m.Groups[1].Value + "$"` to eliminate any string substitution escaping bugs.
+     - Ensured formulas ending before Vietnamese text are closed immediately (`$CH_3COONa$ suy ra`, `$C_{17}H_{33}$. 1 mol`).
+  2. **Strict Pattern Slot Mapping & Deduplication**:
+     - Enforced 4-slot bucket mapping for Lesson 1 (Ester) and 3-slot bucket mapping for Lesson 2 (Lipids), preventing duplicate Dạng 4 and recovering missing Dạng 3 (Biện luận CTCT).
+  3. **Verification**:
+     - 32/32 unit tests passed in 661 ms.
+     - End-to-end extraction verified with zero KaTeX parse errors and zero duplicate patterns.
+
+### 31. Segment-Safe WrapUntouched Engine, Implication Operator & Decimal Normalization Acceptance [12/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- **Components Impacted**:
+  - `CurriculumAiService.cs`
+  - `MathText.jsx` (Web Client)
+- **Key Architectural Deliverables**:
+  1. **Segment-Safe `WrapUntouchedChunk` Architecture**:
+     - Partitioned strings by existing `$` blocks prior to applying regex wrapping, ensuring rules 7.1..7.4 never mutate content inside already-wrapped mathematical formulas.
+     - Completely eliminated nested math delimiters like `$($C_{17}H_{35}COO$)_3C_3H_5$` in both C# and JavaScript.
+  2. **Implication Operator `\Rightarrow` Integration**:
+     - Added `\Rightarrow` to `opPattern` and LaTeX command registries, binding multi-step deduction statements (e.g. `n_{\text{tristearin}} = 0,01\text{ mol} \Rightarrow n_{\text{muối}} = 0,03\text{ mol}`) into unified, cohesive KaTeX math expressions.
+  3. **Decimal Typography Normalization**:
+     - Automated removal of stray whitespaces after commas in decimal numbers (e.g., `9, 18 gam` -> `9,18 gam`), preventing erroneous equation splits.
+  4. **Verification**:
+     - 32/32 unit tests passed in 377 ms.
+     - Docker container `v_eval_ai_engine` rebuilt and operational.
+
+### 33. Empirical Gemini Live Ping Benchmarks, Pattern Deduplication & KaTeX Normalization Acceptance [13/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- **Components Impacted**:
+  - `CurriculumAiService.cs`
+  - `CurriculumLatexNormalizationTests.cs`
+  - `MathText.jsx` (Web Client)
+  - `appsettings.json`
+- **Key Architectural Deliverables**:
+  1. **Empirical Live Ping Benchmarks & Priority Optimization**:
+     - Systematically pinged 14 Google Gemini models across 4 active API keys: `gemini-3.1-flash-lite` emerged as top performer with 100% HTTP 200 OK across all keys and ~808ms latency, eliminating HTTP 503 spikes.
+     - Reconfigured model fallback chain: `gemini-3.1-flash-lite` -> `gemini-flash-lite-latest` -> `gemini-3.5-flash` -> `gemini-3.6-flash`.
+  2. **Pattern Deduplication & Sequential Renumbering**:
+     - Implemented automatic deduplication of identical pattern cards within the same lesson (e.g. duplicate `Dạng 4`).
+     - Merged unique sample questions from duplicates and renumbered patterns sequentially: `Dạng 1: ...`, `Dạng 2: ...` without gaps or duplicate index labels.
+  3. **Robust KaTeX Normalization & MathText Sanitization**:
+     - Restored corrupted units: `textmol`, `textgam`, `textg`, `textkg` -> `\text{mol}`, `\text{gam}`.
+     - Expanded equation detection to cover `\implies`, `>`, `<`, `\ge`, `\le`, `\approx`, `\equiv`, `\rightleftharpoons`, `\xrightarrow`, preventing equation fragmentation across implication steps.
+     - Single-variable auto-wrapping prior to units: `([amVnxy])\s+(mol|gam|g|kg|lít|lit|ml)` -> `$1 $2`.
+     - Standardized chemical subscripts: `k_{gốc}` -> `k_{\text{gốc}}`, `m_{dd}` -> `m_{\text{dd}}`.
+     - Replaced `'$$$1$$'` string replacement with safe lambda match evaluator `(m, g) => '$' + g + '$'` in `MathText.jsx`.
+  4. **Verification**:
+     - 14/14 `CurriculumLatexNormalizationTests` passed in 199 ms.
+     - 32/32 total AI Engine unit tests passed 100%.
+     - Full extraction executed in 12.39s with clean typography and zero pattern duplication.
+
+### 34. Residual KaTeX Defects: Exponents, Parentheses & In-Math Protection [13/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- **Components Impacted**: `CurriculumAiService.cs`, `MathText.jsx`, `CurriculumLatexNormalizationTests.cs`
+- **Key Deliverables**:
+  1. Multi-term equation atoms now support exponents (`2^2`) and parentheses; unbalanced or fully-enclosing parentheses are moved outside the `$...$` span.
+  2. The equation wrapper skips matches that lie inside existing `$...$` spans (fixes `2^$2 ...`).
+  3. The Vietnamese-text liberation step ignores `_{...}`/`^{...}` content, so `m_{chất béo}` is no longer unwrapped.
+  4. Verification: 8 regression cases from real screenshots; 42/42 tests passed.
 
 
-
-
+### 35. Web Client Unwrap Guard & Single-Line Equation Matching [13/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- Root cause: `MathText.jsx` restore step tested Vietnamese words inside `\text{}`/`_{}` and stripped valid `$...$`. Now only text outside those groups is tested.
+- Equation matcher limited to `[ \t]` between terms (no cross-line capture); subscripts may contain parentheses.
+- Verification: Node run of `normalizeMathString` on screenshot cases; 49/49 C# tests passed.

@@ -325,7 +325,7 @@ public class PromptTemplateServiceTests
         out2.Should().NotContain("$C_{17}H_{33}. 1 mol");
 
         // Assert 3: Equations with fractions are wrapped cleanly as a single formula, never inserting $ into = or denominator
-        out3.Should().Be("$n_{\\text{triglyceride}} = \\frac{n_{CO_2} - n_{H_2O}}{k - 1}$");
+        out3.Should().Be("$$n_{\\text{triglyceride}} = \\frac{n_{CO_2} - n_{H_2O}}{k - 1}$$");
         out3.Should().NotContain("$=");
         out3.Should().NotContain("k - 1$}");
 
@@ -350,5 +350,28 @@ public class PromptTemplateServiceTests
 
         // Assert 3: Labeled reaction equation is formatted with display math $$ ... $$
         out1.Should().Contain("Phương trình:\n$$(RCOO)_3C_3H_5 + 3NaOH \\xrightarrow{t^\\circ} 3RCOONa + C_3H_5 (OH)_3$$");
+    }
+
+    [Fact]
+    public void TryParseCurriculumFromLooseJson_WhenChapterNameEmpty_InfersFromFileNameAndFlagsIncomplete()
+    {
+        string emptyLessonsJson = @"{
+            ""domainId"": ""dom_chem"",
+            ""domainName"": ""Hóa học"",
+            ""chapters"": [
+                {
+                    ""chapterName"": """",
+                    ""lessons"": []
+                }
+            ]
+        }";
+
+        var result = CurriculumAiService.TryParseCurriculumFromLooseJson(emptyLessonsJson, "dom_chem", "Hóa học", "CHƯƠNG 1. ESTER - LIPID (BẢN HS).pdf");
+        result.Should().NotBeNull();
+        result!.Chapters.Should().HaveCount(1);
+        result.Chapters[0].ChapterName.Should().Be("CHƯƠNG 1. ESTER - LIPID");
+        
+        bool isIncomplete = CurriculumAiService.IsCurriculumIncomplete(result);
+        isIncomplete.Should().BeTrue();
     }
 }

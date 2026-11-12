@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>V-Eval AI Engine - Bóc Tách Khung Chuyên Đề & Dạng Bài</title>
+
+  <!-- Modern Typography (Inter & Outfit) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- KaTeX CSS for Math/Formula rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" crossorigin="anonymous">
+
+  <!-- Marked.js for Markdown & KaTeX JS -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #090d16 0%, #111827 50%, #0d111a 100%);
+      --panel-bg: rgba(17, 24, 39, 0.75);
+      --panel-border: rgba(255, 255, 255, 0.1);
+      --accent-purple: #8b5cf6;
+      --accent-indigo: #6366f1;
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+
+    /* TOP NAVBAR */
+    .top-navbar {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--panel-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0 1.5rem;
+    }
+
+    .nav-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 68px;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #c084fc, #60a5fa, #22d3ee);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+    }
+
+    .nav-tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 10px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.88rem;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-tab.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3));
+      border-color: rgba(139, 92, 246, 0.45);
+      box-shadow: 0 2px 12px rgba(139, 92, 246, 0.2);
+    }
+
+    /* MAIN CONTAINER */
+    .main-container {
+      max-width: 1440px;
+      margin: 25px auto;
+      padding: 0 1.5rem;
+    }
+
+    .header-banner {
+      margin-bottom: 24px;
+    }
+
+    .header-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.85rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      background: linear-gradient(90deg, #f8fafc, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-desc {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    /* GLASS CARD */
+    .glass-card {
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-control {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 9px 13px;
+      color: #f8fafc;
+      font-size: 0.88rem;
+      outline: none;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .form-control:focus {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+    }
+
+    .form-control select, select.form-control {
+      background-color: #0f172a;
+      color: #f8fafc;
+      cursor: pointer;
+    }
+
+    /* DROPZONE */
+    .dropzone {
+      border: 2px dashed rgba(139, 92, 246, 0.35);
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+      background: rgba(139, 92, 246, 0.03);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      margin-bottom: 16px;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent-purple);
+      background: rgba(139, 92, 246, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .dropzone-icon {
+      font-size: 2.2rem;
+      margin-bottom: 8px;
+    }
+
+    .dropzone-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .dropzone-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    /* MODE SELECTOR CARDS */
+    .mode-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: block;
+      user-select: none;
+    }
+    .mode-card:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(167, 139, 250, 0.4);
+    }
+    .mode-card.active {
+      background: rgba(139, 92, 246, 0.15);
+      border-color: #8b5cf6;
+      box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+
+    /* STEPPER */
+    .stepper-container {
+      display: none;
+      margin-bottom: 24px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 16px 20px;
+    }
+
+    .stepper-steps {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      position: relative;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .step-badge {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.75rem;
+      color: #cbd5e1;
+      shrink: 0;
+    }
+
+    .step-item.active .step-badge {
+      background: var(--accent-purple);
+      color: white;
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.6);
+      animation: pulse 1.5s infinite;
+    }
+
+    .step-item.active {
+      color: #f8fafc;
+      font-weight: 600;
+    }
+
+    .step-item.completed .step-badge {
+      background: var(--accent-emerald);
+      color: white;
+    }
+
+    .step-item.completed {
+      color: var(--accent-emerald);
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    .progress-bar-wrap {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #8b5cf6, #38bdf8);
+      transition: width 0.3s ease;
+    }
+
+    /* RESULT WORKSPACE */
+    .workspace-grid {
+      display: none;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 980px) {
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* TREE NAV PANEL */
+    .tree-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 16px;
+      max-height: 82vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tree-header {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chapter-card {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .chapter-title {
+      padding: 10px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .lesson-item {
+      padding: 8px 12px 8px 18px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #94a3b8;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      cursor: pointer;
+    }
+
+    .lesson-item.active {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .pattern-btn {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 7px 10px 7px 24px;
+      font-size: 0.75rem;
+      color: #cbd5e1;
+      border-left: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .pattern-btn:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #f8fafc;
+    }
+
+    .pattern-btn.active {
+      border-left-color: var(--accent-purple);
+      background: rgba(139, 92, 246, 0.12);
+      color: #f8fafc;
+      font-weight: 600;
+    }
+
+    .bloom-pill {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-right: 4px;
+    }
+
+    .bloom-l1 { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .bloom-l2 { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .bloom-l3 { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .bloom-l4 { background: rgba(244, 63, 94, 0.2); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+
+    /* DETAIL VIEW */
+    .detail-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 24px;
+      max-height: 82vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .pattern-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .pattern-name-big {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 4px;
+    }
+
+    .pattern-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* 4 BLOCKS */
+    .pedagogical-block {
+      border-radius: 14px;
+      padding: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(15, 23, 42, 0.5);
+    }
+
+    .block-title {
+      font-size: 0.86rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .block-1 .block-title { color: #38bdf8; }
+    .block-2 .block-title { color: #fbbf24; }
+    .block-3 .block-title { color: #a78bfa; }
+    .block-4 .block-title { color: #34d399; }
+
+    .block-body {
+      font-size: 0.88rem;
+      line-height: 1.65;
+      color: #e2e8f0;
+    }
+
+    .callout-box {
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-top: 10px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .callout-trap {
+      background: rgba(244, 63, 94, 0.1);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      color: #fecdd3;
+    }
+
+    .callout-casio {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #c7d2fe;
+    }
+
+    /* QUESTIONS */
+    .question-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+
+    .q-number {
+      font-weight: 700;
+      color: #38bdf8;
+      font-size: 0.82rem;
+      margin-bottom: 6px;
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .option-item {
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.82rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .option-item.correct {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #a7f3d0;
+      font-weight: 600;
+    }
+
+    .explanation-box {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 3px solid #38bdf8;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+    }
+
+    /* ACTION BAR */
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      flex-wrap: wrap;
+    }
+
+    /* KaTeX text styling */
+    .katex-display {
+      margin: 0.8em 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP NAVBAR -->
+  <nav class="top-navbar">
+    <div class="nav-container">
+      <a href="/api/ai-engine/view-curriculum" class="brand-logo">
+        <span>⚡</span> V-Eval AI Engine Studio
+      </a>
+      <div class="nav-tabs">
+        <a href="/api/ai-engine/view-exam" class="nav-tab">
+          📝 Ngân Hàng Đề Thi
+        </a>
+        <a href="/api/ai-engine/view-textbook" class="nav-tab">
+          📚 Nạp Tri Thức SGK Local
+        </a>
+        <a href="/api/ai-engine/view-curriculum" class="nav-tab active">
+          🧬 Bóc Tách Chuyên Đề & Dạng Bài
+        </a>
+        <a href="/api/ai-engine/view-diagnostic" class="nav-tab">
+          🎯 Đề Khảo Thí
+        </a>
+        <a href="/api/ai-engine/view-tutor-mentor" class="nav-tab">
+          🤖 Gia Sư AI Mentor
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <div class="main-container">
+    <div class="header-banner">
+      <h1 class="header-title">🧬 Bóc Tách Khung Chuyên Đề & Dạng Bài Học Thuật</h1>
+      <p class="header-desc">
+        Hệ thống AI Engine tự động bóc tách tài liệu chuyên đề theo chuẩn GDPT 2018 & ĐGNL ĐHQG. Nhận diện cấu trúc Chương - Bài học, định hình 4 Khối Sư phạm cho từng dạng bài (Lý thuyết, Phương pháp giải, Bẫy đề thi, Casio, Câu hỏi trắc nghiệm LaTeX).
+      </p>
+    </div>
+
+    <!-- CONFIGURATION & UPLOAD CARD -->
+    <div class="glass-card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Môn Học (Domain ID)</label>
+          <input type="text" id="domainId" class="form-control" value="dom_math_analysis" placeholder="VD: dom_math_analysis, Domain-HoaHoc-Lop12">
+        </div>
+        <div class="form-group">
+          <label>Tên Lĩnh Vực (Domain Name)</label>
+          <input type="text" id="domainName" class="form-control" value="Toán học & Tư duy định lượng" placeholder="VD: Hóa học - Este & Lipit">
+        </div>
+        <div class="form-group">
+          <label>Độ Sâu Bóc Tách (Depth)</label>
+          <select id="extractionDepth" class="form-control">
+            <option value="deep" selected>✨ Chuyên sâu (4 Khối Sư phạm + Bloom L1-L4 + Câu hỏi mẫu)</option>
+            <option value="standard">⚡ Tiêu chuẩn (Khung Chương - Bài học nhanh)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Trang Bắt Đầu - Kết Thúc</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="number" id="startPage" class="form-control" placeholder="Từ trang..." style="width: 50%;">
+            <input type="number" id="endPage" class="form-control" placeholder="Đến trang..." style="width: 50%;">
+          </div>
+        </div>
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span>Chế Độ Bóc Tách Theo Định Dạng Tài Liệu & Chống Lỗi Font:</span>
+            <span style="font-size: 0.78rem; color: #a78bfa; font-weight: 500;">Tự động tối ưu theo từng bộ môn</span>
+          </label>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px;">
+            <div class="mode-card active" id="modeCard_STEM" onclick="selectOcrMode('STEM_FORMULAS')">
+              <div style="font-weight: 700; color: #38bdf8; font-size: 0.86rem; margin-bottom: 4px;">🧪 Tự Nhiên & Công Thức</div>
+              <div style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.4;">Toán, Lý, Hóa - Bóc tách công thức LaTeX, phản ứng hóa học, bảng biến thiên qua Vision AI</div>
+            </div>
+            <div class="mode-card" id="modeCard_HUMANITIES" onclick="selectOcrMode('TEXT_HUMANITIES')">
+              <div style="font-weight: 700; color: #c084fc; font-size: 0.86rem; margin-bottom: 4px;">✨ Tự Động Thông Minh</div>
+              <div style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.4;">KHXH & Ngữ Văn - Tự phát hiện & bóc tách AI Vision nếu lỗi font InDesign, giữ trọn vẹn ngữ cảnh đoạn văn</div>
+            </div>
+            <div class="mode-card" id="modeCard_VISION" onclick="selectOcrMode('VISION_AI')">
+              <div style="font-weight: 700; color: #f43f5e; font-size: 0.86rem; margin-bottom: 4px;">👁️ Vision AI Cloud</div>
+              <div style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.4;">Bóc tách ảnh 100% bằng Gemini AI - Chống triệt để lỗi font rác / mã hóa InDesign và tài liệu scan</div>
+            </div>
+            <div class="mode-card" id="modeCard_AUTO" onclick="selectOcrMode('AUTO_LOCAL')">
+              <div style="font-weight: 700; color: #34d399; font-size: 0.86rem; margin-bottom: 4px;">📄 Chỉ Đọc Chữ Số Hóa</div>
+              <div style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.4;">PdfPig Local - Tối ưu cho PDF văn bản số hóa chuẩn, siêu tốc và không tốn token AI</div>
+            </div>
+          </div>
+          <input type="hidden" id="ocrMode" value="STEM_FORMULAS">
+        </div>
+      </div>
+
+      <!-- DROPZONE -->
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+        <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt" style="display: none;">
+        <div class="dropzone-icon">📄</div>
+        <div class="dropzone-text" id="dropzoneLabel">Kéo thả tệp tài liệu chuyên đề vào đây, hoặc click để chọn tệp</div>
+        <div class="dropzone-sub">Hỗ trợ định dạng .PDF, .DOCX, .TXT (Tối đa 150MB)</div>
+      </div>
+
+      <!-- TEXT SNIPPET INPUT -->
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label>Hoặc dán trực tiếp trích đoạn văn bản chuyên đề (tùy chọn):</label>
+        <textarea id="textSnippet" class="form-control" rows="4" placeholder="Dán nội dung lý thuyết, phân dạng toán, phản ứng hóa học hoặc các bài tập mẫu vào đây..."></textarea>
+      </div>
+
+      <!-- BUTTON ACTIONS -->
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <button id="btnExtract" class="btn btn-primary" onclick="runExtraction()">
+          🚀 Bóc Tách Tri Thức Bằng AI
+        </button>
+        <button class="btn btn-secondary" onclick="loadSampleCurriculum()">
+          🧪 Nạp Dữ Liệu Mẫu (Este & Lipit)
+        </button>
+        <button class="btn btn-secondary" onclick="clearAll()">
+          🧹 Làm Mới
+        </button>
+      </div>
+    </div>
+
+    <!-- STEPPER PROGRESS BAR -->
+    <div class="stepper-container" id="stepperContainer">
+      <div class="stepper-steps">
+        <div class="step-item" id="step1">
+          <div class="step-badge">1</div>
+          <span>Đọc & OCR Tệp</span>
+        </div>
+        <div class="step-item" id="step2">
+          <div class="step-badge">2</div>
+          <span>Phân tích Chương - Bài</span>
+        </div>
+        <div class="step-item" id="step3">
+          <div class="step-badge">3</div>
+          <span>Nhận diện Dạng bài (Bloom)</span>
+        </div>
+        <div class="step-item" id="step4">
+          <div class="step-badge">4</div>
+          <span>Chuẩn hóa KaTeX 4 Khối</span>
+        </div>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <div id="stepStatusText" style="font-size: 0.8rem; color: #94a3b8; margin-top: 8px; text-align: center;"></div>
+    </div>
+
+    <!-- WORKSPACE RESULT -->
+    <div class="workspace-grid" id="workspaceGrid">
+      <!-- TREE NAV -->
+      <div class="tree-panel">
+        <div class="tree-header">
+          <span>📚 CÂY CHƯƠNG TRÌNH</span>
+          <span id="treeSummaryBadge" style="font-size: 0.72rem; color: #a78bfa; background: rgba(167, 139, 250, 0.15); padding: 2px 8px; border-radius: 6px;">0 Dạng bài</span>
+        </div>
+        <div id="treeContainer"></div>
+      </div>
+
+      <!-- DETAIL CONTENT (4 BLOCKS) -->
+      <div class="detail-panel" id="detailPanel">
+        <div class="pattern-banner">
+          <div>
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+              <span id="detailBloomPill" class="bloom-pill bloom-l2">L2 Thông hiểu</span>
+              <span id="detailWeightBadge" style="font-size: 0.75rem; color: #38bdf8; font-weight: 600;">Trọng số: 10%</span>
+            </div>
+            <h2 id="detailPatternName" class="pattern-name-big">Dạng 1: Khái niệm & Phân loại</h2>
+            <div class="pattern-meta">
+              <span id="detailCoreSkill">Kỹ năng cốt lõi: Nhận diện cấu tạo</span>
+              <span id="detailClassification">Phân loại: Lý thuyết & Ứng dụng</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.78rem;" onclick="analyzeCurrentPattern()">
+              🔍 Phân Tích Sâu
+            </button>
+            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.78rem;" onclick="generateMoreQuestions()">
+              ✨ Thêm Câu Hỏi
+            </button>
+          </div>
+        </div>
+
+        <!-- KHỐI 1: KIẾN THỨC NỀN TẢNG SGK -->
+        <div class="pedagogical-block block-1">
+          <div class="block-title">
+            <span>📖</span> Khối 1: Kiến Thức Nền Tảng SGK & Khái Niệm Cốt Lõi
+          </div>
+          <div class="block-body" id="block1Content"></div>
+        </div>
+
+        <!-- KHỐI 2: PHƯƠNG PHÁP GIẢI CHI TIẾT & BẪY -->
+        <div class="pedagogical-block block-2">
+          <div class="block-title">
+            <span>🧭</span> Khối 2: Phương Pháp Giải Chi Tiết, Bẫy Đề Thi & Casio
+          </div>
+          <div class="block-body" id="block2Content"></div>
+        </div>
+
+        <!-- KHỐI 3: VIDEO BÀI GIẢNG SƯ PHẠM -->
+        <div class="pedagogical-block block-3">
+          <div class="block-title">
+            <span>🎥</span> Khối 3: Video Bài Giảng Sư Phạm Khuyến Nghị
+          </div>
+          <div class="block-body" id="block3Content"></div>
+        </div>
+
+        <!-- KHỐI 4: BỘ CÂU HỎI RÈN LUYỆN -->
+        <div class="pedagogical-block block-4">
+          <div class="block-title">
+            <span>🎯</span> Khối 4: Ngân Hàng Câu Hỏi Rèn Luyện Bám Sát Dạng Bài
+          </div>
+          <div class="block-body" id="block4Content"></div>
+        </div>
+
+        <!-- ACTION BAR -->
+        <div class="action-bar">
+          <div style="font-size: 0.82rem; color: #94a3b8;">
+            Chuẩn hóa 100% KaTeX & Khung tri thức GDPT 2018
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" onclick="copyCurriculumJson()">
+              📋 Sao Chép JSON
+            </button>
+            <button class="btn btn-secondary" onclick="downloadCurriculumJson()">
+              📥 Tải JSON
+            </button>
+            <button id="btnSaveDb" class="btn btn-success" onclick="saveToDatabase()">
+              💾 Lưu CSDL PostgreSQL
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentCurriculum = null;
+    let selectedPatternRef = null;
+    let selectedFile = null;
+
+    // File Drag & Drop
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const dropzoneLabel = document.getElementById('dropzoneLabel');
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    function handleFileSelect(file) {
+      selectedFile = file;
+      dropzoneLabel.innerHTML = `✅ Đã chọn tệp: <strong>${file.name}</strong> (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+    }
+
+    function clearAll() {
+      selectedFile = null;
+      fileInput.value = '';
+      dropzoneLabel.innerText = "Kéo thả tệp tài liệu chuyên đề vào đây, hoặc click để chọn tệp";
+      document.getElementById('textSnippet').value = '';
+      document.getElementById('stepperContainer').style.display = 'none';
+      document.getElementById('workspaceGrid').style.display = 'none';
+      currentCurriculum = null;
+    }
+
+    // Math normalizer matching production engine
+    function cleanLatexMath(text) {
+      if (!text) return '';
+      let s = String(text);
+
+      // 1. Spacing normalizations
+      s = s.replace(/\\(text|mathrm|mathbf|mathit|mathsf|mathtt|mathbb|frac|sqrt)\s+\{/g, '\\$1{');
+      s = s.replace(/(\\frac\s*\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})\s+(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/g, '$1$2');
+      s = s.replace(/\{(\s*[0-9a-zA-Z\+\-\*\/]+\s*)\}/g, (m, g) => '{' + g.trim() + '}');
+      s = s.replace(/([0-9,\.]+)\\text\{/g, '$1 \\text{');
+
+      // 2. Wrap arithmetic equations containing \frac and =
+      s = s.replace(/(?<![\$\w])((?:[a-zA-Z]|\\[a-zA-Z]+)(?:_[a-zA-Z0-9\{\}\\]+)?\s*=\s*\\frac\{[^{}]+\}\{[^{}]+\}(?:\s*=\s*[0-9,\.]+(?:\s*\\text\{[^{}]+\})?)?)(?![\$\w])/g, '$$$1$$');
+
+      // 3. Normalize single variables and ions
+      s = s.replace(/(?<![\$\\\w])([A-Z][a-zA-Z0-9]*_\{[0-9a-zA-Z\+\-]+\}[A-Za-z0-9_\{\}\(\)]*)(?![\$\w])/g, '$$$1$$');
+      s = s.replace(/(?<![\$\\\w])((?:[A-Z][a-z]?(?:_\d+)?)+\^\{?[+-]?\d*[+-]?\}?)(?![\$\w])/g, '$$$1$$');
+
+      return s;
+    }
+
+    function renderMathInHtml(html) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      if (window.renderMathInElement) {
+        window.renderMathInElement(tempDiv, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\[', right: '\\]', display: true },
+            { left: '\\(', right: '\\)', display: false }
+          ],
+          throwOnError: false
+        });
+      }
+      return tempDiv.innerHTML;
+    }
+
+    function safeRenderMarkdownAndMath(text) {
+      if (!text) return '';
+      const normalized = cleanLatexMath(text);
+      const html = marked.parse(normalized);
+      return renderMathInHtml(html);
+    }
+
+    function selectOcrMode(mode) {
+      document.getElementById('ocrMode').value = mode;
+      document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+      const idMap = {
+        'STEM_FORMULAS': 'modeCard_STEM',
+        'TEXT_HUMANITIES': 'modeCard_HUMANITIES',
+        'VISION_AI': 'modeCard_VISION',
+        'AUTO_LOCAL': 'modeCard_AUTO'
+      };
+      const activeCard = document.getElementById(idMap[mode]);
+      if (activeCard) activeCard.classList.add('active');
+    }
+
+    async function runExtraction() {
+      const textSnippet = document.getElementById('textSnippet').value.trim();
+      if (!selectedFile && !textSnippet) {
+        alert("Vui lòng chọn tệp tài liệu (.pdf, .docx, .txt) hoặc dán trích đoạn văn bản.");
+        return;
+      }
+
+      const domainId = document.getElementById('domainId').value.trim() || 'dom_math_analysis';
+      const domainName = document.getElementById('domainName').value.trim() || 'Toán học & Tư duy định lượng';
+      const depth = document.getElementById('extractionDepth').value;
+      const startPage = document.getElementById('startPage').value;
+      const endPage = document.getElementById('endPage').value;
+      const ocrMode = document.getElementById('ocrMode').value || 'STEM_FORMULAS';
+
+      const formData = new FormData();
+      if (selectedFile) formData.append('file', selectedFile);
+      if (textSnippet) formData.append('textContent', textSnippet);
+      formData.append('domainId', domainId);
+      formData.append('domainName', domainName);
+      formData.append('extractionDepth', depth);
+      formData.append('ocrMode', ocrMode);
+      formData.append('ocr_mode', ocrMode);
+      if (startPage) formData.append('startPage', startPage);
+      if (endPage) formData.append('endPage', endPage);
+
+      const btn = document.getElementById('btnExtract');
+      btn.disabled = true;
+      btn.innerHTML = "⏳ Đang Bóc Tách...";
+
+      const stepper = document.getElementById('stepperContainer');
+      stepper.style.display = 'block';
+      updateStep(1, 20, "Đang gửi tài liệu & chạy OCR trích xuất nội dung...");
+
+      try {
+        const timer1 = setTimeout(() => updateStep(2, 45, "Đang phân tích cấu trúc Chương & Bài học..."), 3000);
+        const timer2 = setTimeout(() => updateStep(3, 75, "Đang nhận diện Dạng bài & phân loại Bloom L1-L4..."), 8000);
+
+        const response = await fetch('/api/ai-engine/curriculum/extract', {
+          method: 'POST',
+          body: formData
+        });
+
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.detail || err.message || "Lỗi khi trích xuất khung chương trình.");
+        }
+
+        updateStep(4, 100, "Hoàn tất chuẩn hóa KaTeX 4 Khối Sư phạm!");
+        const data = await response.json();
+        currentCurriculum = data;
+        renderCurriculumWorkspace(data);
+      } catch (err) {
+        alert(`❌ Lỗi bóc tách: ${err.message}`);
+        updateStep(1, 0, `Lỗi: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = "🚀 Bóc Tách Tri Thức Bằng AI";
+      }
+    }
+
+    function updateStep(stepNum, progressPct, statusMsg) {
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById(`step${i}`);
+        el.classList.remove('active', 'completed');
+        if (i < stepNum) el.classList.add('completed');
+        else if (i === stepNum) el.classList.add('active');
+      }
+      document.getElementById('progressBar').style.width = `${progressPct}%`;
+      document.getElementById('stepStatusText').innerText = statusMsg;
+    }
+
+    function renderCurriculumWorkspace(data) {
+      document.getElementById('workspaceGrid').style.display = 'grid';
+      const tree = document.getElementById('treeContainer');
+      tree.innerHTML = '';
+
+      let totalPatterns = 0;
+      let firstPattern = null;
+
+      (data.chapters || []).forEach((chap, cIdx) => {
+        const chapDiv = document.createElement('div');
+        chapDiv.className = 'chapter-card';
+        chapDiv.innerHTML = `
+          <div class="chapter-title" onclick="toggleChapter(${cIdx})">
+            <span>📖 C${cIdx + 1}: ${chap.chapterName}</span>
+            <span style="font-size: 0.72rem; color: #94a3b8;">${(chap.lessons || []).length} bài</span>
+          </div>
+          <div id="chap-body-${cIdx}"></div>
+        `;
+        tree.appendChild(chapDiv);
+
+        const chapBody = chapDiv.querySelector(`#chap-body-${cIdx}`);
+
+        (chap.lessons || []).forEach((les, lIdx) => {
+          const lesDiv = document.createElement('div');
+          lesDiv.className = 'lesson-item';
+          lesDiv.innerHTML = `<strong>Bài ${lIdx + 1}:</strong> ${les.lessonName}`;
+          chapBody.appendChild(lesDiv);
+
+          (les.patterns || []).forEach((pat, pIdx) => {
+            totalPatterns++;
+            if (!firstPattern) firstPattern = pat;
+
+            const patBtn = document.createElement('div');
+            patBtn.className = 'pattern-btn';
+            patBtn.id = `pat-btn-${cIdx}-${lIdx}-${pIdx}`;
+
+            const bloomCls = getBloomClass(pat.bloomLevel || pat.difficultyLevel);
+            const bloomTxt = getBloomText(pat.bloomLevel || pat.difficultyLevel);
+
+            patBtn.innerHTML = `
+              <div>
+                <span class="bloom-pill ${bloomCls}">${bloomTxt}</span>
+                <span>${pat.patternName}</span>
+              </div>
+              <div style="font-size: 0.7rem; color: #94a3b8; display: flex; justify-content: space-between;">
+                <span>${(pat.questions || []).length} câu hỏi</span>
+                <span>${Math.round((pat.weight || 0.1) * 100)}%</span>
+              </div>
+            `;
+
+            patBtn.onclick = () => selectPattern(pat, patBtn);
+            chapBody.appendChild(patBtn);
+          });
+        });
+      });
+
+      document.getElementById('treeSummaryBadge').innerText = `${totalPatterns} Dạng bài`;
+
+      if (firstPattern) {
+        const firstBtn = tree.querySelector('.pattern-btn');
+        selectPattern(firstPattern, firstBtn);
+      }
+    }
+
+    function selectPattern(pat, btnEl) {
+      selectedPatternRef = pat;
+      document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+
+      document.getElementById('detailPatternName').innerText = pat.patternName;
+      document.getElementById('detailCoreSkill').innerText = `Kỹ năng: ${pat.coreSkill || pat.patternName}`;
+      document.getElementById('detailClassification').innerText = `Phân loại: ${pat.classification || 'Học thuật'}`;
+      document.getElementById('detailWeightBadge').innerText = `Trọng số: ${Math.round((pat.weight || 0.1) * 100)}%`;
+
+      const bCls = getBloomClass(pat.bloomLevel || pat.difficultyLevel);
+      const bTxt = getBloomText(pat.bloomLevel || pat.difficultyLevel);
+      const pill = document.getElementById('detailBloomPill');
+      pill.className = `bloom-pill ${bCls}`;
+      pill.innerText = bTxt;
+
+      // Khối 1
+      document.getElementById('block1Content').innerHTML = safeRenderMarkdownAndMath(
+        pat.theoryRecap || "Kiến thức nền tảng chuẩn theo SGK GDPT 2018."
+      );
+
+      // Khối 2
+      document.getElementById('block2Content').innerHTML = safeRenderMarkdownAndMath(
+        pat.solutionMethod || "Quy trình giải chi tiết cho dạng bài."
+      );
+
+      // Khối 3
+      document.getElementById('block3Content').innerHTML = `
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
+          <span style="background: rgba(167, 139, 250, 0.2); color: #c084fc; padding: 3px 10px; border-radius: 6px; font-weight: 700; font-size: 0.78rem;">
+            ⏱️ Thời lượng khuyến nghị: 10 - 15 phút (600s - 900s)
+          </span>
+          <span style="font-size: 0.8rem; color: #94a3b8;">Chuẩn sư phạm vi mô Micro-learning</span>
+        </div>
+        <p style="font-size: 0.84rem; color: #cbd5e1;">
+          Kịch bản bài giảng: Giáo viên hệ thống hóa khái niệm nền tảng Khối 1 trong 3 phút, hướng dẫn phương pháp giải mẫu Khối 2 trong 5 phút, và chỉ rõ các bẫy trắc nghiệm ĐGNL thường gặp trong 4 phút cuối.
+        </p>
+      `;
+
+      // Khối 4: Câu hỏi
+      renderQuestionsBlock(pat.questions || []);
+    }
+
+    function renderQuestionsBlock(questions) {
+      const container = document.getElementById('block4Content');
+      if (!questions || questions.length === 0) {
+        container.innerHTML = `
+          <div style="color: #94a3b8; font-size: 0.84rem;">
+            Chưa có câu hỏi rèn luyện cho dạng bài này. Bấm <strong>✨ Thêm Câu Hỏi</strong> ở trên để AI Engine tạo ngay!
+          </div>
+        `;
+        return;
+      }
+
+      let html = `<div style="font-size: 0.82rem; color: #a7f3d0; margin-bottom: 8px; font-weight: 600;">
+        Bộ sưu tập ${questions.length} câu hỏi bám sát 100% dạng bài:
+      </div>`;
+
+      questions.forEach((q, idx) => {
+        const correctOpt = (q.correctOption || 'A').toUpperCase();
+        html += `
+          <div class="question-card">
+            <div class="q-number">Câu ${idx + 1} (${q.difficulty || 'Vận dụng'}):</div>
+            <div style="margin-bottom: 8px;">${safeRenderMarkdownAndMath(q.contentLatex || q.questionText || '')}</div>
+            <div class="options-grid">
+              <div class="option-item ${correctOpt === 'A' ? 'correct' : ''}">
+                <strong>A.</strong> <span>${cleanLatexMath(q.optionA || '')}</span>
+              </div>
+              <div class="option-item ${correctOpt === 'B' ? 'correct' : ''}">
+                <strong>B.</strong> <span>${cleanLatexMath(q.optionB || '')}</span>
+              </div>
+              <div class="option-item ${correctOpt === 'C' ? 'correct' : ''}">
+                <strong>C.</strong> <span>${cleanLatexMath(q.optionC || '')}</span>
+              </div>
+              <div class="option-item ${correctOpt === 'D' ? 'correct' : ''}">
+                <strong>D.</strong> <span>${cleanLatexMath(q.optionD || '')}</span>
+              </div>
+            </div>
+            ${q.explanation ? `
+              <div class="explanation-box">
+                <strong style="color: #38bdf8;">Lời giải chi tiết:</strong><br>
+                ${safeRenderMarkdownAndMath(q.explanation)}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function getBloomClass(level) {
+      const s = String(level || '').toLowerCase();
+      if (s.includes('1') || s.includes('nhận biết')) return 'bloom-l1';
+      if (s.includes('2') || s.includes('thông hiểu')) return 'bloom-l2';
+      if (s.includes('3') || s.includes('vận dụng') && !s.includes('cao')) return 'bloom-l3';
+      if (s.includes('4') || s.includes('cao')) return 'bloom-l4';
+      return 'bloom-l2';
+    }
+
+    function getBloomText(level) {
+      const s = String(level || '').toLowerCase();
+      if (s.includes('1') || s.includes('nhận biết')) return 'L1 Nhận biết';
+      if (s.includes('2') || s.includes('thông hiểu')) return 'L2 Thông hiểu';
+      if (s.includes('3') || s.includes('vận dụng') && !s.includes('cao')) return 'L3 Vận dụng';
+      if (s.includes('4') || s.includes('cao')) return 'L4 Vận dụng cao';
+      return 'L2 Thông hiểu';
+    }
+
+    function copyCurriculumJson() {
+      if (!currentCurriculum) return;
+      navigator.clipboard.writeText(JSON.stringify(currentCurriculum, null, 2)).then(() => {
+        alert("📋 Đã sao chép toàn bộ JSON khung chương trình vào Clipboard!");
+      });
+    }
+
+    function downloadCurriculumJson() {
+      if (!currentCurriculum) return;
+      const blob = new Blob([JSON.stringify(currentCurriculum, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `curriculum_${currentCurriculum.domainId || 'export'}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    async function saveToDatabase() {
+      if (!currentCurriculum) return;
+      const btn = document.getElementById('btnSaveDb');
+      btn.disabled = true;
+      btn.innerText = "⏳ Đang Lưu CSDL...";
+
+      try {
+        const response = await fetch('/api/content/curriculum/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentCurriculum)
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.message || "Lỗi lưu CSDL Content Service");
+        }
+
+        const res = await response.json();
+        alert(`🎉 Nạp CSDL thành công! Lưu ${res.chaptersImported || 0} chương, ${res.lessonsImported || 0} bài học, ${res.patternsImported || 0} dạng bài.`);
+        btn.innerText = "✅ Đã Lưu CSDL";
+      } catch (err) {
+        alert(`❌ Lỗi khi lưu vào CSDL: ${err.message}`);
+        btn.disabled = false;
+        btn.innerText = "💾 Lưu CSDL PostgreSQL";
+      }
+    }
+
+    function loadSampleCurriculum() {
+      const sample = {
+        domainId: "Domain-HoaHoc-Lop12",
+        domainName: "Hóa học 12 - Chương Este & Lipit",
+        chapters: [
+          {
+            chapterName: "Chương 1: Ester - Lipid",
+            lessons: [
+              {
+                lessonName: "Bài 1: Ester",
+                weight: 0.5,
+                patterns: [
+                  {
+                    patternName: "Dạng 1: Khái niệm, Đồng phân, Danh pháp và Tính chất vật lý của Ester",
+                    bloomLevel: "L2",
+                    weight: 0.1,
+                    classification: "Lý thuyết & Nhận diện công thức cấu tạo",
+                    theoryRecap: "Khái niệm: Khi thay thế nhóm -OH ở nhóm carboxyl (-COOH) của carboxylic acid bằng nhóm -OR' thì được ester.\n\nCông thức tổng quát của ester no, đơn chức, mạch hở: $C_nH_{2n}O_2$ ($n \\ge 2$).",
+                    solutionMethod: "Bước 1: Xác định công thức phân tử và độ bất bão hòa $k = \\frac{2n + 2 - 2H}{2}$ của hợp chất.\nBước 2: Viết các đồng phân cấu tạo ester dựa trên acid và alcohol tương ứng.\nBước 3: Gọi tên theo quy tắc IUPAC: Gốc hydrocarbon của alcohol + Tên gốc carboxylate.",
+                    questions: [
+                      {
+                        contentLatex: "Ester $X$ có công thức phân tử $C_4H_8O_2$. Thủy phân $X$ trong dung dịch $NaOH$ đun nóng thu được muối $CH_3COONa$ và alcohol $Y$. Công thức cấu tạo của $X$ là:",
+                        optionA: "$HCOOCH_2CH_2CH_3$",
+                        optionB: "$CH_3COOCH_2CH_3$",
+                        optionC: "$CH_3COOCH_3$",
+                        optionD: "$C_2H_5COOCH_3$",
+                        correctOption: "B",
+                        explanation: "Phản ứng thủy phân: $CH_3COOC_2H_5 + NaOH \\xrightarrow{t^\\circ} CH_3COONa + C_2H_5OH$. Do đó $X$ là $CH_3COOC_2H_5$ (ethyl acetate)."
+                      }
+                    ]
+                  },
+                  {
+                    patternName: "Dạng 2: Tính chất hóa học và Phản ứng thủy phân Ester",
+                    bloomLevel: "L3",
+                    weight: 0.15,
+                    classification: "Hóa tính & Bài toán định lượng thủy phân",
+                    theoryRecap: "Phản ứng xà phòng hóa trong môi trường kiềm là phản ứng một chiều:\n$$RCOOR' + NaOH \\xrightarrow{t^\\circ} RCOONa + R'OH$$",
+                    solutionMethod: "Bước 1: Viết phương trình phản ứng thủy phân ester.\nBước 2: Áp dụng định luật bảo toàn khối lượng hoặc bảo toàn mol nhóm chức ester:\n$$n_{\\text{ester}} = n_{NaOH} = n_{\\text{muối}} = n_{\\text{alcohol}}$$\nBước 3: Tính toán khối lượng chất rắn khan sau khi cô cạn.",
+                    questions: [
+                      {
+                        contentLatex: "Thủy phân hoàn toàn $8,8$ gam $CH_3COOC_2H_5$ bằng dung dịch $NaOH$ dư, đun nóng. Khối lượng muối $CH_3COONa$ thu được là:",
+                        optionA: "4,1 gam",
+                        optionB: "8,2 gam",
+                        optionC: "16,4 gam",
+                        optionD: "6,8 gam",
+                        correctOption: "B",
+                        explanation: "Số mol ester: $n = \\frac{8,8}{88} = 0,1 \\text{mol}$. Theo phương trình phản ứng: $n_{CH_3COONa} = n_{\\text{ester}} = 0,1 \\text{mol}$. Khối lượng muối: $m = 0,1 \\times 82 = 8,2 \\text{gam}$."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                lessonName: "Bài 2: Lipid & Chất béo",
+                weight: 0.5,
+                patterns: [
+                  {
+                    patternName: "Dạng 1: Phản ứng xà phòng hóa chất béo và Bài toán đốt cháy",
+                    bloomLevel: "L3",
+                    weight: 0.15,
+                    classification: "Phản ứng xà phòng hóa & Bảo toàn khối lượng",
+                    theoryRecap: "Chất béo là triester của glycerol với các acid béo ($C_{15}H_{31}COOH$, $C_{17}H_{35}COOH$, $C_{17}H_{33}COOH$).\nPhương trình tổng quát:\n$$(RCOO)_3C_3H_5 + 3NaOH \\xrightarrow{t^\\circ} 3RCOONa + C_3H_5(OH)_3$$",
+                    solutionMethod: "Bước 1: Tính số mol chất béo hoặc glycerol dựa vào tỉ lệ phản ứng $1 : 3$.\nBước 2: Áp dụng định luật bảo toàn khối lượng:\n$$m_{\\text{chất béo}} + m_{NaOH} = m_{\\text{muối}} + m_{\\text{glycerol}}$$",
+                    questions: [
+                      {
+                        contentLatex: "Xà phòng hóa hoàn toàn $17,8$ gam tristearin ($(C_{17}H_{35}COO)_3C_3H_5$) bằng dung dịch $NaOH$ vừa đủ. Khối lượng glycerol thu được là:",
+                        optionA: "0,92 gam",
+                        optionB: "1,84 gam",
+                        optionC: "2,76 gam",
+                        optionD: "3,68 gam",
+                        correctOption: "B",
+                        explanation: "Ta có $M_{\\text{tristearin}} = 890$. Số mol tristearin: $n = \\frac{17,8}{890} = 0,02 \\text{mol}$. Theo PTHH: $n_{\\text{glycerol}} = n_{\\text{tristearin}} = 0,02 \\text{mol}$. Khối lượng glycerol: $m = 0,02 \\times 92 = 1,84 \\text{gam}$."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+      currentCurriculum = sample;
+      renderCurriculumWorkspace(sample);
+      document.getElementById('stepperContainer').style.display = 'block';
+      updateStep(4, 100, "Đã nạp thành công bộ học liệu mẫu chuẩn GDPT 2018!");
+    }
+  </script>
+</body>
+</html>
+

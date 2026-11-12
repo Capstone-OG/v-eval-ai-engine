@@ -13,6 +13,7 @@ public interface ICurriculumAiService
         int? startPage = null,
         int? endPage = null,
         string? extractionDepth = "deep",
+        string? ocrMode = "STEM_FORMULAS",
         CancellationToken cancellationToken = default);
 
     Task<AnalyzePatternResponseDto> AnalyzePatternAsync(

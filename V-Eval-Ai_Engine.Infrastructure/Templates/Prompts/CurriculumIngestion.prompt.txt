@@ -12,18 +12,30 @@ QUY TẮC BẮT BUỘC VỀ BÀI HỌC, DẠNG BÀI, VÍ DỤ MINH HỌA & BÀI 
      * Bài học 2: "Bài 2: Lipid & Chất béo" (với đầy đủ các dạng bài về Chất béo: Khái niệm & cấu tạo lipid/chất béo, Phản ứng xà phòng hóa & bảo toàn khối lượng, Bài toán đốt cháy & hydro hóa...)
    - TUYỆT ĐỐI KHÔNG ĐƯỢC KẾT THÚC JSON SAU BÀI 1. BẮT BUỘC PHẢI SINH TIẾP BÀI 2 VÀ CÁC DẠNG BÀI CỦA BÀI 2 TRƯỚC KHI ĐÓNG JSON. NẾU THIẾU BÀI 2 LÀ LỖI NGHIÊM TRỌNG!
 
-1. BẮT BUỘC BÓC TÁCH TẤT CẢ CÁC BÀI HỌC VÀ TỐI ĐA HÓA CÁC DẠNG BÀI (MAXIMIZE LESSONS & PATTERNS):
+1. BẮT BUỘC BÓC TÁCH TẤT CẢ CÁC BÀI HỌC VÀ TỐI ĐA HÓA CÁC DẠNG BÀI (MAXIMIZE LESSONS & PATTERNS - ĐỦ 7 DẠNG BÀI TOÀN CHƯƠNG):
    - PHÂN TÁCH BÀI HỌC (MULTI-LESSON EXTRACTION): Quét toàn bộ tài liệu để nhận diện TẤT CẢ các Bài học riêng biệt trong chương/chuyên đề:
      * Ví dụ: Chuyên đề "CHƯƠNG 1: ESTER - LIPID" BẮT BUỘC phân tách thành 2 Bài học riêng biệt trong JSON:
        + "Bài 1: Ester" (Este)
        + "Bài 2: Lipid & Chất béo" (Lipit - Chất béo)
      * TUYỆT ĐỐI KHÔNG gộp các bài học khác nhau thành 1 bài duy nhất!
-   - NGUYÊN TẮC BÓC TÁCH CỐT LÕI & CÂN BẰNG HIỆU NĂNG (CORE PATTERNS & BALANCED PERFORMANCE):
-     * Mỗi Bài học nhận diện từ 2 đến 3 Dạng bài (`patterns`) cốt lõi (tổng cộng 4 đến 6 dạng bài cho toàn chuyên đề), đặt tên rõ ràng 'Dạng [Số]: [Tên dạng bài chi tiết]'.
-       + Ví dụ Bài 1 (Ester): Bóc tách 2-3 dạng bài trọng tâm (Đồng phân - Danh pháp - Tính chất, Phản ứng thủy phân & xà phòng hóa, Đốt cháy & Điều chế este).
-       + Ví dụ Bài 2 (Lipid & Chất béo): Bóc tách 2-3 dạng bài trọng tâm (Khái niệm & Cấu tạo lipid/triglyceride, Phản ứng xà phòng hóa & bảo toàn khối lượng, Bài toán đốt cháy & hydro hóa chất béo lỏng).
+   - QUY TẮC PHÂN TÁCH 7 DẠNG BÀI CỐT LÕI THEO MỤC LỤC SGK GDPT 2018 (EXACT 7 PATTERNS):
+     * BÀI 1 (Ester) BẮT BUỘC BÓC TÁCH ĐỦ 4 DẠNG BÀI:
+       + Dạng 1: Khái niệm, Đồng phân, Danh pháp và Tính chất vật lý của Ester
+       + Dạng 2: Tính chất hóa học & Phản ứng thủy phân, xà phòng hóa của Ester
+       + Dạng 3: Biện luận xác định công thức cấu tạo Ester từ sản phẩm phản ứng thủy phân & phản ứng tráng bạc
+       + Dạng 4: Bài toán đốt cháy Ester và Hiệu suất phản ứng este hóa
+     * BÀI 2 (Lipid & Chất béo) BẮT BUỘC BÓC TÁCH ĐỦ 3 DẠNG BÀI:
+       + Dạng 1: Khái niệm, Phân loại, Cấu tạo phân tử và Danh pháp của Lipid - Chất béo (Triglyceride)
+       + Dạng 2: Phản ứng xà phòng hóa chất béo và Bài toán bảo toàn khối lượng (tỉ lệ mol 1:3)
+       + Dạng 3: Phản ứng hydro hóa chất béo lỏng và Bài toán đốt cháy chất béo (hiệu số mol CO2 và H2O, liên kết pi)
+     * TỔNG CỘNG TOÀN CHUYÊN ĐỀ ESTER - LIPID: BẮT BUỘC ĐỦ ĐÚNG 7 DẠNG BÀI HOÀN CHỈNH (4 bài Ester + 3 bài Lipid).
      * Phần lý thuyết `theoryRecap` phải đầy đủ, rõ ràng (100% định nghĩa, công thức tổng quát, danh pháp, tính chất, phương trình hóa học bằng LaTeX chuẩn), và phần phương pháp giải `solutionMethod` nêu rõ quy trình giải từng bước và bài toán mẫu chi tiết có số liệu rõ ràng.
-2. BẮT BUỘC ĐỦ 4 KHỐI NỘI DUNG SƯ PHẠM KÈM VÍ DỤ VÀ BÀI TOÁN MẪU:
+3. BẮT BUỘC ĐỦ 4 KHỐI NỘI DUNG SƯ PHẠM KÈM VÍ DỤ VÀ BÀI TOÁN MẪU (ZERO SPARSITY MANDATE):
+   - QUY TẮC CẤM RÚT GỌN NỘI DUNG (ZERO SPARSITY RULE):
+     * TUYỆT ĐỐI CẤM viết lý thuyết tóm tắt sơ sài 1-2 câu! CẤM viết "Chất béo lỏng có gốc acid không no..." rồi bỏ trống!
+     * TẤT CẢ các dạng bài (Dạng 1 đến Dạng 4 của Bài 1, và Dạng 1 đến Dạng 3 của Bài 2) ĐỀU PHẢI có ít nhất 3-5 gạch đầu dòng lý thuyết sâu sắc + khối '### 📌 Ví dụ minh họa SGK:' có đề bài và phân tích lời giải chi tiết.
+     * MỖI dạng bài BẮT BUỘC có 'solutionMethod' gồm quy trình 3-4 bước giải + '{{sampleHeading}}' có bài toán mẫu với số liệu định lượng thật + '### ⚠️ Các bẫy đề thi ĐGNL thường gặp:' (1-2 bẫy) + '{{tipHeading}}' (mẹo Casio/nhẩm nhanh).
+     * MỖI dạng bài BẮT BUỘC có tối thiểu 2 câu hỏi trắc nghiệm rèn luyện trong 'questions' (1 câu L1-L2 và 1 câu L3-L4) với đầy đủ 4 phương án A-D và giải thích chi tiết.
    - `theoryRecap`: Lý thuyết nền tảng SGK toàn diện, định lý/khái niệm cốt lõi, công thức KaTeX đặt trong $...$, phương trình hóa học viết bằng LaTeX chuẩn. Kèm theo '### 📌 Ví dụ minh họa SGK:' (Trích xuất ví dụ/ngữ liệu từ tài liệu có phân tích và lời giải ngắn gọn).
    - `solutionMethod`: Quy trình 3-4 bước giải / làm bài: 'Bước 1: ...', 'Bước 2: ...', 'Bước 3: ...'. Kèm theo:
      * '{{sampleHeading}}' (Bài toán mẫu áp dụng phương pháp có đề bài, phân tích và hướng dẫn giải từng bước chi tiết, đầy đủ số liệu và đáp số).
@@ -38,14 +50,24 @@ QUY TẮC BẮT BUỘC VỀ BÀI HỌC, DẠNG BÀI, VÍ DỤ MINH HỌA & BÀI 
 3. QUY TẮC BẮT BUỘC VỀ ĐỊNH DẠNG KATEX & CÔNG THỨC KHOA HỌC (STRICT KATEX & LATEX INTEGRITY):
    - BẮT BUỘC BỌC MỌI CÔNG THỨC VÀ BIỂU THỨC TRONG CẶP DẤU $...$ HOẶC $$...$$:
      * Mọi công thức tổng quát, công thức phân tử, công thức cấu tạo, điều kiện toán học (như $C_nH_{2n}O_2$, $n \ge 2$, $CH_3COOC_2H_5$, $C_4H_8O_2$, $H_2SO_4$, $CO_2$, $H_2O$) BẮT BUỘC PHẢI BỌC TRỌN VẸN trong cặp dấu $...$.
-     * Mọi phương trình phản ứng hóa học (có mũi tên thuận nghịch \rightleftharpoons hoặc 1 chiều \xrightarrow) BẮT BUỘC BỌC TRỌN VẸN cả phương trình trong $$...$$ hoặc $...$, ví dụ:
+     * Mọi phương trình phản ứng hóa học (có mũi tên thuận nghịch \rightleftharpoons hoặc 1 chiều \xrightarrow) BẮT BUỘC ĐẶT TRÊN DÒNG RIÊNG VÀ BỌC TRỌN VẸN trong $$...$$, ví dụ:
        $$\text{RCOOR}' + \text{NaOH} \xrightarrow{t^\circ} \text{RCOONa} + \text{R}'\text{OH}$$
        $$\text{CH}_3\text{COOH} + \text{C}_2\text{H}_5\text{OH} \rightleftharpoons \text{CH}_3\text{COOC}_2\text{H}_5 + \text{H}_2\text{O}$$
+   - TUYỆT ĐỐI CẤM ĐỂ TỪ TIẾNG VIỆT BỊ NUỐT VÀO TRONG KHỐI MATH (NO VIETNAMESE WORDS IN MATH MODE):
+     * Cấm để các từ tiếng Việt giải thích (như "suy ra gốc acid là", "dựa vào alcohol", "phản ứng tối đa", "chất béo lỏng") nằm chung trong một cặp $...$ với công thức mà không có \text{}.
+     * Mỗi chất hóa học phải bọc cặp $ riêng biệt để giữ trọn vẹn khoảng trắng tiếng Việt.
+       Ví dụ đúng: "Dựa vào muối $CH_3COONa$ suy ra gốc acid là $CH_3COO^-$, dựa vào alcohol $C_2H_5OH$ suy ra..."
+       Ví dụ sai (CẤM): "$CH_3COONa suy ra gốc acid là CH_3COO-$" (sẽ bị lỗi dính chữ không có dấu cách!).
+   - ĐƠN VỊ ĐO LƯỜNG VÀ PHƯƠNG TRÌNH TÍNH TOÁN:
+      * Trong văn bản tiếng Việt thông thường (ngoài công thức): Viết số và đơn vị tự nhiên bằng tiếng Việt: '12,0 gam', '0,35 mol'. TUYỆT ĐỐI KHÔNG chèn `\\text{gam}` hay `\\text{mol}` vào đoạn văn thường.
+      * Trong công thức toán học/hóa học KaTeX ($...$): Viết đơn vị đi sau số liệu dạng `\text{ mol}`, `\text{ gam}`, `\text{ lít}` (ví dụ: `$n = \frac{17,68}{884} = 0,02\text{ mol}$`).
+      * Mọi phương trình tính toán nhiều vế và biểu thức bảo toàn (như `$2n_X + 2n_{O_2} = 2n_{CO_2} + n_{H_2O} \longrightarrow n_X = 0,1\text{ mol}$` hay `$2n_{\text{ester}} + 2n_{O_2} = 2n_{CO_2} + n_{H_2O}$`) BẮT BUỘC PHẢI BỌC TRỌN VẸN trong cặp dấu `$...$` hoặc `$$...$$`.
    - TUYỆT ĐỐI CẤM XUỐNG DÒNG \n Ở GIỮA CÔNG THỨC LATEX:
      * Cấm ngắt dòng bên trong \frac{...}{...}, \text{...} hoặc giữa các dấu ngoặc { }.
      * Mọi công thức tính toán số học/hóa học (như tính hiệu suất $H\% = \frac{m_{\text{thực tế}}}{m_{\text{lý thuyết}}} \times 100\%$ hoặc số mol $n = \frac{m}{M}$) BẮT BUỘC phải nằm gọn trọn vẹn trên 1 dòng duy nhất.
    - TUYỆT ĐỐI CẤM DẤU $ LẺ / UNBALANCED DOLLARS:
      * Không bao giờ để sót dấu $ đơn độc ở cuối dòng (như 'A. HCOOC_2H_5$'). Cặp dấu $ luôn phải có mở $ và đóng $.
+     * Đóng mở $ ngay lập tức sau mỗi công thức hoặc chất hóa học đơn lẻ ($C_3H_6O_2$, $CO_2$, $O_2$).
    - ĐỊNH DẠNG PHƯƠNG ÁN TRẮC NGHIỆM (OPTION A-D):
      * Các phương án optionA, optionB, optionC, optionD chứa công thức hóa học phải viết có chỉ số dưới chuẩn KaTeX (ví dụ: "$CH_3COOCH_3$", "$C_2H_5OH$", "$HCOOC_2H_5$").
      * TUYỆT ĐỐI KHÔNG bọc dấu nháy đơn '...' quanh nội dung đáp án (như '25,00%').
@@ -200,6 +222,37 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
                   "explanation": "..."
                 }
               ]
+            },
+            {
+              "patternName": "Dạng 4: [Tên dạng bài 4 của Bài 1, ví dụ: Bài toán đốt cháy Ester và Hiệu suất phản ứng este hóa]",
+              "weight": 0.05,
+              "classification": "Vận dụng và Vận dụng cao",
+              "coreSkill": "...",
+              "theoryRecap": "...",
+              "solutionMethod": "...",
+              "durationSeconds": 600,
+              "questions": [
+                {
+                  "difficultyLevel": 3,
+                  "contentLatex": "...",
+                  "optionA": "...",
+                  "optionB": "...",
+                  "optionC": "...",
+                  "optionD": "...",
+                  "correctOption": "A",
+                  "explanation": "..."
+                },
+                {
+                  "difficultyLevel": 4,
+                  "contentLatex": "...",
+                  "optionA": "...",
+                  "optionB": "...",
+                  "optionC": "...",
+                  "optionD": "...",
+                  "correctOption": "C",
+                  "explanation": "..."
+                }
+              ]
             }
           ]
         },
@@ -208,9 +261,9 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
           "weight": 0.2,
           "patterns": [
             {
-              "patternName": "Dạng 1: [Tên dạng bài 1 của Bài 2]",
+              "patternName": "Dạng 1: [Tên dạng bài 1 của Bài 2, ví dụ: Khái niệm, Phân loại, Cấu tạo phân tử và Danh pháp của Lipid - Chất béo]",
               "weight": 0.05,
-              "classification": "...",
+              "classification": "Nhận biết và Thông hiểu",
               "coreSkill": "...",
               "theoryRecap": "...",
               "solutionMethod": "...",
@@ -227,7 +280,7 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
                   "explanation": "..."
                 },
                 {
-                  "difficultyLevel": 3,
+                  "difficultyLevel": 2,
                   "contentLatex": "...",
                   "optionA": "...",
                   "optionB": "...",
@@ -239,9 +292,9 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
               ]
             },
             {
-              "patternName": "Dạng 2: [Tên dạng bài 2 của Bài 2]",
+              "patternName": "Dạng 2: [Tên dạng bài 2 của Bài 2, ví dụ: Phản ứng xà phòng hóa chất béo và Bài toán bảo toàn khối lượng (tỉ lệ mol 1:3)]",
               "weight": 0.05,
-              "classification": "...",
+              "classification": "Thông hiểu và Vận dụng",
               "coreSkill": "...",
               "theoryRecap": "...",
               "solutionMethod": "...",
@@ -255,6 +308,47 @@ Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
                   "optionC": "...",
                   "optionD": "...",
                   "correctOption": "C",
+                  "explanation": "..."
+                },
+                {
+                  "difficultyLevel": 3,
+                  "contentLatex": "...",
+                  "optionA": "...",
+                  "optionB": "...",
+                  "optionC": "...",
+                  "optionD": "...",
+                  "correctOption": "A",
+                  "explanation": "..."
+                }
+              ]
+            },
+            {
+              "patternName": "Dạng 3: [Tên dạng bài 3 của Bài 2, ví dụ: Phản ứng hydro hóa chất béo lỏng và Bài toán đốt cháy chất béo]",
+              "weight": 0.05,
+              "classification": "Vận dụng và Vận dụng cao",
+              "coreSkill": "...",
+              "theoryRecap": "...",
+              "solutionMethod": "...",
+              "durationSeconds": 600,
+              "questions": [
+                {
+                  "difficultyLevel": 3,
+                  "contentLatex": "...",
+                  "optionA": "...",
+                  "optionB": "...",
+                  "optionC": "...",
+                  "optionD": "...",
+                  "correctOption": "A",
+                  "explanation": "..."
+                },
+                {
+                  "difficultyLevel": 4,
+                  "contentLatex": "...",
+                  "optionA": "...",
+                  "optionB": "...",
+                  "optionC": "...",
+                  "optionD": "...",
+                  "correctOption": "D",
                   "explanation": "..."
                 }
               ]

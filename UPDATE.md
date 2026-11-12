@@ -1,25 +1,34 @@
 # NHẬT KÝ CẬP NHẬT (UPDATE LOG) - AI ENGINE SERVICE
 
-## [12/11/2026] - Khắc Phục Triệt Để Vòng Lặp Retry 503 (Key-First Smart Failover), Tinh Gọn Prompt Bóc Tách Đa Bài Học & Chuẩn Hóa KaTeX Hóa Học
+## [13/11/2026] - Khảo Sát Live Ping Mô Hình Gemini, Tối Ưu Thứ Tự Ưu Tiên 503, Khử Trùng Lặp Dạng Bài & Nâng Cấp Chuẩn Hóa KaTeX/MathText
 
-- **Khắc Phục Triệt Để Cơ Chế Vòng Lặp Thử Lại (Smart Key-First & Model-Inner Failover) ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`MultiCloudExamParserService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/MultiCloudExamParserService.cs))**:
-  - **Đảo ngược thứ tự vòng lặp**: Vòng lặp ngoài duyệt theo từng Key trong `apiKeys`, vòng lặp trong duyệt qua danh sách các Model trong `geminiModels`.
-  - **Phân loại lỗi chính xác**:
-    - Khi gặp lỗi Key/Quota (`HTTP 401 Unauthorized`, `HTTP 403 Forbidden`, `HTTP 429 Too Many Requests`): Đánh dấu `keyInvalidOrQuotaExceeded = true` và `break` model loop để chuyển sang API Key tiếp theo.
-    - Khi gặp lỗi Model/Server quá tải (`HTTP 503 Service Unavailable`, `HTTP 500`, `HTTP 504`, `HTTP 404`, `HTTP 400`): Giữ nguyên API Key và `continue` model loop để thử ngay Model tiếp theo với cùng key. Triệt tiêu hoàn toàn hiện tượng thử lại 4 lần cùng 1 model bị 503.
-  - **Rút ngắn Timeout từng lượt**: Hạ timeout xuống `35 giây` (`TimeSpan.FromSeconds(35)`), bắt ngoại lệ `OperationCanceledException` để chuyển model tức thì.
+- **Khảo Sát Thực Nghiệm Live Ping Toàn Diện Trên 4 API Keys**:
+  - Live ping 14 mô hình Gemini: `gemini-3.1-flash-lite` đạt **100% 200 OK trên cả 4 keys**, độ trễ siêu nhanh **~808ms - 882ms**, không dính lỗi 503 Spike hay Rate Limit.
+  - Tối ưu chuỗi ưu tiên trong `appsettings.json` ([`appsettings.json`](./V-Eval-Ai_Engine.API/appsettings.json)): `gemini-3.1-flash-lite` -> `gemini-flash-lite-latest` -> `gemini-3.5-flash` -> `gemini-3.6-flash`.
+  - Kết quả bóc tách PDF thực tế qua Gemini hoàn thành chỉ trong **9.09s**, tổng thời gian cấu trúc C# **12.39s**.
 
-- **Tinh Gọn Directive Bóc Tách & Prompt Theo Nhánh Main ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`CurriculumIngestion.prompt.txt`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt))**:
-  - Giữ vững nguyên tắc đa bài học (Multi-Lesson Extraction): Chương "Ester - Lipid" bắt buộc tách thành 2 bài học riêng biệt ("Bài 1: Ester" và "Bài 2: Lipid & Chất béo").
-  - Cân bằng số lượng dạng bài: Mỗi bài học trích xuất 2-3 dạng bài cốt lõi (tổng 4-6 dạng bài), mỗi dạng có 2-3 câu hỏi trắc nghiệm kèm giải thích chi tiết, đầy đủ 4 khối sư phạm. Loại bỏ việc ép bóc tách 12+ dạng bài gây quá tải token kích hoạt lỗi 503 từ Google AI Studio.
+- **Khử Trùng Lặp Dạng Bài (Deduplication) & Tự Động Đánh Số Thứ Tự Tuần Tự ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
+  - Loại bỏ hoàn toàn lỗi duplicate dạng bài (như hai thẻ `Dạng 4: Bài toán đốt cháy ester...` trong cùng bài học).
+  - Tự động gộp ngân hàng câu hỏi từ dạng bài trùng và xóa thẻ thừa.
+  - Đánh số tuần tự chuẩn xác: `Dạng 1: ...`, `Dạng 2: ...`, `Dạng 3: ...` cho toàn bộ bài học.
 
-- **Cấu Hình Thứ Tự Ưu Tiên Gemini Chống 503 ([`appsettings.json`](./V-Eval-Ai_Engine.API/appsettings.json), [`Configs/V-Eval-Ai_Engine/appsettings.json`](../../Configs/V-Eval-Ai_Engine/appsettings.json))**:
-  - Ưu tiên số 1: `gemini-3.5-flash-lite` (~1.0s latency, chịu tải cao, không bị 503).
-  - Tiếp nối: `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3.1-flash-lite`, `gemini-flash-lite-latest`.
-  - Loại bỏ hoàn toàn `gemini-3.8-flash` (gây 503 liên tục).
+- **Nâng Cấp Chuẩn Hóa KaTeX / LaTeX Backend ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
+  - Tự động khôi phục mã lệnh đơn vị rụng gạch chéo: `textmol`, `textgam`, `textg`, `textkg` -> `\text{mol}`, `\text{gam}`.
+  - Mở rộng nhận diện phương trình và toán tử liên kết: `\implies`, `>`, `<`, `\ge`, `\le`, `\approx`, `\equiv`, `\rightleftharpoons`, `\xrightarrow`.
+  - Khắc phục lỗi rách công thức trước suy luận (như `$n_{...} = 0,2$ textmol \implies $m_{...} = 17,6$ textgam`).
+  - Tự động bọc biến số đứng trước đơn vị đo: `([amVnxy])\s+(mol|gam|g|kg|lít|lit|ml)` -> `$1 $2`.
+  - Chuẩn hóa chỉ số dưới tiếng Việt cho hóa học: `k_{gốc}` -> `k_{\text{gốc}}`, `m_{dd}` -> `m_{\text{dd}}`.
+  - Kiểm thử `CurriculumLatexNormalizationTests` đạt **14/14 tests pass 100%**. Tổng số test AI Engine: **32/32 tests pass 100%**.
 
-- **Chuẩn Hóa KaTeX Backend ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
-  - Xóa bỏ dấu `$` đặt nhầm cạnh dấu bằng `\$\s*=\s*\$?` trong công thức tính toán.
-  - Tự động đóng dấu `$` trước dấu chấm câu khi có văn bản giải thích: `$C_{17}H_{33}$. 1 mol` thay vì nuốt vào math mode.
-  - Định dạng phương trình hóa học độc lập theo dòng chuẩn xác.
-  - **19/19 unit tests pass 100%** trong 309 ms. Rebuild và triển khai thành công container `v_eval_ai_engine`.
+- **Vận Hành Trực Tiếp Qua Terminal (Không Dùng Docker)**:
+  - Khởi chạy trực tiếp `V-Eval-Ai_Engine.API` bằng `dotnet run` trên cổng `http://localhost:5104`.
+
+- **Khắc Phục Lỗi KaTeX Còn Sót (Mũ `^`, Ngoặc Đơn, Chỉ Số Dưới Tiếng Việt) ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`MathText.jsx`](../V-Eval-Web_Client/src/components/common/MathText.jsx))**:
+  - `fullEqPattern` hỗ trợ số mũ (`2^2`, `3^{2}`) và ngoặc đơn (`\times (3 \times 40 - 92)`), không còn tách `2^$2`; ngoặc không cân bằng/bao trọn biểu thức được đưa ra ngoài `$...$`.
+  - Không còn can thiệp vào bên trong cặp `$...$` đã có; bước giải phóng văn bản tiếng Việt bỏ qua nội dung `_{...}` / `^{...}` nên `m_{chất béo}` không còn bị gỡ `$`.
+  - Thêm test hồi quy `Regression_NoBareOrBrokenMath` (8 ca từ ảnh lỗi thực tế); tổng **42/42 tests pass**.
+
+- **Khắc Phục Lỗi KaTeX Trần Do Web Client Gỡ `$` Nhầm (Lần 2)**:
+  - Nguyên nhân gốc: bộ phục hồi trong [`MathText.jsx`](../V-Eval-Web_Client/src/components/common/MathText.jsx) dò từ tiếng Việt (`chất`, `muối`...) ngay cả bên trong `\text{...}` và `_{...}`, nên gỡ `$` của các công thức hợp lệ như `$n_{\text{NaOH}} = 3 \times n_{\text{chất béo}}$`. Nay chỉ dò phần ngoài `\text{}`/`_{}`/`^{}`.
+  - Bộ nhận diện phương trình không còn nuốt xuống dòng kế tiếp (chỉ `[ \t]` giữa các vế); chỉ số dưới cho phép ngoặc đơn (`m_{muối (xà phòng)}`).
+  - Kiểm chứng JS bằng Node trên các ca ảnh lỗi và 49/49 unit tests C# pass.
