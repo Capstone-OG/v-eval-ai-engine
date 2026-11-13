@@ -11,103 +11,28 @@ using V_Eval_Ai_Engine.Application.Interfaces;
 namespace V_Eval_Ai_Engine.Infrastructure.Services;
 
 /// <summary>
-/// Dịch vụ bóc tách đề thi PDF sử dụng Google Gemini 2.5 Flash Multimodal API trực tiếp từ C#
+/// Dịch vụ bóc tách đề thi PDF đa đám mây (Multi-Cloud Cascade Failover: OpenAI GPT-4o Vision <-> Google Gemini Multimodal) trực tiếp từ C#
 /// </summary>
-public class GeminiExamParserService : IExamParserService
+public class MultiCloudExamParserService : IExamParserService
 {
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<GeminiExamParserService> _logger;
+    private readonly ILogger<MultiCloudExamParserService> _logger;
     private readonly PdfImageExtractor _imageExtractor;
+    private readonly IPromptTemplateService _promptTemplateService;
 
-    private const string GeminiPrompt = @"BẠN LÀ MỘT HỆ THỐNG SCAN & CHUYỂN TỰ QUANG HỌC ĐỘ CHÍNH XÁC CAO (HIGH-PRECISION VERBATIM OCR) DÀNH CHO ĐỀ THI ĐGNL V-ACT.
-Nhiệm vụ: Đọc trực quan toàn bộ tài liệu và sao chép NGUYÊN VĂN 100% TOÀN BỘ 120 CÂU HỎI từ trang đầu đến trang cuối cùng sang JSON, TUYỆT ĐỐI KHÔNG ĐƯỢC SUY DIỄN HOẶC TỰ Ý SỬA ĐỔI.
-
-CÁC NGUYÊN TẮC BẮT BUỘC:
-1. ĐẦY ĐỦ VÀ TOÀN DIỆN (BẮT BUỘC ĐỦ 100% TỔNG CỘNG 120 CÂU HỎI):
-   - Đề thi chuẩn V-ACT có ĐẦY ĐỦ 120 CÂU HỎI (từ Câu 1 đến Câu 120) trải dài qua tất cả các trang từ Trang 1 đến Trang 16.
-   - Bạn PHẢI duyệt qua TẤT CẢ các trang và trích xuất TOÀN BỘ 120 CÂU HỎI vào JSON.
-   - TUYỆT ĐỐI KHÔNG ĐƯỢC DỪNG LẠI, KHÔNG ĐƯỢC TÓM TẮT, KHÔNG ĐƯỢC CHỈ LÀM MẪU VÀI CÂU ĐẦU! PHẢI BÓC TÁCH ĐẦY ĐỦ HẾT CẢ 120 CÂU!
-2. NGUYÊN TẮC TRUNG THỰC NGUYÊN VĂN (100% VERBATIM):
-   - Đọc chính xác từng con số, từng chữ số, từng biến số, từng số mũ, từng dấu cộng trừ (+, -), từng dấu chấm phẩy và dấu ngoặc.
-   - TUYỆT ĐỐI KHÔNG BỎ SÓT HỆ SỐ ĐỨNG NGAY SAU DẤU BẰNG: Ví dụ trong biểu thức 'y = 2x^3', số 2 đứng ngay sau dấu bằng, BẮT BUỘC phải ghi đúng '$y = 2x^3$', TUYỆT ĐỐI KHÔNG ĐƯỢC bỏ mất hệ số 2 thành '$y = x^3$'.
-   - TUYỆT ĐỐI KHÔNG ĐỔI DẤU PHÉP TÍNH: Nếu trong đề là '3(m+1)' thì BẮT BUỘC giữ nguyên dấu cộng '$3(m+1)$', KHÔNG ĐƯỢC tự ý đổi thành '$3(m-1)$'.
-   - TUYỆT ĐỐI KHÔNG TỰ BỊA ĐẶT THÊM HỆ SỐ: Nếu phương án là 'x + y + z - 3 = 0' thì ghi đúng '$x + y + z - 3 = 0$', KHÔNG ĐƯỢC tự thêm số 3 vào z thành '$x + y + 3z - 3 = 0$'. Nếu là 'x + 2y + z - 4 = 0' thì ghi đúng '$x + 2y + z - 4 = 0$', KHÔNG ĐƯỢC đổi thành '$x + 2y - 2z - 4 = 0$'.
-   - TẤT CẢ các phương án A, B, C, D phải được đọc trực tiếp từng chữ số từ hình ảnh của trang đề, chép đúng nguyên trạng từng tọa độ, phương trình và giá trị.
-3. ĐẶC BIỆT LƯU Ý VỀ CÁC PHƯƠNG ÁN GÂY NHIỄU (BẪY TOÁN HỌC TRẮC NGHIỆM):
-   - Trong đề thi trắc nghiệm, tác giả thường cố tình tạo ra các PHƯƠNG ÁN SAI / BẪY TOÁN HỌC để thử thách học sinh (Ví dụ: đưa dấu giá trị tuyệt đối ra bên NGOÀI tích phân: \left| \int_{-1}^1 (x^3 - x) dx \right|).
-   - BẠN LÀ MÁY QUÉT, KHÔNG ĐƯỢC 'SỬA SAI GIÙM TÁC GIẢ'! Thấy hai thanh gạch dọc đứng |...| ở hai đầu tích phân thì BẮT BUỘC chép đúng dấu giá trị tuyệt đối: \left| \int_{-1}^1 (x^3 - x) dx \right|, TUYỆT ĐỐI KHÔNG ĐƯỢC tự ý đổi thành ngoặc đơn hay tự giải toán chia tách tích phân ra các cận [-1;0] và [0;1].
-4. CHUYỂN ĐỔI CÔNG THỨC TOÁN HỌC, VẬT LÝ, HÓA HỌC SANG LATEX:
-   - Mọi biểu thức toán học, vật lý, hóa học, hàm số, phương trình, tọa độ, biến số (kể cả chữ đơn lẻ như x, y, z, m, P_n, P_{hp}, k^2) BẮT BUỘC phải được bao bọc bởi một cặp dấu đô-la đơn $...$.
-   - CÁC CÔNG THỨC VẬT LÝ / HÓA HỌC DÀI (Hiệu suất truyền tải điện, Tốc độ phản ứng...): BẮT BUỘC bao bọc bằng dấu $: $H = \frac{P_n - P_{hp}}{P_n} \times 100\%$, $R = -\frac{\Delta[\text{Acetone}]}{\Delta t}$. TUYỆT ĐỐI KHÔNG để công thức trần trụi ngoài dấu $.
-   - KÝ HIỆU BIẾN THIÊN DELTA (\Delta): Ký hiệu tam giác ∆ BẮT BUỘC viết là $\Delta$ (ví dụ: $\Delta[\text{Acetone}]$, $\Delta t$). TUYỆT ĐỐI KHÔNG ĐƯỢC nhìn nhầm ký hiệu tam giác ∆ thành chữ A hay \bar{A} hay \bar{\text{A}}!
-   - ĐƠN VỊ CÓ SỐ MŨ ÂM: Ví dụ mol.l-1.phút-1 hay 10-3 BẮT BUỘC định dạng LaTeX chuẩn: $2,33 \cdot 10^{-3}\text{ mol}\cdot\text{l}^{-1}\cdot\text{phút}^{-1}$.
-   - NGUYÊN TẮC THOÁT KÝ TỰ JSON: Trong JSON, BẮT BUỘC sử dụng hai dấu gạch chéo ngược (\\) cho tất cả các lệnh LaTeX (\\frac, \\times, \\Delta, \\text, \\bar, \\le, \\ge...) để tránh bị JSON Parser hiểu nhầm thành ký tự điều khiển.
-5. CÂU HỎI TIẾNG ANH TÌM LỖI SAI (GẠCH CHÂN):
-   - Ở các câu hỏi gạch chân tương ứng với lựa chọn A, B, C, D, hãy bao bọc từ/cụm từ được gạch chân bằng thẻ <u>...</u> kèm ký hiệu tương ứng (Ví dụ: <u>word</u> (A)).
-6. HÌNH VẼ / BIỂU ĐỒ / ĐỒ THỊ / ẢNH MINH HỌA & BẢNG SỐ LIỆU:
-   - NGUYÊN TẮC ZERO-SPOILER (TUYỆT ĐỐI CHỐNG LỘ ĐÁP ÁN):
-     + Khi câu hỏi trắc nghiệm hỏi về tên gọi, bản chất hoặc công dụng của đối tượng trong hình ảnh, phần mô tả trong nội dung câu hỏi CHỈ ĐƯỢC mô tả trung tính đặc điểm trực quan/hiện tượng.
-     + TUYỆT ĐỐI KHÔNG ĐƯỢC dùng từ ngữ trùng với đáp án đúng của câu hỏi! Ví dụ: Nếu câu hỏi hỏi 'Dụng cụ đó là gì?' và có đáp án 'Gương cầu lồi', BẮT BUỘC chỉ ghi trung tính: '([Hình vẽ]: Thiết bị dạng mặt gương gắn tại khúc cua đường đèo)', TUYỆT ĐỐI KHÔNG ĐƯỢC ghi chữ 'Gương cầu lồi' vào phần câu hỏi!
-     + Tương tự với các thí nghiệm Hóa học / Sinh học: Chỉ mô tả hiện tượng/sơ đồ thí nghiệm trung tính, không kết luận thay cho các phương án trắc nghiệm.
-   - BẢNG SỐ LIỆU:
-     + Với bảng cơ bản: Định dạng bảng dưới dạng Markdown Table chuẩn (| Cột 1 | Cột 2 | ...) với đầy đủ tất cả các hàng và các cột, không được bỏ sót bất kỳ ô dữ liệu nào.
-     + Với bảng có tiêu đề 2 tầng hoặc ô gộp (ví dụ: tiêu đề lớn 'Số giờ chiếu sáng vào ban đêm (giờ)' bao phủ các cột con '0,5', '1', '2', '3', '4', '5'): Có thể xuất dưới dạng thẻ HTML <table> chuẩn mực có rowspan và colspan (ví dụ <th rowspan=""2"">, <th colspan=""6"">) để bảo toàn 100% cấu trúc bảng hình học, TUYỆT ĐỐI KHÔNG ghép nối tiêu đề cha vào một ô con đơn lẻ (như 'Tiêu đề: 0,5') làm các cột khác bị trơ trọi mất ngữ cảnh.
-   - BIỂU ĐỒ (Cột, Tròn, Đường): Ghi rõ loại biểu đồ và liệt kê đầy đủ tên nhãn kèm số liệu phần trăm hoặc giá trị (ví dụ: *([Hình vẽ]: Biểu đồ cột biểu diễn tỷ lệ chi phí: Đầu tư 20%, Vận chuyển 12,5%...)* hoặc *([Hình vẽ]: Biểu đồ hình tròn thể hiện Doanh thu: A (22%), B (26%)...)*) để hệ thống tự động vẽ lại biểu đồ tương tác.
-   - HÌNH HỌC KHÔNG GIAN 3D & ĐỒ THỊ HÀM SỐ 2D TƯƠNG TÁC (BẮT BUỘC NHÚNG THẺ MATHLAB):
-     + KỂ CẢ KHI CÂU HỎI TRONG ĐỀ THI CHỈ MÔ TẢ HÌNH BẰNG CHỮ (hoàn toàn không có hình ảnh in sẵn trong đề thi gốc):
-       Bất kỳ khi nào câu hỏi đề cập đến hình không gian (tứ diện ABCD, hình chóp, lăng trụ, hộp chữ nhật, lập phương, khoảng cách, góc, thể tích, thiết diện) hoặc đồ thị hàm số:
-       BẠN BẮT BUỘC ĐÓNG VAI TRÒ MÁY DỰNG HÌNH HỌC TOÁN HỌC, tự động tính toán tọa độ đỉnh, điểm phụ, nét đứt và tạo/nhúng khối thẻ cấu trúc [MATH_GRAPH_3D] hoặc [MATH_GRAPH] vào CẢ NỘI DUNG CÂU HỎI (ở cuối `content` để học sinh xoay 360 độ giải bài) VÀ LỜI GIẢI CHI TIẾT (`explanation`).
-     + ĐỐI VỚI HÌNH HỌC KHÔNG GIAN 3D: Nhúng khối thẻ cấu trúc (chọn shapeType tương ứng và suy luận tọa độ đỉnh, điểm phụ, nét đứt):
-       [MATH_GRAPH_3D]
-       title: [Tên hình, VD: Cho tứ diện ABCD hoặc Cho hình chóp S.ABCD]
-       shapeType: [tetrahedron | pyramid_rect_sa | pyramid_tri_sa | pyramid_regular_quad | pyramid_regular_tri | pyramid_side_perp | prism_tri | box_cube]
-       dimensions: h=4,w=4,d=3.5,r=3,planeD=1.8
-       vertices: A:A(1.3,1.2,4);B:B(0,0,0);C:C(4,0,0);D:D(2,3.5,0)
-       extraPoints: [Điểm phụ/trung điểm nếu có, VD: M:name=M:edge=A,B:ratio=0.5:color=#ec4899;H:name=H:projection=true:color=#ef4444]
-       auxLines: [Đường phụ nét đứt dash=2 hoặc liền dash=0, VD: M-N:dash=0:color=#ef4444;A-H:dash=2:color=#ef4444]
-       [/MATH_GRAPH_3D]
-       * Quy ước shapeType:
-         - tetrahedron: Tứ diện ABCD (đỉnh A, đáy tam giác BCD).
-         - pyramid_rect_sa: Chóp đáy chữ nhật/vuông ABCD có cạnh bên SA vuông góc đáy (A gốc (0,0,0), S(0,0,h)).
-         - pyramid_tri_sa: Chóp tam giác ABC có SA vuông góc đáy (A gốc (0,0,0), S(0,0,h)).
-         - pyramid_regular_quad: Chóp tứ giác đều S.ABCD có tâm đáy O(0,0,0), đỉnh S(0,0,h).
-         - pyramid_regular_tri: Chóp tam giác đều S.ABC có trọng tâm đáy G(0,0,0), đỉnh S(0,0,h).
-         - pyramid_side_perp: Chóp có mặt bên (SAB) vuông góc đáy, chân đường cao H(w/2,0,0).
-         - prism_tri: Lăng trụ tam giác ABC.A'B'C' (đáy dưới z=0, đáy trên z=h).
-         - box_cube: Hình hộp chữ nhật hoặc hình lập phương ABCD.A'B'C'D'.
-     + ĐỐI VỚI BẢNG BIẾN THIÊN (VARIATION TABLE): Khi đề bài/câu hỏi/lời giải có bảng biến thiên:
-       [VARIATION_TABLE]
-       title: [Tên bảng biến thiên, VD: Bảng biến thiên hàm số y = f(x)]
-       x: -\infty | x_1 | x_2 | +\infty
-       y': + | 0 | - | 0 | +
-       y: -\infty | y_max | y_min | +\infty
-       dir: up | down | up
-       [/VARIATION_TABLE]
-       (Hỗ trợ vạch kép || cho hàm phân thức: y': + | || | +; y: y_left | +\infty || -\infty | y_right; dir: up || up).
-     + ĐỐI VỚI ĐỒ THỊ HÀM SỐ 2D: Nhúng khối thẻ cấu trúc:
-       [MATH_GRAPH]
-       title: [Tên đồ thị, VD: Đồ thị hàm số y = f(x)]
-       formula: [Công thức hiển thị, VD: y = x^3 - 3*x + 1]
-       type: [cubic | quartic | rational | rational_21 | quadratic | custom]
-       params: [Nếu chuẩn: a=1,b=0,c=-3,d=1; Nếu custom: expr=x^3-3*x+1 (hỗ trợ sin, cos, sqrt, abs, ^)]
-       [/MATH_GRAPH]
-7. CHÙM BÀI ĐỌC (PASSAGES) & CÂU ĐỘC LẬP (SINGLE QUESTIONS):
-   - Đoạn văn ngữ cảnh dùng chung đưa vào content của `passages` kèm start_question và end_question.
-   - Câu hỏi riêng lẻ đưa vào `single_questions`. Đảm bảo trích xuất đầy đủ toàn bộ câu hỏi từ trang đầu đến trang cuối.
-8. PHÂN TÍCH DẠNG BÀI:
-   - Gợi ý tên dạng bài / kỹ năng tương ứng (suggested_skill_name) ngắn gọn, chuẩn xác.";
-
-    public GeminiExamParserService(
+    public MultiCloudExamParserService(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<GeminiExamParserService> logger,
-        PdfImageExtractor imageExtractor)
+        ILogger<MultiCloudExamParserService> logger,
+        PdfImageExtractor imageExtractor,
+        IPromptTemplateService promptTemplateService)
     {
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
         _imageExtractor = imageExtractor;
+        _promptTemplateService = promptTemplateService;
     }
 
     private List<string> ResolveApiKeys()
@@ -130,7 +55,10 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
         }
 
         // 3. Lấy từ biến môi trường nếu có
-        var envKeys = Environment.GetEnvironmentVariable("GEMINI_API_KEYS") ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+        var envKeys = Environment.GetEnvironmentVariable("GEMINI_API_KEYS") 
+                      ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY")
+                      ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY")
+                      ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEYS");
         if (!string.IsNullOrWhiteSpace(envKeys))
         {
             keys.AddRange(envKeys.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries));
@@ -199,7 +127,12 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
         };
     }
 
-    private async Task<string?> TryCallOpenAiAsync(string modelName, string apiKey, string base64Data, CancellationToken cancellationToken)
+    private async Task<string?> TryCallOpenAiAsync(
+        string modelName, 
+        string apiKey, 
+        string base64Data, 
+        string ocrPrompt, 
+        CancellationToken cancellationToken)
     {
         var requestBody = new JsonObject
         {
@@ -209,7 +142,7 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
                 new JsonObject
                 {
                     ["role"] = "system",
-                    ["content"] = GeminiPrompt
+                    ["content"] = ocrPrompt
                 },
                 new JsonObject
                 {
@@ -293,6 +226,9 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
 
         _logger.LogInformation("Bắt đầu đọc dữ liệu PDF '{FileName}' và chuẩn bị bóc tách (Gemini Keys: {KeyCount}, OpenAI: {HasOpenAi})...", 
             fileName, apiKeys.Count, !string.IsNullOrEmpty(openAiKey));
+
+        // Nạp Prompt template từ hệ thống PromptTemplateService (Zero-Hardcode)
+        string ocrPrompt = await _promptTemplateService.RenderPromptAsync("ExamIngestionVerbatimOcr.prompt.txt", cancellationToken: cancellationToken);
 
         // 1. Đọc stream PDF thành byte[]
         byte[] pdfBytes;
@@ -418,7 +354,7 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
             },
             new JsonObject
             {
-                ["text"] = GeminiPrompt
+                ["text"] = ocrPrompt
             }
         };
 
@@ -454,7 +390,7 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
         int maxExtractedCount = 0;
         bool isSuccess = false;
 
-        // BƯỚC 1: Kiểm tra OpenAI API Key (Ưu tiên GPT 4 models nếu có key thực)
+        // BƯỚC 1: Kiểm tra OpenAI API Key (Ưu tiên GPT-4o / GPT-4o-mini nếu có key)
         if (!string.IsNullOrEmpty(openAiKey))
         {
             var openAiModels = ResolveOpenAiModels();
@@ -475,7 +411,7 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
 
                 try
                 {
-                    string? gptResult = await TryCallOpenAiAsync(gptModel, openAiKey, base64Data, cancellationToken);
+                    string? gptResult = await TryCallOpenAiAsync(gptModel, openAiKey, base64Data, ocrPrompt, cancellationToken);
                     if (!string.IsNullOrWhiteSpace(gptResult))
                     {
                         gptResult = SanitizeJsonForLatex(gptResult);
@@ -523,42 +459,34 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
         if (!isSuccess && attemptCount < maxAttempts && apiKeys.Count > 0)
         {
             var geminiModels = ResolveGeminiModels();
-            _logger.LogInformation("Tiến hành chạy Google Gemini: {ModelCount} mô hình, {KeyCount} API Key dự phòng (còn lại {Remaining} lần thử)...",
+            _logger.LogInformation("Tiến hành chạy Google Gemini: {ModelCount} mô hình, {KeyCount} API Key dự phòng (còn lại {Remaining} lần thử)...", 
                 geminiModels.Count, apiKeys.Count, maxAttempts - attemptCount);
 
-            foreach (var modelName in geminiModels)
+            foreach (var currentKey in apiKeys)
             {
-                if (attemptCount >= maxAttempts)
-                {
-                    _logger.LogWarning("Đã đạt giới hạn tối đa {MaxAttempts} lần thử. Dừng gọi thêm mô hình.", maxAttempts);
-                    break;
-                }
+                if (attemptCount >= maxAttempts || isSuccess) break;
+                bool keyInvalidOrQuotaExceeded = false;
+                string maskedKey = MaskKey(currentKey);
 
-                // gemini-3.1-flash-lite mặc định bật suy luận ngầm (thinking), cần tắt thinkingBudget để in thẳng JSON câu hỏi
-                if (modelName.Contains("3.1", StringComparison.OrdinalIgnoreCase))
+                foreach (var modelName in geminiModels)
                 {
-                    genConfig["thinkingConfig"] = new JsonObject
+                    if (attemptCount >= maxAttempts || keyInvalidOrQuotaExceeded || isSuccess) break;
+
+                    // gemini-3.1-flash-lite mặc định bật suy luận ngầm (thinking), cần tắt thinkingBudget để in thẳng JSON câu hỏi
+                    if (modelName.Contains("3.1", StringComparison.OrdinalIgnoreCase))
                     {
-                        ["thinkingBudget"] = 0
-                    };
-                }
-                else
-                {
-                    genConfig.Remove("thinkingConfig");
-                }
-
-                var payloadJson = requestPayload.ToJsonString();
-
-                foreach (var currentKey in apiKeys)
-                {
-                    if (attemptCount >= maxAttempts)
+                        genConfig["thinkingConfig"] = new JsonObject
+                        {
+                            ["thinkingBudget"] = 0
+                        };
+                    }
+                    else
                     {
-                        _logger.LogWarning("Đã đạt giới hạn tối đa {MaxAttempts} lần thử. Dừng gọi thêm mô hình.", maxAttempts);
-                        break;
+                        genConfig.Remove("thinkingConfig");
                     }
 
+                    var payloadJson = requestPayload.ToJsonString();
                     attemptCount++;
-                    string maskedKey = MaskKey(currentKey);
                     string geminiBaseUrl = _configuration["AiSettings:GeminiBaseUrl"] ?? "https://generativelanguage.googleapis.com/v1beta";
                     string requestUrl = $"{geminiBaseUrl.TrimEnd('/')}/models/{modelName}:generateContent?key={currentKey}";
                     using var requestMessage = new HttpRequestMessage(HttpMethod.Post, requestUrl)
@@ -571,8 +499,12 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
 
                     try
                     {
-                        var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+                        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
+
+                        var response = await _httpClient.SendAsync(requestMessage, linkedCts.Token);
                         var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                        var statusCode = (int)response.StatusCode;
 
                         if (response.IsSuccessStatusCode)
                         {
@@ -606,7 +538,7 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
                                                 _logger.LogInformation("Mô hình '{ModelName}' với API Key [{MaskedKey}] trích xuất thành công xuất sắc {Total} câu hỏi (vượt ngưỡng {MinThreshold})!", modelName, maskedKey, totalQ, minQuestionThreshold);
                                                 rawJsonText = textVal;
                                                 isSuccess = true;
-                                                break; // Thoát vòng lặp key
+                                                break; // Thành công, thoát vòng lặp model
                                             }
                                             else
                                             {
@@ -628,29 +560,34 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
                             continue;
                         }
 
-                        if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                        if (statusCode == 401 || statusCode == 403 || statusCode == 429)
                         {
-                            _logger.LogWarning("API Key [{MaskedKey}] chạm hạn mức (HTTP 429 Too Many Requests). Tự động fallback sang API Key dự phòng...", maskedKey);
+                            _logger.LogWarning("API Key [{MaskedKey}] gặp lỗi xác thực/hạn mức (HTTP {StatusCode}). Chuyển sang API Key dự phòng...", maskedKey, statusCode);
+                            keyInvalidOrQuotaExceeded = true;
+                            break; // Thoát vòng lặp model, thử key tiếp theo
+                        }
+                        else if (statusCode == 503 || statusCode == 500 || statusCode == 504 || statusCode == 404 || statusCode == 400)
+                        {
+                            _logger.LogWarning("Mô hình '{ModelName}' gặp lỗi máy chủ/yêu cầu (HTTP {StatusCode}). Chuyển ngay sang MODEL tiếp theo với cùng API key [{MaskedKey}]...",
+                                modelName, statusCode, maskedKey);
+                            continue; // Thử ngay model tiếp theo với cùng key
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Mô hình '{ModelName}' với Key [{MaskedKey}] trả về HTTP {StatusCode}. Thử lựa chọn kế tiếp...", modelName, maskedKey, statusCode);
                             continue;
                         }
-
-                        if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
-                        {
-                            _logger.LogWarning("Mô hình '{ModelName}' bị quá tải phía Google (HTTP 503 Service Unavailable). Thử key khác hoặc mô hình kế tiếp...", modelName);
-                            continue;
-                        }
-
-                        _logger.LogWarning("Mô hình '{ModelName}' với Key [{MaskedKey}] trả về HTTP {StatusCode}. Thử lựa chọn kế tiếp...", modelName, maskedKey, response.StatusCode);
+                    }
+                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        _logger.LogWarning("Mô hình '{ModelName}' với API Key [{MaskedKey}] bị timeout sau 45s. Chuyển ngay sang MODEL tiếp theo.", modelName, maskedKey);
+                        continue;
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
                         _logger.LogWarning(ex, "Lỗi kết nối tới '{ModelName}' bằng Key [{MaskedKey}]. Thử lựa chọn kế tiếp...", modelName, maskedKey);
+                        continue;
                     }
-                }
-
-                if (isSuccess)
-                {
-                    break; // Thoát vòng lặp model
                 }
             }
         }
@@ -697,7 +634,7 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
 
         parsedResult.TotalPages = maxPage;
 
-        _logger.LogInformation("Bóc tách đề thi '{FileName}' bằng Gemini thành công: {Passages} chùm câu hỏi, {Questions} câu hỏi đơn lẻ.",
+        _logger.LogInformation("Bóc tách đề thi '{FileName}' thành công qua MultiCloud AI: {Passages} chùm câu hỏi, {Questions} câu hỏi đơn lẻ.",
             fileName, parsedResult.TotalPassages, parsedResult.TotalSingleQuestions);
 
         // Tự động map ảnh gốc đã trích xuất cục bộ vào các câu hỏi và bài đọc
@@ -710,7 +647,7 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
     }
 
     /// <summary>
-    /// Bộ bóc tách dự phòng cục bộ (Local Fallback Parser) khi Gemini bị lỗi 503 hoặc quá tải
+    /// Bộ bóc tách dự phòng cục bộ (Local Fallback Parser) khi cả OpenAI và Gemini bị lỗi 503 hoặc quá tải
     /// </summary>
     private async Task<ParsedExamDto> RunLocalFallbackParserAsync(
         byte[] pdfBytes, 
@@ -881,3 +818,4 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
         return wwwroot;
     }
 }
+

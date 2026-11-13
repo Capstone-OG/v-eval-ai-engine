@@ -1,21 +1,38 @@
 # NHẬT KÝ CẬP NHẬT (UPDATE LOG) - AI ENGINE SERVICE
 
-## [06/11/2026] - Triển Khai Kiến Trúc 2 Luồng Phân Tách (Decoupled Dual-Track Architecture) & Ma Trận 5 Intent Cho Gia Sư Socratic
+## [13/11/2026] - Khảo Sát Live Ping Mô Hình Gemini, Tối Ưu Thứ Tự Ưu Tiên 503, Khử Trùng Lặp Dạng Bài & Nâng Cấp Chuẩn Hóa KaTeX/MathText
 
-- **Kiến Trúc 2 Luồng Phân Tách (Decoupled Dual-Track Architecture) ([`intent_router.py`](./rag-service/socratic/intent_router.py), [`socratic_tutor.py`](./rag-service/routers/socratic_tutor.py))**:
-  - **Triệt tiêu hoàn toàn ô nhiễm vector (Semantic Contamination)**: Track 1 (Task Grounding) chỉ embed duy nhất `question_latex + options` vào không gian pgvector của Knowledge Graph, cách ly 100% câu hỏi hội thoại tự do của học sinh (`student_query`), bảo đảm định vị chuẩn xác dạng bài và bẫy tư duy.
-  - **Định tuyến ý định động (Dynamic Intent & Tone Router - Track 2)**: Xây dựng module `socratic/intent_router.py` bóc tách tin nhắn học sinh thành Ma trận 5 tình huống sư phạm (C1: Persona/Chit-chat, C2: Thái độ + Bài toán, C3: Nghi ngờ tính hợp lệ đề bài, C4: Thắc mắc chuyên môn trong KG, C5: Đề bài ngoài hệ thống), nhận diện tâm trạng học sinh (`NEUTRAL`, `SKEPTICAL`, `FRUSTRATED`, `CURIOUS`) và mục tiêu dẫn dắt.
-  - **Thực thi song song (Concurrent Execution)**: `ask_socratic_json` và `ask_socratic_stream` thực thi song song Track 1 và Track 2 qua `asyncio.gather`. Bỏ qua vector search khi gặp lời chào C1 (0ms KG latency).
-- **Hệ Thống Prompt Sư Phạm Modular 2 Khối ([`socratic_engine.py`](./rag-service/socratic/socratic_engine.py))**:
-  - **Khối 1 (Persona Core)**: Giọng điệu người thầy thông thái, ấm áp, khiêm tốn, sắc sảo; xưng hô thầy - em; nghiêm cấm tự xưng chatbot/mô hình AI; tuân thủ nguyên tắc Socratic co-pilot (cấm giải thay, cấm đưa kết quả số cuối, cấm lộ đáp án đúng).
-  - **Khối 2 (Dynamic Case Injection)**: Tiêm chỉ thị chuyên biệt bám sát ma trận C1–C5, tâm trạng học sinh và nguồn tri thức Subgraph.
-  - **Safe Fallback Phân Hóa**: `build_fallback_guidance` trả về thông điệp cứu cánh sư phạm phù hợp theo từng Category khi gặp sự cố mạng.
-- **Hội Đồng Thẩm Định Thích Ứng (Adaptive LLM-as-a-Judge) ([`validator_judge.py`](./rag-service/socratic/validator_judge.py))**:
-  - Tiêu chí thẩm định linh hoạt theo Category: C1 kiểm tra tính thân thiện và kéo về việc học (không đòi hỏi định lý KG); C2/C3/C4 kiểm tra bám sát định lý và tính nhất quán đáp án đúng; C5 kiểm tra tính đúng đắn logic; mọi tình huống bắt buộc không lộ đáp án trực tiếp (`revealed_direct_answer == False`).
-- **Phát Sự Kiện Tiến Độ SSE (Status Hydration) ([`socratic_tutor.py`](./rag-service/routers/socratic_tutor.py))**:
-  - Bổ sung phát sự kiện `event: status` (`"Gia sư đang phân tích thắc mắc của bạn..."`) và `intent_category` trong `event: metadata` cho giao diện người dùng.
-- **Khắc Phục Quota Rate Limit 429 & Tối Ưu Client LLM Siêu Tốc ([`llm_clients.py`](./rag-service/socratic/llm_clients.py), [`.env`](./rag-service/.env))**:
-  - Nạp khóa API Google Gemini mới, cấu hình `HttpRetryOptions(attempts=1)` và `max_retries=1`, loại bỏ vòng lặp treo 25s Tenacity retry, ưu tiên `gemini-3.5-flash-lite` phản hồi toàn chu trình trong ~1.5 - 2.5s.
-- **Kiểm Thử & Nghiệm Thu**:
-  - 50/50 test cases đạt 100% trong `pytest` (`test_intent_router.py`, `test_socratic_engine.py`, `test_diagnostic.py`, `test_academic_graph.py`).
-  - Biên dịch .NET 9 Practice Service thành công sạch sẽ (0 Warning, 0 Error).
+- **Khảo Sát Thực Nghiệm Live Ping Toàn Diện Trên 4 API Keys**:
+  - Live ping 14 mô hình Gemini: `gemini-3.1-flash-lite` đạt **100% 200 OK trên cả 4 keys**, độ trễ siêu nhanh **~808ms - 882ms**, không dính lỗi 503 Spike hay Rate Limit.
+  - Tối ưu chuỗi ưu tiên trong `appsettings.json` ([`appsettings.json`](./V-Eval-Ai_Engine.API/appsettings.json)): `gemini-3.1-flash-lite` -> `gemini-flash-lite-latest` -> `gemini-3.5-flash` -> `gemini-3.6-flash`.
+  - Kết quả bóc tách PDF thực tế qua Gemini hoàn thành chỉ trong **9.09s**, tổng thời gian cấu trúc C# **12.39s**.
+
+- **Khử Trùng Lặp Dạng Bài (Deduplication) & Tự Động Đánh Số Thứ Tự Tuần Tự ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
+  - Loại bỏ hoàn toàn lỗi duplicate dạng bài (như hai thẻ `Dạng 4: Bài toán đốt cháy ester...` trong cùng bài học).
+  - Tự động gộp ngân hàng câu hỏi từ dạng bài trùng và xóa thẻ thừa.
+  - Đánh số tuần tự chuẩn xác: `Dạng 1: ...`, `Dạng 2: ...`, `Dạng 3: ...` cho toàn bộ bài học.
+
+- **Nâng Cấp Chuẩn Hóa KaTeX / LaTeX Backend ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
+  - Tự động khôi phục mã lệnh đơn vị rụng gạch chéo: `textmol`, `textgam`, `textg`, `textkg` -> `\text{mol}`, `\text{gam}`.
+  - Mở rộng nhận diện phương trình và toán tử liên kết: `\implies`, `>`, `<`, `\ge`, `\le`, `\approx`, `\equiv`, `\rightleftharpoons`, `\xrightarrow`.
+  - Khắc phục lỗi rách công thức trước suy luận (như `$n_{...} = 0,2$ textmol \implies $m_{...} = 17,6$ textgam`).
+  - Tự động bọc biến số đứng trước đơn vị đo: `([amVnxy])\s+(mol|gam|g|kg|lít|lit|ml)` -> `$1 $2`.
+  - Chuẩn hóa chỉ số dưới tiếng Việt cho hóa học: `k_{gốc}` -> `k_{\text{gốc}}`, `m_{dd}` -> `m_{\text{dd}}`.
+  - Kiểm thử `CurriculumLatexNormalizationTests` đạt **14/14 tests pass 100%**. Tổng số test AI Engine: **32/32 tests pass 100%**.
+
+- **Vận Hành Trực Tiếp Qua Terminal (Không Dùng Docker)**:
+  - Khởi chạy trực tiếp `V-Eval-Ai_Engine.API` bằng `dotnet run` trên cổng `http://localhost:5104`.
+
+- **Khắc Phục Lỗi KaTeX Còn Sót (Mũ `^`, Ngoặc Đơn, Chỉ Số Dưới Tiếng Việt) ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`MathText.jsx`](../V-Eval-Web_Client/src/components/common/MathText.jsx))**:
+  - `fullEqPattern` hỗ trợ số mũ (`2^2`, `3^{2}`) và ngoặc đơn (`\times (3 \times 40 - 92)`), không còn tách `2^$2`; ngoặc không cân bằng/bao trọn biểu thức được đưa ra ngoài `$...$`.
+  - Không còn can thiệp vào bên trong cặp `$...$` đã có; bước giải phóng văn bản tiếng Việt bỏ qua nội dung `_{...}` / `^{...}` nên `m_{chất béo}` không còn bị gỡ `$`.
+  - Thêm test hồi quy `Regression_NoBareOrBrokenMath` (8 ca từ ảnh lỗi thực tế); tổng **42/42 tests pass**.
+
+- **Khắc Phục Lỗi KaTeX Trần Do Web Client Gỡ `$` Nhầm (Lần 2)**:
+  - Nguyên nhân gốc: bộ phục hồi trong [`MathText.jsx`](../V-Eval-Web_Client/src/components/common/MathText.jsx) dò từ tiếng Việt (`chất`, `muối`...) ngay cả bên trong `\text{...}` và `_{...}`, nên gỡ `$` của các công thức hợp lệ như `$n_{\text{NaOH}} = 3 \times n_{\text{chất béo}}$`. Nay chỉ dò phần ngoài `\text{}`/`_{}`/`^{}`.
+  - Bộ nhận diện phương trình không còn nuốt xuống dòng kế tiếp (chỉ `[ \t]` giữa các vế); chỉ số dưới cho phép ngoặc đơn (`m_{muối (xà phòng)}`).
+  - Kiểm chứng JS bằng Node trên các ca ảnh lỗi và 49/49 unit tests C# pass.
+
+- **Bổ Sung Chặn `**/.env*` & `**/*.bak` Trong [`.gitignore`](./.gitignore)**:
+  - Đảm bảo toàn bộ file `.env` và `appsettings.json` chứa Gemini/OpenAI API keys của AI Engine và `rag-service` được chặn hoàn toàn khi `git add`.
+
