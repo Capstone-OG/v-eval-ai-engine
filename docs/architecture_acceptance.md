@@ -1102,3 +1102,30 @@
 - Root cause: `MathText.jsx` restore step tested Vietnamese words inside `\text{}`/`_{}` and stripped valid `$...$`. Now only text outside those groups is tested.
 - Equation matcher limited to `[ \t]` between terms (no cross-line capture); subscripts may contain parentheses.
 - Verification: Node run of `normalizeMathString` on screenshot cases; 49/49 C# tests passed.
+
+### 36. Pure Prompt Separation, Full 3D/2D MathLab Restoration, Zero-Hardcode Enforcement & Vision Timeout Optimization [14/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- **Components Impacted**:
+  - `CurriculumAiService.cs`
+  - `Templates/Prompts/CurriculumIngestion.prompt.txt`
+  - `Templates/Prompts/CurriculumDepthExamPatterns.prompt.txt`
+  - `Templates/Prompts/CurriculumDepthTheoryExtended.prompt.txt`
+  - `Templates/Prompts/PracticeQuestionAntiDuplication.prompt.txt`
+- **Key Architectural Deliverables**:
+  1. **Strict Prompt-Code Decoupling**:
+     - Extracted all remaining inline prompt directives (`depthDirective` and `antiDuplicationNote`) out of `CurriculumAiService.cs` into dedicated `.prompt.txt` templates rendered via `IPromptTemplateService`.
+  2. **Full Text-to-MathLab Reconstruction Restoration**:
+     - Restored comprehensive instructions and JSON schema exemplars for `[MATH_GRAPH_3D]` (7 spatial geometry types with `vertices`, `extraPoints`, `auxLines`), `[VARIATION_TABLE]` (polynomial and rational functions with `||` vertical asymptote markers), and `[MATH_GRAPH]` (2D interactive curves) inside `CurriculumIngestion.prompt.txt`.
+  3. **Absolute Zero-Hardcode Policy**:
+     - Completely removed `EnsureComprehensiveEsterLesson`, `EnsureComprehensiveEsterLipidLessons`, `EnrichPatternWithStandard`, and all hardcoded "Chương 1: Ester - Lipid" fallback injections (~800 lines removed). Failed extractions now surface a deterministic `InvalidOperationException` rather than returning synthetic curriculum data.
+  4. **Multimodal Vision Sampling & Timeout Tuning**:
+     - Reduced default sampled PDF vision pages from `8` to `5` (first page, evenly spaced middle pages, last page) rendered at `120 DPI`, `1024px` max dimension, and `JPEG quality 75`.
+     - Increased per-request Gemini timeout from `15s` to `120s` (`AiSettings:CurriculumRequestTimeoutSeconds`) so multi-lesson JSON generation with 3D geometry completes reliably without premature cancellation.
+  5. **MathLab Block Shielding (`[MATH_GRAPH_3D]`, `[MATH_GRAPH]`, `[VARIATION_TABLE]`, `[MATH_GEOMETRY_2D]`), Multi-Pattern Quality Gate & Prefix-Suffix Key Masking**:
+     - Implemented pre-normalization block shielding using lowercase-only placeholders (`@@mathlabblocka@@`) and automatic tag healing (`[$MATH_GRAPH_3D$]` -> `[MATH_GRAPH_3D]`) in `NormalizeCurriculumLatex` so equation and chemical formula regexes never wrap `MATH_GRAPH_3D`, `h=4`, `A-C`, or `S-O` in `$...$`.
+     - Fixed nested bold corruption on `**Phân tích & Lời giải:**` by anchoring orphaned trailing `:**` repair to line/bullet starts.
+     - Enforced **Zero Single-Pattern Contract** (`4-6+` patterns per lesson, `3-4` Bloom L1-L4 questions per pattern) in `CurriculumIngestion.prompt.txt`, `CurriculumDepthExamPatterns.prompt.txt`, and `CurriculumDepthTheoryExtended.prompt.txt`, coupled with a `MinPatternsThreshold = 3` quality gate (`bestPartialParsed` fallback) in `CurriculumAiService.cs`.
+     - Upgraded `MaskKey` across `CurriculumAiService`, `MultiCloudExamParserService`, and `PdfPigTextbookParserService` to log both first 6 and last 6 characters (`AQ.Ab8...SuxCw`) for unambiguous HTTP 401 key diagnostics.
+     - Synchronized `appsettings.Development.json` with active API keys and `gemini-3.1-flash-lite` priority, and suppressed `CA1416` platform analyzer warnings.
+  6. **Verification**:
+     - 51/51 unit tests in `V-Eval-Ai_Engine.Tests` passed with 0 warnings and 0 errors.

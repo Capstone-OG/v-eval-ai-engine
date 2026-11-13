@@ -210,8 +210,8 @@ public class MultiCloudExamParserService : IExamParserService
 
     private static string MaskKey(string key)
     {
-        if (string.IsNullOrEmpty(key) || key.Length <= 8) return "****";
-        return $"{key[..4]}...{key[^4..]}";
+        if (string.IsNullOrEmpty(key) || key.Length <= 10) return "****";
+        return $"{key[..6]}...{key[^6..]}";
     }
 
     public async Task<ParsedExamDto> ParsePdfAsync(Stream pdfStream, string fileName, CancellationToken cancellationToken = default)

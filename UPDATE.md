@@ -1,38 +1,19 @@
 # NHẬT KÝ CẬP NHẬT (UPDATE LOG) - AI ENGINE SERVICE
 
-## [13/11/2026] - Khảo Sát Live Ping Mô Hình Gemini, Tối Ưu Thứ Tự Ưu Tiên 503, Khử Trùng Lặp Dạng Bài & Nâng Cấp Chuẩn Hóa KaTeX/MathText
+## [14/11/2026] - Tách Bạch Hoàn Toàn Prompt Ra File `.prompt.txt` (Pure C# Code), Khôi Phục Bộ Chỉ Thị Hình Học 3D / BBT / Đồ Thị 2D, Bảo Vệ Khối `[MATH_GRAPH_3D]` & Tiêu Đề `**Phân tích & Lời giải:**`, Bắt Buộc Đa Dạng Bài (4-6+ Dạng/Bài), Log Đuôi API Key 401 & Triệt Tiêu 100% Hardcode
 
-- **Khảo Sát Thực Nghiệm Live Ping Toàn Diện Trên 4 API Keys**:
-  - Live ping 14 mô hình Gemini: `gemini-3.1-flash-lite` đạt **100% 200 OK trên cả 4 keys**, độ trễ siêu nhanh **~808ms - 882ms**, không dính lỗi 503 Spike hay Rate Limit.
-  - Tối ưu chuỗi ưu tiên trong `appsettings.json` ([`appsettings.json`](./V-Eval-Ai_Engine.API/appsettings.json)): `gemini-3.1-flash-lite` -> `gemini-flash-lite-latest` -> `gemini-3.5-flash` -> `gemini-3.6-flash`.
-  - Kết quả bóc tách PDF thực tế qua Gemini hoàn thành chỉ trong **9.09s**, tổng thời gian cấu trúc C# **12.39s**.
+- **Ràng Buộc Cứng Bóc Tách Đa Dạng Bài (4–6+ Dạng Bài / Bài Học) & Cổng Kiểm Định `MinPatternsThreshold` ([`CurriculumIngestion.prompt.txt`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt), [`CurriculumDepthExamPatterns.prompt.txt`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumDepthExamPatterns.prompt.txt), [`CurriculumDepthTheoryExtended.prompt.txt`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumDepthTheoryExtended.prompt.txt), [`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
+  - Khắc phục triệt để hiện tượng AI chỉ trả về 1 dạng bài đơn lẻ: bổ sung **Zero Single-Pattern Rule** bắt buộc phân rã tối thiểu **4 đến 6+ dạng bài (`patterns`)** cho mỗi bài học (kể cả khi tài liệu gốc là SGK trình bày theo mục `I, II, III...`), kèm 3–4 câu hỏi trắc nghiệm đủ 4 mức độ Bloom (`L1 -> L4`).
+  - Bổ sung cổng kiểm định `MinPatternsThreshold = 3` trong `CurriculumAiService.cs` (lưu tạm `bestPartialParsed` và tự động thử mô hình kế tiếp nếu mô hình đầu tiên trả về dưới 3 dạng bài) và nhận diện PDF mật độ chữ thưa (`< 150 ký tự/trang`) để kích hoạt Multimodal Vision AI.
 
-- **Khử Trùng Lặp Dạng Bài (Deduplication) & Tự Động Đánh Số Thứ Tự Tuần Tự ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
-  - Loại bỏ hoàn toàn lỗi duplicate dạng bài (như hai thẻ `Dạng 4: Bài toán đốt cháy ester...` trong cùng bài học).
-  - Tự động gộp ngân hàng câu hỏi từ dạng bài trùng và xóa thẻ thừa.
-  - Đánh số tuần tự chuẩn xác: `Dạng 1: ...`, `Dạng 2: ...`, `Dạng 3: ...` cho toàn bộ bài học.
+- **Bảo Vệ Tuyệt Đối Khối Hình Học 3D / Đồ Thị (`[MATH_GRAPH_3D]`, `[MATH_GRAPH]`, `[VARIATION_TABLE]`, `[MATH_GEOMETRY_2D]`) & Sửa Lỗi `Phân tích & Lời giải:**` ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`CurriculumLatexNormalizationTests.cs`](./V-Eval-Ai_Engine.Tests/Infrastructure/CurriculumLatexNormalizationTests.cs))**:
+  - Cô lập toàn bộ khối `[MATH_GRAPH_3D]...[/MATH_GRAPH_3D]`, `[MATH_GRAPH]...[/MATH_GRAPH]`, `[VARIATION_TABLE]...[/VARIATION_TABLE]`, `[MATH_GEOMETRY_2D]...[/MATH_GEOMETRY_2D]` bằng placeholder chữ thường `@@mathlabblocka@@` ngay đầu hàm `NormalizeCurriculumLatex`, đồng thời tự động chữa lành các thẻ đã bị chèn `$` từ trước.
+  - Sửa lỗi regex tiêu đề làm biến dạng `**Phân tích & Lời giải:**` thành `**Phân tích & **Lời giải:****`.
 
-- **Nâng Cấp Chuẩn Hóa KaTeX / LaTeX Backend ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
-  - Tự động khôi phục mã lệnh đơn vị rụng gạch chéo: `textmol`, `textgam`, `textg`, `textkg` -> `\text{mol}`, `\text{gam}`.
-  - Mở rộng nhận diện phương trình và toán tử liên kết: `\implies`, `>`, `<`, `\ge`, `\le`, `\approx`, `\equiv`, `\rightleftharpoons`, `\xrightarrow`.
-  - Khắc phục lỗi rách công thức trước suy luận (như `$n_{...} = 0,2$ textmol \implies $m_{...} = 17,6$ textgam`).
-  - Tự động bọc biến số đứng trước đơn vị đo: `([amVnxy])\s+(mol|gam|g|kg|lít|lit|ml)` -> `$1 $2`.
-  - Chuẩn hóa chỉ số dưới tiếng Việt cho hóa học: `k_{gốc}` -> `k_{\text{gốc}}`, `m_{dd}` -> `m_{\text{dd}}`.
-  - Kiểm thử `CurriculumLatexNormalizationTests` đạt **14/14 tests pass 100%**. Tổng số test AI Engine: **32/32 tests pass 100%**.
+- **Log Đầy Đủ Đầu + Đuôi API Key (`Prefix...Suffix`) & Đồng Bộ `appsettings.Development.json` ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`MultiCloudExamParserService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/MultiCloudExamParserService.cs), [`PdfPigTextbookParserService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs))**:
+  - Nâng cấp hàm `MaskKey` hiển thị 6 ký tự đầu và 6 ký tự cuối (`AQ.Ab8...SuxCw`, `AQ.Ab8...93kbA`) thay vì chỉ `AQ.Ab8RN...`, giúp xác định ngay lập tức key nào bị HTTP 401/429.
+  - Đồng bộ `appsettings.Development.json` sang 4 API keys mới và ưu tiên `gemini-3.1-flash-lite` số 1; tắt cảnh báo `CA1416` trong [`V-Eval-Ai_Engine.Infrastructure.csproj`](./V-Eval-Ai_Engine.Infrastructure/V-Eval-Ai_Engine.Infrastructure.csproj).
 
-- **Vận Hành Trực Tiếp Qua Terminal (Không Dùng Docker)**:
-  - Khởi chạy trực tiếp `V-Eval-Ai_Engine.API` bằng `dotnet run` trên cổng `http://localhost:5104`.
-
-- **Khắc Phục Lỗi KaTeX Còn Sót (Mũ `^`, Ngoặc Đơn, Chỉ Số Dưới Tiếng Việt) ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`MathText.jsx`](../V-Eval-Web_Client/src/components/common/MathText.jsx))**:
-  - `fullEqPattern` hỗ trợ số mũ (`2^2`, `3^{2}`) và ngoặc đơn (`\times (3 \times 40 - 92)`), không còn tách `2^$2`; ngoặc không cân bằng/bao trọn biểu thức được đưa ra ngoài `$...$`.
-  - Không còn can thiệp vào bên trong cặp `$...$` đã có; bước giải phóng văn bản tiếng Việt bỏ qua nội dung `_{...}` / `^{...}` nên `m_{chất béo}` không còn bị gỡ `$`.
-  - Thêm test hồi quy `Regression_NoBareOrBrokenMath` (8 ca từ ảnh lỗi thực tế); tổng **42/42 tests pass**.
-
-- **Khắc Phục Lỗi KaTeX Trần Do Web Client Gỡ `$` Nhầm (Lần 2)**:
-  - Nguyên nhân gốc: bộ phục hồi trong [`MathText.jsx`](../V-Eval-Web_Client/src/components/common/MathText.jsx) dò từ tiếng Việt (`chất`, `muối`...) ngay cả bên trong `\text{...}` và `_{...}`, nên gỡ `$` của các công thức hợp lệ như `$n_{\text{NaOH}} = 3 \times n_{\text{chất béo}}$`. Nay chỉ dò phần ngoài `\text{}`/`_{}`/`^{}`.
-  - Bộ nhận diện phương trình không còn nuốt xuống dòng kế tiếp (chỉ `[ \t]` giữa các vế); chỉ số dưới cho phép ngoặc đơn (`m_{muối (xà phòng)}`).
-  - Kiểm chứng JS bằng Node trên các ca ảnh lỗi và 49/49 unit tests C# pass.
-
-- **Bổ Sung Chặn `**/.env*` & `**/*.bak` Trong [`.gitignore`](./.gitignore)**:
-  - Đảm bảo toàn bộ file `.env` và `appsettings.json` chứa Gemini/OpenAI API keys của AI Engine và `rag-service` được chặn hoàn toàn khi `git add`.
-
+- **Tách Bạch Tuyệt Đối Prompt Ra File `.prompt.txt`, Khôi Phục Bộ Chỉ Thị Hình Học 3D/2D & Triệt Tiêu 100% Hardcode ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`Templates/Prompts/`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/))**:
+  - Di chuyển toàn bộ các chỉ thị sư phạm nội tuyến ra tệp `.prompt.txt` riêng biệt; khôi phục đầy đủ quy tắc **Text-to-MathLab Reconstruction**; xóa bỏ hoàn toàn ~800 dòng mã nguồn hardcode chuyên đề Ester - Lipid; nâng timeout gọi Gemini lên `120s` và giảm ảnh PDF đại diện xuống `5` trang (`120 DPI`, `1024px`, `JPEG 75`).
+  - Kiểm thử `dotnet test` đạt **51/51 unit tests pass 100% (0 warning, 0 error)**.

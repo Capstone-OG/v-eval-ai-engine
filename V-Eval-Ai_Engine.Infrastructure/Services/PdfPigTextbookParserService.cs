@@ -334,9 +334,10 @@ public class PdfPigTextbookParserService : ITextbookParserService
                         }
                         else
                         {
+                            string maskedKey = apiKey.Length > 10 ? $"{apiKey[..6]}...{apiKey[^6..]}" : "****";
                             string errBody = await response.Content.ReadAsStringAsync(cancellationToken);
-                            _logger.LogWarning("[Trang {PageNumber}] Gọi Gemini Model '{Model}' thất bại (HTTP {Status}): {Error}", 
-                                pageNumber, model, (int)response.StatusCode, errBody.Length > 250 ? errBody[..250] : errBody);
+                            _logger.LogWarning("[Trang {PageNumber}] Gọi Gemini Model '{Model}' với Key [{MaskedKey}] thất bại (HTTP {Status}): {Error}", 
+                                pageNumber, model, maskedKey, (int)response.StatusCode, errBody.Length > 250 ? errBody[..250] : errBody);
                         }
                     }
                     catch (Exception ex)

@@ -1,0 +1,12 @@
+YÊU CẦU BÓC TÁCH: CHẾ ĐỘ 2 - CHUYÊN LÝ THUYẾT THUẦN & DẠNG BÀI MỞ RỘNG (THEORY_EXTENDED DIRECTIVE):
+- Mục tiêu: Tối ưu cho Sách Giáo Khoa (SGK) và Tài liệu Chuyên đề sâu dày, nhiều kiến thức nền tảng và bài tập mở rộng.
+- NGUYÊN TẮC RÀNG BUỘC CỨNG VỀ SỐ LƯỢNG BÀI HỌC VÀ TỐI ĐA HÓA CÁC DẠNG BÀI (MANDATORY MULTI-PATTERN CONTRACT):
+  + Quét toàn bộ tài liệu '{{domainName}}' để nhận diện TẤT CẢ các Bài học riêng biệt trong chương theo đúng mục lục của tài liệu (tuyệt đối không gộp chung các bài học khác nhau).
+  + BẮT BUỘC MỖI BÀI HỌC PHẢI BÓC TÁCH TỐI THIỂU TỪ 4 ĐẾN 7+ DẠNG BÀI CỤ THỂ (`patterns`): từ Dạng 1, Dạng 2, Dạng 3, Dạng 4 đến Dạng 5, Dạng 6, Dạng 7...
+  + TUYỆT ĐỐI CẤM CHỈ TRẢ VỀ 1 HOẶC 2 DẠNG BÀI ĐƠN LẺ! Khi tài liệu SGK trình bày theo các mục lý thuyết (I, II, III, 1, 2, 3...), bạn BẮT BUỘC phải chuyển hóa từng mục kiến thức, định lý, tính chất và nhóm bài tập thành tối thiểu 4 đến 7 dạng bài học thuật hoàn chỉnh.
+- ĐẶC BIỆT 1 - LÝ THUYẾT NỀN TẢNG PHẢI ĐẦY ĐỦ VÀ SÂU SẮC NHẤT (`theoryRecap`):
+  + Trình bày 100% cơ sở lý thuyết, định nghĩa, định lý, công thức tổng quát, phân loại, tính chất đặc trưng và ví dụ minh họa SGK thực tế từ tài liệu.
+  + TUYỆT ĐỐI KHÔNG tóm tắt sơ sài vài dòng; cung cấp phần lý thuyết sâu sắc làm cẩm nang tra cứu trọn đời.
+- ĐẶC BIỆT 2 - PHƯƠNG PHÁP GIẢI & DẠNG BÀI MỞ RỘNG (`solutionMethod`):
+  + Nêu rõ dấu hiệu nhận biết, thuật toán giải từng bước, mở rộng các trường hợp đặc biệt, bài toán mẫu chi tiết có số liệu thật.
+- CÂU HỎI BÀI MẪU (`questions`): MỖI DẠNG BÀI BẮT BUỘC CÓ TỪ 3 ĐẾN 4 CÂU HỎI TRẮC NGHIỆM đại diện các cấp độ Bloom L1 -> L4 có phân tích phương án đúng và hướng dẫn giải từng bước.
