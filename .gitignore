@@ -6,10 +6,14 @@ obj/
 *.user
 *.suo
 
-# Ignore sensitive appsettings configuration files in production
+# Ignore sensitive appsettings & environment configuration files in production
 **/appsettings.json
 **/appsettings.*.json
 !**/appsettings.example.json
+**/.env
+**/.env.*
+!**/.env.example
+**/*.bak
 
 # Uploaded test and preview files
 **/wwwroot/uploads/**

@@ -45,6 +45,9 @@
   - Bộ nhận diện phương trình không còn nuốt xuống dòng kế tiếp (chỉ `[ \t]` giữa các vế); chỉ số dưới cho phép ngoặc đơn (`m_{muối (xà phòng)}`).
   - Kiểm chứng JS bằng Node trên các ca ảnh lỗi và 49/49 unit tests C# pass.
 
+- **Bổ Sung Chặn `**/.env*` & `**/*.bak` Trong [`.gitignore`](../.gitignore)**:
+  - Đảm bảo toàn bộ file `.env` và `appsettings.json` chứa Gemini/OpenAI API keys của AI Engine và `rag-service` được chặn hoàn toàn khi `git add`.
+
 
 ## [12/11/2026] - Chuẩn Hóa Cấu Trúc SGK 2 Bài Học & Đúng Đủ 7 Dạng Bài Ester - Lipid, Khắc Phục Triệt Để Toàn Bộ Lỗi KaTeX/LaTeX Hiển Thị & Bảo Hiểm Dữ Liệu Sư Phạm
 

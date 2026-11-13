@@ -32,3 +32,7 @@
   - Nguyên nhân gốc: bộ phục hồi trong [`MathText.jsx`](../V-Eval-Web_Client/src/components/common/MathText.jsx) dò từ tiếng Việt (`chất`, `muối`...) ngay cả bên trong `\text{...}` và `_{...}`, nên gỡ `$` của các công thức hợp lệ như `$n_{\text{NaOH}} = 3 \times n_{\text{chất béo}}$`. Nay chỉ dò phần ngoài `\text{}`/`_{}`/`^{}`.
   - Bộ nhận diện phương trình không còn nuốt xuống dòng kế tiếp (chỉ `[ \t]` giữa các vế); chỉ số dưới cho phép ngoặc đơn (`m_{muối (xà phòng)}`).
   - Kiểm chứng JS bằng Node trên các ca ảnh lỗi và 49/49 unit tests C# pass.
+
+- **Bổ Sung Chặn `**/.env*` & `**/*.bak` Trong [`.gitignore`](./.gitignore)**:
+  - Đảm bảo toàn bộ file `.env` và `appsettings.json` chứa Gemini/OpenAI API keys của AI Engine và `rag-service` được chặn hoàn toàn khi `git add`.
+
