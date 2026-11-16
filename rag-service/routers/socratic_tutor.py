@@ -56,6 +56,7 @@ class SocraticAskRequest(BaseModel):
     correct_option: str = Field(..., min_length=1, max_length=10, description="Ground truth correct option (e.g. 'A')")
     skill_id: Optional[UUID] = Field(default=None, description="Optional taxonomy skill UUID for search scoping")
     student_query: Optional[str] = Field(default=None, description="Optional conversational question/query sent by the student")
+    conversation_history: list[dict[str, Any]] = Field(default_factory=list, description="Recent conversation turns [{'role': 'student'|'tutor', 'text': '...'}]")
 
 
 class SocraticAskResponse(BaseModel):
@@ -194,6 +195,7 @@ async def _resolve_dual_track(
         question_latex=req.question_latex,
         student_query=req.student_query,
         student_selected_option=req.student_selected_option,
+        conversation_history=req.conversation_history,
     )
 
     if not has_task:
@@ -203,7 +205,7 @@ async def _resolve_dual_track(
 
     # Fast heuristic check: If student query is an obvious standalone greeting/persona check,
     # skip expensive vector retrieval immediately (0ms KG latency).
-    fast_decision = heuristic_route(req.question_latex, req.student_query)
+    fast_decision = heuristic_route(req.question_latex, req.student_query, conversation_history=req.conversation_history)
     if fast_decision.category == IntentCategory.C1:
         decision = fast_decision
         subgraph = SocraticSubgraph(status="GENERAL_CHAT")
@@ -220,6 +222,7 @@ async def _resolve_dual_track(
                 student_selected_option=req.student_selected_option,
                 correct_option=req.correct_option,
                 skill_id=str(req.skill_id) if req.skill_id else None,
+                question_id=str(req.question_id) if req.question_id else None,
             )
         except Exception as exc:
             logger.warning("Knowledge retrieval failed (%s). Using resilient LOW_CONFIDENCE subgraph.", exc)
@@ -256,6 +259,7 @@ async def ask_socratic_json(req: SocraticAskRequest) -> SocraticAskResponse:
         student_selected_option_text=selected_text,
         student_query=req.student_query,
         routing_decision=decision,
+        conversation_history=req.conversation_history,
     )
 
     val_status = "PASSED" if judge_result.is_passed else "OVERRIDDEN"
@@ -326,6 +330,7 @@ async def ask_socratic_stream(req: SocraticAskRequest) -> StreamingResponse:
                 student_selected_option_text=selected_text,
                 student_query=req.student_query,
                 routing_decision=decision,
+                conversation_history=req.conversation_history,
             ):
                 full_text_parts.append(chunk)
                 payload = {"type": "token", "token": chunk}

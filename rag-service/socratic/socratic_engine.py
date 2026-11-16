@@ -156,6 +156,7 @@ def build_socratic_prompts(
     student_selected_option_text: Optional[str] = None,
     student_query: Optional[str] = None,
     routing_decision: Optional[RoutingDecision] = None,
+    conversation_history: Optional[Sequence[Any]] = None,
 ) -> tuple[str, str]:
     """Construct pedagogically strict system and user messages based on the 5-Case routing matrix."""
     pattern_name = subgraph_payload["pattern_name"]
@@ -165,10 +166,23 @@ def build_socratic_prompts(
     socratic_hint = subgraph_payload["socratic_hint"]
 
     if routing_decision is None:
-        routing_decision = heuristic_route(question_latex, student_query)
+        routing_decision = heuristic_route(question_latex, student_query, conversation_history=conversation_history)
 
     category = routing_decision.category
     mood = routing_decision.student_mood.value
+
+    # Format multi-turn conversation history
+    history_formatted = ""
+    if conversation_history:
+        formatted_turns = []
+        for item in conversation_history:
+            if isinstance(item, dict):
+                role_label = "Học sinh" if item.get("role") in ("student", "user") else "Thầy"
+                text_content = (item.get("text") or "").strip()
+                if text_content:
+                    formatted_turns.append(f"- {role_label}: {text_content}")
+        if formatted_turns:
+            history_formatted = "\n[LỊCH SỬ TRAO ĐỔI VỪA RỒI CỦA 2 THẦY TRÒ]:\n" + "\n".join(formatted_turns[-6:]) + "\n"
 
     # Options formatting
     options_formatted = ""
@@ -223,6 +237,7 @@ Mục tiêu sư phạm:
 {question_latex}{options_formatted}
 
 - Phương án học sinh đã chọn (sai): {student_choice_desc}
+{history_formatted}
 - Lời nhắn của học sinh: "{student_query}"
 
 Hãy giải tỏa thái độ của học sinh với giọng điệu khiêm tốn, đồng thời vận dụng phương pháp gợi mở Socratic để giúp học sinh tự nhận ra lỗ hổng trong phương án {student_choice_desc}."""
@@ -306,12 +321,12 @@ Nhiệm vụ tối thượng của bạn là DẪN DẮT GỢI MỞ THEO PHƯƠN
 
 - Phương án học sinh đã chọn (sai): {student_choice_desc}
 - Đáp án đúng của hệ thống: {correct_option}
-
+{history_formatted}
 Học sinh vừa hỏi / thắc mắc trong cuộc trò chuyện:
 "{student_query.strip()}"
 
-Thầy/Cô hãy đóng vai Gia sư AI Socratic, phản hồi trực tiếp câu hỏi/thắc mắc trên của học sinh theo nguyên tắc gợi mở sư phạm:
-1. Giải thích tự nhiên, ngắn gọn điểm mấu chốt học sinh đang băn khoăn.
+Thầy/Cô hãy đóng vai Gia sư AI Socratic, bám sát toàn bộ mạch đàm thoại trên để phản hồi trực tiếp thắc mắc mới nhất của học sinh:
+1. Giải thích tự nhiên, ngắn gọn điểm mấu chốt học sinh đang băn khoăn (nếu học sinh xin ví dụ, hãy lấy ngay ví dụ minh họa trực quan gắn liền với dữ kiện/hình học của bài toán hoặc kiến thức đang xét).
 2. TUYỆT ĐỐI KHÔNG giải thay trọn vẹn, không đưa ra đáp án cuối cùng.
 3. Đặt duy nhất 1 câu hỏi dẫn dắt để học sinh tự suy nghĩ và tìm ra lời giải."""
     else:
@@ -385,41 +400,7 @@ def build_fallback_guidance(
             f"👉 *Câu hỏi gợi mở:* Giả thiết bài toán đang cho em những dữ kiện nào, và công thức nào liên hệ trực tiếp giữa các đại lượng đó?"
         )
 
-    # 5. Fallback for C4: Check topic-specific overrides first
-    q_lower = (question_latex or "").lower()
-    if r"p \Rightarrow q" in q_lower or "p => q" in q_lower or "q => r" in q_lower or "kéo theo" in q_lower or "mệnh đề" in q_lower or "bảng chân trị" in q_lower or "logic" in q_lower:
-        return (
-            "💡 **Gợi ý phương pháp giải Socratic (Toán logic mệnh đề & suy luận kéo theo):**\n\n"
-            f"- **Phân tích lựa chọn:** Em đang chọn {choice_label} cho mệnh đề kéo theo $P \\Rightarrow Q$.\n"
-            "- **Kiến thức trọng tâm:** Bảng chân trị mệnh đề kéo theo $P \\Rightarrow Q$ chỉ nhận giá trị **Sai** duy nhất khi $P$ Đúng và $Q$ Sai ($1 \\Rightarrow 0 = 0$). Trong mọi trường hợp khác, mệnh đề kéo theo luôn Đúng.\n"
-            "- **Lưu ý bẫy thường gặp:** Nhiều bạn lầm tưởng khi $Q$ sai thì $P$ có thể nhận bất kỳ giá trị nào, quên mất rằng nếu $P$ đúng thì $P \\Rightarrow Q$ sẽ bị sai mâu thuẫn giả thiết.\n\n"
-            "👉 *Câu hỏi gợi mở:* Giả thiết cho biết $P \\Rightarrow Q$ là Đúng và $Q$ là Sai. Nếu $P$ là Đúng thì mệnh đề $P \\Rightarrow Q$ sẽ mang giá trị Đúng hay Sai?\n"
-        )
-    elif "cấp số cộng" in q_lower or "công sai" in q_lower or "u_n" in q_lower:
-        return (
-            "💡 **Gợi ý phương pháp giải Socratic (Dãy số & Cấp số cộng):**\n\n"
-            f"- **Phân tích lựa chọn:** Em đang chọn {choice_label}.\n"
-            "- **Kiến thức trọng tâm:** Số hạng tổng quát của cấp số cộng $(u_n)$ là $u_n = u_1 + (n - 1)d$.\n"
-            "- **Lưu ý bẫy thường gặp:** Sai lầm phổ biến là quên trừ 1 ở chỉ số (lấy $u_1 + n \\times d$ thay vì $(n-1)d$).\n\n"
-            "👉 *Câu hỏi gợi mở:* Giữa số hạng đầu $u_1$ và số hạng thứ $n$, có bao nhiêu khoảng cách công sai $d$?\n"
-        )
-    elif r"log" in q_lower or "tập xác định" in q_lower:
-        return (
-            "💡 **Gợi ý phương pháp giải Socratic (Hàm số Lũy thừa, Mũ & Logarit):**\n\n"
-            f"- **Phân tích lựa chọn:** Em đang chọn {choice_label}.\n"
-            "- **Kiến thức trọng tâm:** Biểu thức $\\log_a f(x)$ xác định khi và chỉ khi $f(x) > 0$ nghiêm ngặt và cơ số $0 < a \\neq 1$.\n"
-            "- **Lưu ý bẫy thường gặp:** Nhầm dấu bất phương trình hoặc lấy nhầm khoảng nghiệm của tam thức bậc hai.\n\n"
-            "👉 *Câu hỏi gợi mở:* Khi giải bất phương trình $f(x) > 0$, khoảng nghiệm của tam thức bậc hai nằm ở phía trong hay phía ngoài hai nghiệm?\n"
-        )
-    elif "chính tả" in q_lower or "xán lạn" in q_lower or "sáng lạng" in q_lower:
-        return (
-            "💡 **Gợi ý phương pháp giải Socratic (Chính tả Tiếng Việt):**\n\n"
-            f"- **Phân tích lựa chọn:** Em đang chọn {choice_label}.\n"
-            "- **Kiến thức trọng tâm:** Từ Hán Việt chuẩn 'Xán lạn' (chữ 'xán' là rực rỡ, 'lạn' là sáng sủa, viết x-l). Trong từ điển tiếng Việt chuẩn không có từ 'sáng lạng'.\n"
-            "- **Lưu ý bẫy thường gặp:** Lỗi đồng hóa ngữ âm với từ thuần Việt 'sáng sủa'.\n\n"
-            "👉 *Câu hỏi gợi mở:* Trong từ điển chính tả tiếng Việt, từ chỉ tương lai rực rỡ bắt đầu bằng âm 'x' hay 's'?\n"
-        )
-
+    # 5. Fallback for C4 / Task-oriented assistance
     # If conversational open question without wrong option selection
     if student_query and (not options or not sel or sel in ("NONE", "NULL")):
         return (
@@ -428,11 +409,14 @@ def build_fallback_guidance(
             f"👉 *Câu hỏi gợi mở:* {socratic_hint or 'Em hãy chia sẻ cụ thể bước làm hoặc hướng suy nghĩ hiện tại của mình để thầy cùng em gỡ rối nhé!'}"
         )
 
+    misconception_part = f"\n\n- **Lưu ý bẫy thường gặp:**\n{misconception}" if misconception else ""
+    hint_part = socratic_hint if socratic_hint else f"Em hãy kiểm tra lại điều kiện biên và mối liên hệ giữa các giả thiết với {choice_label}."
+
     return (
         f"💡 **Gợi ý phương pháp giải chuẩn ({pattern_name}):**\n\n"
-        f"- **Kiến thức trọng tâm:**\n{core_theorems}\n\n"
-        f"- **Lưu ý bẫy thường gặp:**\n{misconception}\n\n"
-        f"👉 *Câu hỏi gợi mở:* {socratic_hint}\n"
+        f"- **Kiến thức trọng tâm:**\n{core_theorems}"
+        f"{misconception_part}\n\n"
+        f"👉 *Câu hỏi gợi mở:* {hint_part}\n"
     )
 
 
@@ -472,6 +456,7 @@ async def generate_socratic_guidance(
         student_selected_option_text=student_selected_option_text,
         student_query=student_query,
         routing_decision=routing_decision,
+        conversation_history=conversation_history,
     )
 
     # 1. Generate draft response with dynamic model fallback and reasonable timeout
@@ -488,7 +473,7 @@ async def generate_socratic_guidance(
                     SystemMessage(content=system_prompt),
                     HumanMessage(content=user_message),
                 ]),
-                timeout=8.0,
+                timeout=18.0,
             )
             content_raw = draft.content
             if isinstance(content_raw, list):

@@ -1129,3 +1129,46 @@
      - Synchronized `appsettings.Development.json` with active API keys and `gemini-3.1-flash-lite` priority, and suppressed `CA1416` platform analyzer warnings.
   6. **Verification**:
      - 51/51 unit tests in `V-Eval-Ai_Engine.Tests` passed with 0 warnings and 0 errors.
+
+### 37. Socratic AI Tutor Multi-Turn Conversational Memory & Intent Heuristic Routing Acceptance [16/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- **Components Impacted**:
+  - `rag-service/routers/socratic_tutor.py`
+  - `rag-service/socratic/socratic_engine.py`
+  - `rag-service/socratic/intent_router.py`
+- **Key Architectural Deliverables**:
+  1. **Multi-Turn Conversation Ingestion & Prompt Injection**:
+     - Extended `SocraticAskRequest` schema with `conversation_history: list[dict[str, Any]] = Field(default_factory=list)`.
+     - In `build_socratic_prompts`, transformed recent dialogue turns into structured markdown context (`[LỊCH SỬ TRAO ĐỔI VỪA RỒI CỦA 2 THẦY TRÒ]`) and injected them into the student prompt block for Case C4 and Case C2.
+     - Preserves full conversational continuity across multi-turn interactions (e.g. geometric proofs on pyramid $S.ABC$), preventing the model from hallucinating amnesic greetings when students ask follow-up questions like *"thầy đưa em ví dụ minh họa với"*.
+  2. **Context-Aware Intent Routing & Misclassification Prevention**:
+     - Expanded `_TASK_MARKERS` in `intent_router.py` with follow-up triggers: `"ví dụ"`, `"vi du"`, `"minh họa"`, `"minh hoa"`, `"làm sao"`, `"như thế nào"`, `"giải thích"`, `"hướng dẫn"`, `"thầy ơi"`, `"thầy chỉ"`, `"tiếp theo"`, `"cụ thể"`, `"chi tiết"`, `"là sao"`.
+     - Updated `heuristic_route` and `_resolve_dual_track` to evaluate conversation history and active task contexts, guaranteeing queries in an active problem session never get misrouted to Case C1 (Chit-chat / Persona Greeting).
+  3. **Resilient LLM Invocation Timeout Extension**:
+     - Raised draft generation timeout from `8.0s` to `18.0s` in `socratic_engine.py`, accommodating real-world API latency and eliminating false-positive fallbacks during brief network spikes.
+  4. **Verification**:
+     - Executed test suite via `pytest tests -k "socratic"` with 18/18 tests passing 100%.
+
+### 38. Zero-Hardcode Federated Curriculum Material Retrieval & Dynamic Socratic Grounding [16/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- **Components Impacted**:
+  - `rag-service/graph/hybrid_retriever.py`
+  - `rag-service/routers/socratic_tutor.py`
+  - `rag-service/socratic/socratic_engine.py`
+  - `rag-service/socratic/validator_judge.py`
+- **Key Architectural Deliverables**:
+  1. **Dynamic Federated Curriculum Material Retrieval via Relational Database**:
+     - Resolved the critical flaw where questions were disconnected from textbook lesson materials (`v_eval_content."Materials"`).
+     - Implemented `_fetch_material_from_content(cur, question_id, skill_id)` in `HybridGraphRetriever`. When `question_id` is supplied, dynamically joins `v_eval_content."Questions"` with `v_eval_content."Materials"` on foreign key `skill_id`.
+     - Automatically constructs a grounded `ArchetypeNode` (`scope="CURRICULUM_MATERIAL"`, `similarity=0.98`) carrying the official textbook lesson, standard theorem formulations, and golden solution exemplar steps.
+  2. **Elimination of Keyword Overrides and Stopword Matching Flaws**:
+     - Removed the legacy static keyword map (`keywords_map`) and single-word splitting loop (`for w in name.split(): if len(w) >= 3 ... score += 0.15`), which previously caused 3D geometry questions containing the common Vietnamese preposition *"của"* to falsely score $0.85$ and attach to *"Tính đơn điệu của hàm số"*.
+     - Questions not covered by textbook materials fall back strictly to pgvector semantic cosine similarity; if $< 0.75$, the retriever fails closed safely to `STATUS_LOW_CONFIDENCE` without hallucinating unrelated topics.
+  3. **Universal Zero-Hardcode Fallback Generation**:
+     - Removed all hardcoded `if/elif` topic branches ($P \Rightarrow Q$, arithmetic progression, logarithms, orthography) in `build_fallback_guidance`.
+     - Dynamically renders guidance from the retrieved lesson theorems (`core_theorems`), or produces an objective, domain-agnostic Socratic reflection guiding the student back to problem constraints.
+  4. **Adaptive LLM Judge Grounding**:
+     - Reconfirmed `validator_judge.py` criteria: when `grounded=False` or `LOW_CONFIDENCE`, the pedagogical judge evaluates purely on mathematical/logical correctness (`CRITERION_LOGIC`) and ground truth consistency (`CRITERION_GROUND_TRUTH`) without penalizing valid multi-step reasoning against ungrounded external theorems.
+  5. **Verification**:
+     - Verified end-to-end with 3D Spatial Geometry Question `4e59df20-e11b-4d14-ab8f-0ac4cb734d0b` (pyramid $S.ABCD$, plane intersection $(SAC) \cap (SBD) = SO$): retrieved 100% accurate textbook lesson and golden solution.
+     - Automated test suite: `pytest tests/test_hybrid_retriever.py tests/test_socratic_engine.py tests/test_socratic_mentor.py` passed 26/26 tests (100%).
