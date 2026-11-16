@@ -13,8 +13,8 @@ public static class DependencyInjection
         int examTimeoutMinutes = configuration.GetValue<int>("AiSettings:ExamParserTimeoutMinutes", 8);
         int textbookTimeoutMinutes = configuration.GetValue<int>("AiSettings:TextbookParserTimeoutMinutes", 10);
 
-        // Đăng ký HttpClient cho Gemini Parser với timeout cấu hình linh hoạt từ appsettings
-        services.AddHttpClient<IExamParserService, GeminiExamParserService>(client =>
+        // Đăng ký HttpClient cho MultiCloud Parser với timeout cấu hình linh hoạt từ appsettings
+        services.AddHttpClient<IExamParserService, MultiCloudExamParserService>(client =>
         {
             client.Timeout = TimeSpan.FromMinutes(examTimeoutMinutes);
         });
@@ -31,6 +31,9 @@ public static class DependencyInjection
 
         // Đăng ký Vector Database Service cho RAG
         services.AddSingleton<IVectorDbService, QdrantVectorDbService>();
+
+        // Đăng ký dịch vụ Prompt Template Engine nạp prompt từ file độc lập
+        services.AddSingleton<IPromptTemplateService, PromptTemplateService>();
 
         // Đăng ký Socratic AI Tutor Service
         services.AddScoped<ISocraticTutorService, SocraticTutorService>();

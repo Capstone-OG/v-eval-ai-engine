@@ -1,21 +1,19 @@
 # NHẬT KÝ CẬP NHẬT (UPDATE LOG) - AI ENGINE SERVICE
 
-## [06/11/2026] - Triển Khai Kiến Trúc 2 Luồng Phân Tách (Decoupled Dual-Track Architecture) & Ma Trận 5 Intent Cho Gia Sư Socratic
+## [14/11/2026] - Tách Bạch Hoàn Toàn Prompt Ra File `.prompt.txt` (Pure C# Code), Khôi Phục Bộ Chỉ Thị Hình Học 3D / BBT / Đồ Thị 2D, Bảo Vệ Khối `[MATH_GRAPH_3D]` & Tiêu Đề `**Phân tích & Lời giải:**`, Bắt Buộc Đa Dạng Bài (4-6+ Dạng/Bài), Log Đuôi API Key 401 & Triệt Tiêu 100% Hardcode
 
-- **Kiến Trúc 2 Luồng Phân Tách (Decoupled Dual-Track Architecture) ([`intent_router.py`](./rag-service/socratic/intent_router.py), [`socratic_tutor.py`](./rag-service/routers/socratic_tutor.py))**:
-  - **Triệt tiêu hoàn toàn ô nhiễm vector (Semantic Contamination)**: Track 1 (Task Grounding) chỉ embed duy nhất `question_latex + options` vào không gian pgvector của Knowledge Graph, cách ly 100% câu hỏi hội thoại tự do của học sinh (`student_query`), bảo đảm định vị chuẩn xác dạng bài và bẫy tư duy.
-  - **Định tuyến ý định động (Dynamic Intent & Tone Router - Track 2)**: Xây dựng module `socratic/intent_router.py` bóc tách tin nhắn học sinh thành Ma trận 5 tình huống sư phạm (C1: Persona/Chit-chat, C2: Thái độ + Bài toán, C3: Nghi ngờ tính hợp lệ đề bài, C4: Thắc mắc chuyên môn trong KG, C5: Đề bài ngoài hệ thống), nhận diện tâm trạng học sinh (`NEUTRAL`, `SKEPTICAL`, `FRUSTRATED`, `CURIOUS`) và mục tiêu dẫn dắt.
-  - **Thực thi song song (Concurrent Execution)**: `ask_socratic_json` và `ask_socratic_stream` thực thi song song Track 1 và Track 2 qua `asyncio.gather`. Bỏ qua vector search khi gặp lời chào C1 (0ms KG latency).
-- **Hệ Thống Prompt Sư Phạm Modular 2 Khối ([`socratic_engine.py`](./rag-service/socratic/socratic_engine.py))**:
-  - **Khối 1 (Persona Core)**: Giọng điệu người thầy thông thái, ấm áp, khiêm tốn, sắc sảo; xưng hô thầy - em; nghiêm cấm tự xưng chatbot/mô hình AI; tuân thủ nguyên tắc Socratic co-pilot (cấm giải thay, cấm đưa kết quả số cuối, cấm lộ đáp án đúng).
-  - **Khối 2 (Dynamic Case Injection)**: Tiêm chỉ thị chuyên biệt bám sát ma trận C1–C5, tâm trạng học sinh và nguồn tri thức Subgraph.
-  - **Safe Fallback Phân Hóa**: `build_fallback_guidance` trả về thông điệp cứu cánh sư phạm phù hợp theo từng Category khi gặp sự cố mạng.
-- **Hội Đồng Thẩm Định Thích Ứng (Adaptive LLM-as-a-Judge) ([`validator_judge.py`](./rag-service/socratic/validator_judge.py))**:
-  - Tiêu chí thẩm định linh hoạt theo Category: C1 kiểm tra tính thân thiện và kéo về việc học (không đòi hỏi định lý KG); C2/C3/C4 kiểm tra bám sát định lý và tính nhất quán đáp án đúng; C5 kiểm tra tính đúng đắn logic; mọi tình huống bắt buộc không lộ đáp án trực tiếp (`revealed_direct_answer == False`).
-- **Phát Sự Kiện Tiến Độ SSE (Status Hydration) ([`socratic_tutor.py`](./rag-service/routers/socratic_tutor.py))**:
-  - Bổ sung phát sự kiện `event: status` (`"Gia sư đang phân tích thắc mắc của bạn..."`) và `intent_category` trong `event: metadata` cho giao diện người dùng.
-- **Khắc Phục Quota Rate Limit 429 & Tối Ưu Client LLM Siêu Tốc ([`llm_clients.py`](./rag-service/socratic/llm_clients.py), [`.env`](./rag-service/.env))**:
-  - Nạp khóa API Google Gemini mới, cấu hình `HttpRetryOptions(attempts=1)` và `max_retries=1`, loại bỏ vòng lặp treo 25s Tenacity retry, ưu tiên `gemini-3.5-flash-lite` phản hồi toàn chu trình trong ~1.5 - 2.5s.
-- **Kiểm Thử & Nghiệm Thu**:
-  - 50/50 test cases đạt 100% trong `pytest` (`test_intent_router.py`, `test_socratic_engine.py`, `test_diagnostic.py`, `test_academic_graph.py`).
-  - Biên dịch .NET 9 Practice Service thành công sạch sẽ (0 Warning, 0 Error).
+- **Ràng Buộc Cứng Bóc Tách Đa Dạng Bài (4–6+ Dạng Bài / Bài Học) & Cổng Kiểm Định `MinPatternsThreshold` ([`CurriculumIngestion.prompt.txt`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt), [`CurriculumDepthExamPatterns.prompt.txt`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumDepthExamPatterns.prompt.txt), [`CurriculumDepthTheoryExtended.prompt.txt`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumDepthTheoryExtended.prompt.txt), [`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
+  - Khắc phục triệt để hiện tượng AI chỉ trả về 1 dạng bài đơn lẻ: bổ sung **Zero Single-Pattern Rule** bắt buộc phân rã tối thiểu **4 đến 6+ dạng bài (`patterns`)** cho mỗi bài học (kể cả khi tài liệu gốc là SGK trình bày theo mục `I, II, III...`), kèm 3–4 câu hỏi trắc nghiệm đủ 4 mức độ Bloom (`L1 -> L4`).
+  - Bổ sung cổng kiểm định `MinPatternsThreshold = 3` trong `CurriculumAiService.cs` (lưu tạm `bestPartialParsed` và tự động thử mô hình kế tiếp nếu mô hình đầu tiên trả về dưới 3 dạng bài) và nhận diện PDF mật độ chữ thưa (`< 150 ký tự/trang`) để kích hoạt Multimodal Vision AI.
+
+- **Bảo Vệ Tuyệt Đối Khối Hình Học 3D / Đồ Thị (`[MATH_GRAPH_3D]`, `[MATH_GRAPH]`, `[VARIATION_TABLE]`, `[MATH_GEOMETRY_2D]`) & Sửa Lỗi `Phân tích & Lời giải:**` ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`CurriculumLatexNormalizationTests.cs`](./V-Eval-Ai_Engine.Tests/Infrastructure/CurriculumLatexNormalizationTests.cs))**:
+  - Cô lập toàn bộ khối `[MATH_GRAPH_3D]...[/MATH_GRAPH_3D]`, `[MATH_GRAPH]...[/MATH_GRAPH]`, `[VARIATION_TABLE]...[/VARIATION_TABLE]`, `[MATH_GEOMETRY_2D]...[/MATH_GEOMETRY_2D]` bằng placeholder chữ thường `@@mathlabblocka@@` ngay đầu hàm `NormalizeCurriculumLatex`, đồng thời tự động chữa lành các thẻ đã bị chèn `$` từ trước.
+  - Sửa lỗi regex tiêu đề làm biến dạng `**Phân tích & Lời giải:**` thành `**Phân tích & **Lời giải:****`.
+
+- **Log Đầy Đủ Đầu + Đuôi API Key (`Prefix...Suffix`) & Đồng Bộ `appsettings.Development.json` ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`MultiCloudExamParserService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/MultiCloudExamParserService.cs), [`PdfPigTextbookParserService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs))**:
+  - Nâng cấp hàm `MaskKey` hiển thị 6 ký tự đầu và 6 ký tự cuối (`AQ.Ab8...SuxCw`, `AQ.Ab8...93kbA`) thay vì chỉ `AQ.Ab8RN...`, giúp xác định ngay lập tức key nào bị HTTP 401/429.
+  - Đồng bộ `appsettings.Development.json` sang 4 API keys mới và ưu tiên `gemini-3.1-flash-lite` số 1; tắt cảnh báo `CA1416` trong [`V-Eval-Ai_Engine.Infrastructure.csproj`](./V-Eval-Ai_Engine.Infrastructure/V-Eval-Ai_Engine.Infrastructure.csproj).
+
+- **Tách Bạch Tuyệt Đối Prompt Ra File `.prompt.txt`, Khôi Phục Bộ Chỉ Thị Hình Học 3D/2D & Triệt Tiêu 100% Hardcode ([`CurriculumAiService.cs`](./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`Templates/Prompts/`](./V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/))**:
+  - Di chuyển toàn bộ các chỉ thị sư phạm nội tuyến ra tệp `.prompt.txt` riêng biệt; khôi phục đầy đủ quy tắc **Text-to-MathLab Reconstruction**; xóa bỏ hoàn toàn ~800 dòng mã nguồn hardcode chuyên đề Ester - Lipid; nâng timeout gọi Gemini lên `120s` và giảm ảnh PDF đại diện xuống `5` trang (`120 DPI`, `1024px`, `JPEG 75`).
+  - Kiểm thử `dotnet test` đạt **51/51 unit tests pass 100% (0 warning, 0 error)**.

@@ -28,6 +28,7 @@ public static class CurriculumEndpoints
                 int? startPage = null;
                 int? endPage = null;
                 string extractionDepth = "deep";
+                string ocrMode = "STEM_FORMULAS";
 
                 if (httpRequest.HasFormContentType)
                 {
@@ -68,6 +69,11 @@ public static class CurriculumEndpoints
                     {
                         if (!string.IsNullOrWhiteSpace(ed)) extractionDepth = ed.ToString();
                     }
+
+                    if (form.TryGetValue("ocrMode", out var formOcrMode) || form.TryGetValue("ocr_mode", out formOcrMode))
+                    {
+                        if (!string.IsNullOrWhiteSpace(formOcrMode)) ocrMode = formOcrMode.ToString();
+                    }
                 }
                 else if (httpRequest.ContentType?.Contains("application/json") == true)
                 {
@@ -80,6 +86,7 @@ public static class CurriculumEndpoints
                         if (jsonBody.StartPage.HasValue) startPage = jsonBody.StartPage;
                         if (jsonBody.EndPage.HasValue) endPage = jsonBody.EndPage;
                         if (!string.IsNullOrWhiteSpace(jsonBody.ExtractionDepth)) extractionDepth = jsonBody.ExtractionDepth;
+                        if (!string.IsNullOrWhiteSpace(jsonBody.OcrMode)) ocrMode = jsonBody.OcrMode;
                     }
                 }
 
@@ -94,7 +101,7 @@ public static class CurriculumEndpoints
 
                 using (fileStream)
                 {
-                    var result = await curriculumAiService.ExtractCurriculumAsync(fileStream, fileName, domainId, domainName, textContent, startPage, endPage, extractionDepth, cancellationToken);
+                    var result = await curriculumAiService.ExtractCurriculumAsync(fileStream, fileName, domainId, domainName, textContent, startPage, endPage, extractionDepth, ocrMode, cancellationToken);
                     return Results.Ok(result);
                 }
             }
@@ -172,6 +179,39 @@ public static class CurriculumEndpoints
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status500InternalServerError);
 
+        // 4. Endpoint phục vụ giao diện bóc tách chuyên đề & xem trước 4 khối Sư phạm (view-curriculum.html)
+        app.MapGet("/api/ai-engine/view-curriculum", async (IWebHostEnvironment env) =>
+        {
+            string webRoot = env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            string filePath = Path.Combine(webRoot, "view-curriculum.html");
+
+            if (File.Exists(filePath))
+            {
+                string htmlContent = await File.ReadAllTextAsync(filePath, Encoding.UTF8);
+                return Results.Content(htmlContent, "text/html; charset=utf-8");
+            }
+
+            return Results.NotFound(new { message = "Không tìm thấy file view-curriculum.html trong wwwroot." });
+        })
+        .WithName("ViewCurriculumStudioPage")
+        .ExcludeFromDescription();
+
+        group.MapGet("/view", async (IWebHostEnvironment env) =>
+        {
+            string webRoot = env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            string filePath = Path.Combine(webRoot, "view-curriculum.html");
+
+            if (File.Exists(filePath))
+            {
+                string htmlContent = await File.ReadAllTextAsync(filePath, Encoding.UTF8);
+                return Results.Content(htmlContent, "text/html; charset=utf-8");
+            }
+
+            return Results.NotFound(new { message = "Không tìm thấy file view-curriculum.html trong wwwroot." });
+        })
+        .WithName("ViewCurriculumStudioGroupPage")
+        .ExcludeFromDescription();
+
         return app;
     }
 }
@@ -213,4 +253,10 @@ public class CurriculumExtractTextPayload
 
     [System.Text.Json.Serialization.JsonPropertyName("extraction_depth")]
     public string? ExtractionDepthSnake { set { if (!string.IsNullOrWhiteSpace(value)) ExtractionDepth = value; } }
+
+    [System.Text.Json.Serialization.JsonPropertyName("ocrMode")]
+    public string? OcrMode { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("ocr_mode")]
+    public string? OcrModeSnake { set { if (!string.IsNullOrWhiteSpace(value)) OcrMode = value; } }
 }

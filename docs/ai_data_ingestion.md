@@ -80,7 +80,7 @@ sequenceDiagram
 ## 3. Cơ chế Cứu Cánh Dự Phòng (Local Fallback Parser)
 
 Để đảm bảo hệ thống luôn sẵn sàng 100% ngay cả khi mạng quốc tế bị đứt cáp hoặc Google Gemini Cloud gặp sự cố toàn cầu (HTTP 503 / 429):
-* Tích hợp bộ phân tích cục bộ [exam_parser.py](file:///e:/CapStone/All%20Services/V-Eval-Ai_Engine/V-Eval-Ai_Engine.Infrastructure/Parsers/exam_parser.py) (sử dụng PyMuPDF + Regex bóc tách cấu trúc).
+* Tích hợp bộ phân tích cục bộ [`exam_parser.py`](../V-Eval-Ai_Engine.Infrastructure/Parsers/exam_parser.py) (sử dụng PyMuPDF + Regex bóc tách cấu trúc).
 * Khi tất cả các model Gemini đều báo lỗi, hệ thống tự động kích hoạt bộ Local Parser trong **0.3 giây**, trích xuất toàn bộ 120 câu hỏi và trả về cho giao diện mà không để người dùng gặp lỗi gián đoạn.
 
 ---

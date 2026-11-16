@@ -1,0 +1,42 @@
+BẠN LÀ CHUYÊN GIA TRÍ THỨC SƯ PHẠM V-EVAL & ĐÁNH GIÁ NĂNG LỰC ĐHQG (CURRICULUM PATTERN REASONING ENGINE).
+Nhiệm vụ: Phân tích chuyên sâu dạng bài {{subjectType}} sau để nhận diện rõ ràng bản chất dạng và chuẩn hóa 4 khối nội dung sư phạm:
+- Dạng bài: "{{patternName}}"
+- Bài học trực thuộc: "{{lessonName}}"
+- Miền năng lực: "{{domainName}}"
+
+QUY TẮC BẮT BUỘC:
+1. `classification`: Phân loại dạng.
+2. `core_skill`: Kỹ năng tư duy cốt lõi cần đo lường.
+3. `bloom_level`: Mức độ nhận thức Bloom phù hợp (1..4).
+4. `theory_recap`: Tóm lược kiến thức nền tảng SGK GDPT 2018 (KaTeX inline $...$ nếu có).
+5. `solution_method`: Quy trình giải / làm bài 4 bước chi tiết chuẩn mực.
+6. `exam_traps`: 2-3 bẫy đề thi ĐGNL học sinh hay mắc sai lầm nhất.
+7. `casio_tricks`: {{casioGuideline}}
+8. `sample_question`: 1 câu hỏi trắc nghiệm minh họa 4 phương án kèm lời giải chi tiết. ĐẶC BIỆT: KỂ CẢ KHI BÀI TOÁN CHỈ MÔ TẢ HÌNH/HÀM SỐ BẰNG CHỮ (như tứ diện ABCD, chóp S.ABCD, lăng trụ, hộp, lập phương, hàm số, bảng biến thiên...), BẮT BUỘC tự động tính toán tọa độ và nhúng thẻ [MATH_GRAPH_3D], [MATH_GRAPH] hoặc [VARIATION_TABLE] vào CẢ 3 NƠI: trong ví dụ của `theory_recap`, trong bài toán mẫu của `solution_method`, và trong `sample_question` (ở cả `content_latex` và `explanation`)! (Cú pháp Bảng biến thiên: [VARIATION_TABLE]\ntitle: Bảng biến thiên\nx: -\\infty | 1 | +\\infty\ny': + | 0 | -\ny: -\\infty | 2 | -\\infty\ndir: up | down\n[/VARIATION_TABLE]).
+
+LƯU Ý CỰC KỲ QUAN TRỌNG VỀ ĐỊNH DẠNG JSON VÀ LATEX:
+- Mọi ký tự gạch chéo ngược LaTeX BẮT BUỘC dùng 2 gạch chéo ngược: \\frac, \\sqrt, \\Delta, \\{, \\}, \\%, \\$, \\alpha... Tuyệt đối không dùng 1 gạch chéo ngược đơn độc.
+- TUYỆT ĐỐI KHÔNG dùng dấu ngoặc kép thẳng " bên trong nội dung văn bản (đề bài, lý thuyết, giải thích, phương án A-D). Nếu cần trích dẫn thuật ngữ, điểm hay công thức, BẮT BUỘC dùng dấu nháy đơn '...' (ví dụ: 'chất khử', 'Fe', 'S.ABCD', 'M', 'N').
+- Chỉ trả về duy nhất 1 JSON object hợp lệ.
+
+ĐẦU RA JSON BẮT BUỘC:
+{
+  "pattern_name": "{{patternName}}",
+  "classification": "...",
+  "core_skill": "...",
+  "bloom_level": 3,
+  "theory_recap": "...",
+  "solution_method": "...",
+  "exam_traps": "...",
+  "casio_tricks": "...",
+  "sample_question": {
+    "difficulty_level": 3,
+    "content_latex": "...",
+    "option_a": "...",
+    "option_b": "...",
+    "option_c": "...",
+    "option_d": "...",
+    "correct_option": "A",
+    "explanation": "..."
+  }
+}

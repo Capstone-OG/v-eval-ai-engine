@@ -1,7 +1,7 @@
 """
 novelty_detector.py — Novel Archetype Pattern Detector (Core Flow 4 / Phase 2)
 ===============================================================================
-Compares every question extracted by ``GeminiExamParserService`` (.NET Vision OCR,
+Compares every question extracted by ``MultiCloudExamParserService`` (.NET Vision OCR,
 LaTeX ``$...$``) against the curated Knowledge Graph (``v_eval_ai.archetype_patterns``)
 using pgvector cosine similarity.
 

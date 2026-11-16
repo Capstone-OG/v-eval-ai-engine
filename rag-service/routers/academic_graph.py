@@ -2,7 +2,7 @@
 academic_graph.py — Academic Knowledge Graph Router (Core Flow 4 / Phase 2)
 ============================================================================
 REST endpoints used by the Academic team (and by V-Eval-Ai_Engine .NET after
-``GeminiExamParserService`` finishes Vision OCR) to:
+``MultiCloudExamParserService`` finishes Vision OCR) to:
 
 1. Run novelty detection on parsed exam questions (single list or full ParsedExamDto).
 2. List novel pattern proposals waiting for review.
