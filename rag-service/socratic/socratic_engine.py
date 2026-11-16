@@ -156,6 +156,7 @@ def build_socratic_prompts(
     student_selected_option_text: Optional[str] = None,
     student_query: Optional[str] = None,
     routing_decision: Optional[RoutingDecision] = None,
+    conversation_history: Optional[Sequence[Any]] = None,
 ) -> tuple[str, str]:
     """Construct pedagogically strict system and user messages based on the 5-Case routing matrix."""
     pattern_name = subgraph_payload["pattern_name"]
@@ -165,10 +166,23 @@ def build_socratic_prompts(
     socratic_hint = subgraph_payload["socratic_hint"]
 
     if routing_decision is None:
-        routing_decision = heuristic_route(question_latex, student_query)
+        routing_decision = heuristic_route(question_latex, student_query, conversation_history=conversation_history)
 
     category = routing_decision.category
     mood = routing_decision.student_mood.value
+
+    # Format multi-turn conversation history
+    history_formatted = ""
+    if conversation_history:
+        formatted_turns = []
+        for item in conversation_history:
+            if isinstance(item, dict):
+                role_label = "Học sinh" if item.get("role") in ("student", "user") else "Thầy"
+                text_content = (item.get("text") or "").strip()
+                if text_content:
+                    formatted_turns.append(f"- {role_label}: {text_content}")
+        if formatted_turns:
+            history_formatted = "\n[LỊCH SỬ TRAO ĐỔI VỪA RỒI CỦA 2 THẦY TRÒ]:\n" + "\n".join(formatted_turns[-6:]) + "\n"
 
     # Options formatting
     options_formatted = ""
@@ -223,6 +237,7 @@ Mục tiêu sư phạm:
 {question_latex}{options_formatted}
 
 - Phương án học sinh đã chọn (sai): {student_choice_desc}
+{history_formatted}
 - Lời nhắn của học sinh: "{student_query}"
 
 Hãy giải tỏa thái độ của học sinh với giọng điệu khiêm tốn, đồng thời vận dụng phương pháp gợi mở Socratic để giúp học sinh tự nhận ra lỗ hổng trong phương án {student_choice_desc}."""
@@ -306,12 +321,12 @@ Nhiệm vụ tối thượng của bạn là DẪN DẮT GỢI MỞ THEO PHƯƠN
 
 - Phương án học sinh đã chọn (sai): {student_choice_desc}
 - Đáp án đúng của hệ thống: {correct_option}
-
+{history_formatted}
 Học sinh vừa hỏi / thắc mắc trong cuộc trò chuyện:
 "{student_query.strip()}"
 
-Thầy/Cô hãy đóng vai Gia sư AI Socratic, phản hồi trực tiếp câu hỏi/thắc mắc trên của học sinh theo nguyên tắc gợi mở sư phạm:
-1. Giải thích tự nhiên, ngắn gọn điểm mấu chốt học sinh đang băn khoăn.
+Thầy/Cô hãy đóng vai Gia sư AI Socratic, bám sát toàn bộ mạch đàm thoại trên để phản hồi trực tiếp thắc mắc mới nhất của học sinh:
+1. Giải thích tự nhiên, ngắn gọn điểm mấu chốt học sinh đang băn khoăn (nếu học sinh xin ví dụ, hãy lấy ngay ví dụ minh họa trực quan gắn liền với dữ kiện/hình học của bài toán hoặc kiến thức đang xét).
 2. TUYỆT ĐỐI KHÔNG giải thay trọn vẹn, không đưa ra đáp án cuối cùng.
 3. Đặt duy nhất 1 câu hỏi dẫn dắt để học sinh tự suy nghĩ và tìm ra lời giải."""
     else:
@@ -472,6 +487,7 @@ async def generate_socratic_guidance(
         student_selected_option_text=student_selected_option_text,
         student_query=student_query,
         routing_decision=routing_decision,
+        conversation_history=conversation_history,
     )
 
     # 1. Generate draft response with dynamic model fallback and reasonable timeout
@@ -488,7 +504,7 @@ async def generate_socratic_guidance(
                     SystemMessage(content=system_prompt),
                     HumanMessage(content=user_message),
                 ]),
-                timeout=8.0,
+                timeout=18.0,
             )
             content_raw = draft.content
             if isinstance(content_raw, list):

@@ -1102,3 +1102,22 @@
 - Root cause: `MathText.jsx` restore step tested Vietnamese words inside `\text{}`/`_{}` and stripped valid `$...$`. Now only text outside those groups is tested.
 - Equation matcher limited to `[ \t]` between terms (no cross-line capture); subscripts may contain parentheses.
 - Verification: Node run of `normalizeMathString` on screenshot cases; 49/49 C# tests passed.
+
+### 36. Socratic AI Tutor Multi-Turn Conversational Memory & Intent Heuristic Routing Acceptance [16/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- **Components Impacted**:
+  - `rag-service/routers/socratic_tutor.py`
+  - `rag-service/socratic/socratic_engine.py`
+  - `rag-service/socratic/intent_router.py`
+- **Key Architectural Deliverables**:
+  1. **Multi-Turn Conversation Ingestion & Prompt Injection**:
+     - Extended `SocraticAskRequest` schema with `conversation_history: list[dict[str, Any]] = Field(default_factory=list)`.
+     - In `build_socratic_prompts`, transformed recent dialogue turns into structured markdown context (`[LỊCH SỬ TRAO ĐỔI VỪA RỒI CỦA 2 THẦY TRÒ]`) and injected them into the student prompt block for Case C4 and Case C2.
+     - Preserves full conversational continuity across multi-turn interactions (e.g. geometric proofs on pyramid $S.ABC$), preventing the model from hallucinating amnesic greetings when students ask follow-up questions like *"thầy đưa em ví dụ minh họa với"*.
+  2. **Context-Aware Intent Routing & Misclassification Prevention**:
+     - Expanded `_TASK_MARKERS` in `intent_router.py` with follow-up triggers: `"ví dụ"`, `"vi du"`, `"minh họa"`, `"minh hoa"`, `"làm sao"`, `"như thế nào"`, `"giải thích"`, `"hướng dẫn"`, `"thầy ơi"`, `"thầy chỉ"`, `"tiếp theo"`, `"cụ thể"`, `"chi tiết"`, `"là sao"`.
+     - Updated `heuristic_route` and `_resolve_dual_track` to evaluate conversation history and active task contexts, guaranteeing queries in an active problem session never get misrouted to Case C1 (Chit-chat / Persona Greeting).
+  3. **Resilient LLM Invocation Timeout Extension**:
+     - Raised draft generation timeout from `8.0s` to `18.0s` in `socratic_engine.py`, accommodating real-world API latency and eliminating false-positive fallbacks during brief network spikes.
+  4. **Verification**:
+     - Executed test suite via `pytest tests -k "socratic"` with 18/18 tests passing 100%.

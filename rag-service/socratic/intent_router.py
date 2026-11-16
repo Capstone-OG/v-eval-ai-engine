@@ -166,6 +166,8 @@ _EXAM_VALIDITY_MARKERS = (
 _TASK_MARKERS = (
     "vì sao", "tại sao", "sao lại", "công thức", "phương án", "đáp án", "bước", "tính", "giải",
     "gợi ý", "sai ở đâu", "chỗ nào", "định lý", "hiểu", "câu này", "bài này", "chọn",
+    "ví dụ", "vi du", "minh họa", "minh hoa", "làm sao", "như thế nào", "giải thích", "hướng dẫn",
+    "thầy ơi", "thầy chỉ", "tiếp theo", "cụ thể", "chi tiết", "là sao",
 )
 _KNOWLEDGE_MARKERS = ("công thức", "định lý", "định nghĩa", "là gì", "cách tính", "khái niệm", "tính chất")
 _PROBLEM_MARKERS = (
@@ -221,10 +223,12 @@ def _focus_for(category: IntentCategory, query: str) -> TargetFocus:
 def heuristic_route(
     question_latex: Optional[str],
     student_query: Optional[str],
+    conversation_history: Optional[Sequence[Any]] = None,
 ) -> RoutingDecision:
     """Deterministic routing used when the LLM router is unavailable."""
     task = has_task_context(question_latex, student_query)
     query = _norm(student_query)
+    has_history = bool(conversation_history and len(conversation_history) > 0)
 
     if task:
         if not query:
@@ -236,10 +240,10 @@ def heuristic_route(
         else:
             persona = _contains(query, _PERSONA_MARKERS)
             attitude = persona or _contains(query, _SKEPTIC_MARKERS) or _contains(query, _FRUSTRATED_MARKERS)
-            task_signal = _contains(query, _TASK_MARKERS) or bool(_OPTION_MENTION_RE.search(query))
+            task_signal = _contains(query, _TASK_MARKERS) or bool(_OPTION_MENTION_RE.search(query)) or has_history
             if attitude and task_signal:
                 category = IntentCategory.C2
-            elif persona:
+            elif persona and not has_history:
                 category = IntentCategory.C1
             else:
                 category = IntentCategory.C4
