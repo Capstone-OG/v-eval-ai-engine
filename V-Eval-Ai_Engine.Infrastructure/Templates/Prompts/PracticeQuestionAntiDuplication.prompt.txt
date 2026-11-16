@@ -1,0 +1,6 @@
+QUY TẮC BẮT BUỘC CHỐNG TRÙNG LẶP:
+Dạng bài này hiện ĐÃ CÓ {{existingCount}} câu hỏi sau:
+- {{samples}}
+TUYỆT ĐỐI KHÔNG ĐƯỢC lặp lại, không được copy lại đề bài hoặc ngữ liệu y hệt ở trên!
+BẮT BUỘC PHẢI KHAI THÁC các trích đoạn thơ/văn mới, góc nhìn cảm thụ mới, chi tiết nghệ thuật mới, hoặc các câu hỏi đọc hiểu/vận dụng hoàn toàn mới!
+

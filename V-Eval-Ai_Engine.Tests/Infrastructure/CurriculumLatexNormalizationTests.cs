@@ -73,4 +73,37 @@ public class CurriculumLatexNormalizationTests
         string result = CurriculumAiService.NormalizeCurriculumLatex(input);
         result.Should().Contain(expectedSubstring);
     }
+
+    [Fact]
+    public void NormalizeCurriculumLatex_PreservesMathGraph3DBlockIntact()
+    {
+        string input = """
+        • Do đó: $(SAC) \cap (SBD) = SO$.
+
+        [MATH_GRAPH_3D]
+        title: Giao tuyến SO của mặt phẳng (SAC) và (SBD)
+        shapeType: pyramid_rect_sa
+        dimensions: h=4,w=4,d=3.5,r=3,planeD=1.8
+        vertices: S:S(0,0,4);A:A(0,0,0);B:B(4,0,0);C:C(4,3.5,0);D:D(0,3.5,0)
+        extraPoints: O:name=O:edge=A,C:ratio=0.5:color=#ec4899
+        auxLines: A-C:dash=2:color=#0f172a;B-D:dash=2:color=#0f172a;S-O:dash=0:color=#ef4444
+        [/MATH_GRAPH_3D]
+        """;
+
+        string result = CurriculumAiService.NormalizeCurriculumLatex(input);
+        result.Should().Contain("[MATH_GRAPH_3D]");
+        result.Should().Contain("[/MATH_GRAPH_3D]");
+        result.Should().NotContain("[$MATH_GRAPH_3D$]");
+        result.Should().Contain("dimensions: h=4,w=4,d=3.5,r=3,planeD=1.8");
+        result.Should().Contain("auxLines: A-C:dash=2:color=#0f172a;B-D:dash=2:color=#0f172a;S-O:dash=0:color=#ef4444");
+    }
+
+    [Fact]
+    public void NormalizeCurriculumLatex_PreservesBoldPhanTichVaLoiGiaiHeading()
+    {
+        string input = "**Ví dụ:** Cho hình chóp S.ABCD, M là trung điểm của AB.\n**Phân tích & Lời giải:** Vì M thuộc đoạn thẳng AB, mà AB nằm trong mặt phẳng (SAB) nên M thuộc mặt phẳng (SAB).";
+        string result = CurriculumAiService.NormalizeCurriculumLatex(input);
+        result.Should().Contain("**Phân tích & Lời giải:**");
+        result.Should().NotContain("**Phân tích & **Lời giải:****");
+    }
 }

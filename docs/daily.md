@@ -1,5 +1,44 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [14/11/2026] - Tách Bạch Hoàn Toàn Prompt Ra File `.prompt.txt` (Pure C# Code), Khôi Phục Trọn Vẹn Bộ Chỉ Thị Hình Học 3D / Bảng Biến Thiên / Đồ Thị 2D, Bảo Vệ Khối `[MATH_GRAPH_3D]` & Tiêu Đề `**Phân tích & Lời giải:**`, Bắt Buộc Bóc Tách Đa Dạng Bài (4-6+ Dạng/Bài), Định Danh Rõ Đuôi API Key 401 & Triệt Tiêu 100% Hardcode
+
+- **Ràng Buộc Cứng Bóc Tách Đa Dạng Bài (4–6+ Dạng Bài / Bài Học) & Cổng Kiểm Định Số Lượng Dạng Bài ([`CurriculumIngestion.prompt.txt`](../V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt), [`CurriculumDepthExamPatterns.prompt.txt`](../V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumDepthExamPatterns.prompt.txt), [`CurriculumDepthTheoryExtended.prompt.txt`](../V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumDepthTheoryExtended.prompt.txt), [`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
+  - **Khắc phục triệt để lỗi chỉ sinh 1 Dạng bài đơn lẻ**: Bổ sung quy tắc **Zero Single-Pattern Rule** vào cả 3 tệp prompt (`.prompt.txt`), bắt buộc mỗi bài học (`lesson`) phải được phân rã thành tối thiểu **4 đến 6+ dạng bài cụ thể (`patterns`)** kèm 3–4 câu hỏi trắc nghiệm đủ 4 cấp độ Bloom (`L1 -> L4`). Kể cả khi tài liệu là SGK chia theo đề mục lý thuyết (`I, II, III...`) mà không ghi sẵn chữ `"Dạng 1, Dạng 2"`, AI bắt buộc phải tự động chuyển hóa toàn bộ các mục định lý, tính chất và bài tập thành tối thiểu 4–6 dạng bài toán thực chiến.
+  - **Cổng kiểm định `MinPatternsThreshold = 3` trong `CurriculumAiService.cs`**: Nếu mô hình đầu tiên trả về ít hơn 3 dạng bài cho tài liệu lớn, hệ thống lưu tạm kết quả vào `bestPartialParsed` và tự động chuyển tiếp sang mô hình kế tiếp để lấy trọn bộ đa dạng bài (và chỉ dùng `bestPartialParsed` làm phương án dự phòng an toàn nếu các mô hình sau gặp sự cố mạng).
+  - **Nhận diện PDF mật độ chữ thưa (`< 150 ký tự/trang`)**: Tự động kích hoạt Multimodal Vision AI cho các file PDF scan có chèn header/watermark chữ ngắn ở đầu trang.
+
+- **Bảo Vệ Tuyệt Đối Khối Hình Học 3D / Đồ Thị (`[MATH_GRAPH_3D]`, `[MATH_GRAPH]`, `[VARIATION_TABLE]`, `[MATH_GEOMETRY_2D]`) & Sửa Lỗi Tiêu Đề `**Phân tích & Lời giải:**` ([`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`CurriculumLatexNormalizationTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/CurriculumLatexNormalizationTests.cs))**:
+  - **Khắc phục lỗi `[ $MATH_GRAPH_3D$ ]` biến thành công thức KaTeX**: Cô lập toàn bộ khối `[MATH_GRAPH_3D]...[/MATH_GRAPH_3D]`, `[MATH_GRAPH]...[/MATH_GRAPH]`, `[VARIATION_TABLE]...[/VARIATION_TABLE]`, `[MATH_GEOMETRY_2D]...[/MATH_GEOMETRY_2D]` bằng placeholder chữ thường thuần túy (`@@mathlabblocka@@`) trước khi chạy bất kỳ regex LaTeX/Hóa học nào, đồng thời tự động chữa lành các thẻ đã bị bọc nhầm `[$MATH_GRAPH_3D$]`.
+  - **Khắc phục lỗi dư dấu `**` ở `Phân tích & Lời giải:**`**: Neo regex sửa nhãn `: **` vào đầu dòng/bullet `(^|[\r\n•\-]\s*)(?!\*)` để không bao giờ khớp nhầm chữ `Lời giải:**` nằm giữa chuỗi `**Phân tích & Lời giải:**`.
+  - Kiểm thử toàn bộ solution `V-Eval-Ai_Engine.sln` đạt **51/51 unit tests pass 100%** (0 warning, 0 error).
+
+- **Hiển Thị Rõ Đầu + Đuôi API Key (`Prefix...Suffix`) Trong Log Để Định Danh Chính Xác Key Lỗi 401 & Đồng Bộ `appsettings.Development.json` ([`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`MultiCloudExamParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/MultiCloudExamParserService.cs), [`PdfPigTextbookParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs))**:
+  - **Nâng cấp hàm `MaskKey`**: Do toàn bộ Google API keys đều có cùng tiền tố `AQ.Ab8RN6...`, việc chỉ log 8 ký tự đầu (`AQ.Ab8RN...`) khiến không thể phân biệt key nào bị 401. Đã cập nhật `MaskKey` hiển thị cả 6 ký tự đầu và 6 ký tự cuối (`AQ.Ab8...SuxCw`, `AQ.Ab8...93kbA`...).
+  - **Đồng bộ `appsettings.Development.json`**: Khắc phục nguyên nhân gốc khiến môi trường `Development` nạp đè 2 key cũ đã chết (`...WmD2ug`, `...rjnrZA`) và gọi `gemini-3.6-flash` đầu tiên gây lỗi 401. Đã đồng bộ 4 API keys hoạt động và đưa `gemini-3.1-flash-lite` lên vị trí số 1.
+  - **Loại bỏ cảnh báo biên dịch `CA1416`**: Bổ sung `<NoWarn>$(NoWarn);CA1416</NoWarn>` vào [`V-Eval-Ai_Engine.Infrastructure.csproj`](../V-Eval-Ai_Engine.Infrastructure/V-Eval-Ai_Engine.Infrastructure.csproj) để tắt cảnh báo đa nền tảng của `PDFtoImage.Conversion.ToImage`, giúp build sạch 0 warning.
+
+- **Tách Bạch Tuyệt Đối Prompt Ra File `.prompt.txt` & Giữ Mã Nguồn C# Thuần Khiết ([`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`Templates/Prompts/`](../V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/))**:
+  - Di chuyển toàn bộ các khối văn bản chỉ thị sư phạm nội tuyến (inline strings) trong `CurriculumAiService.cs` sang các tệp mẫu `.prompt.txt` độc lập:
+    + [`CurriculumDepthExamPatterns.prompt.txt`](../V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumDepthExamPatterns.prompt.txt): Chỉ thị chế độ chuyên sâu `deep` / `exam_patterns`.
+    + [`CurriculumDepthTheoryExtended.prompt.txt`](../V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumDepthTheoryExtended.prompt.txt): Chỉ thị chế độ mở rộng lý thuyết `theory` / `standard`.
+    + [`PracticeQuestionAntiDuplication.prompt.txt`](../V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/PracticeQuestionAntiDuplication.prompt.txt): Chỉ thị chống trùng lặp ngữ liệu khi sinh câu hỏi rèn luyện.
+  - Lớp `CurriculumAiService.cs` nay chỉ đảm nhiệm logic điều phối, truyền biến vào `IPromptTemplateService.RenderPromptAsync` và hậu xử lý dữ liệu thuần túy.
+
+- **Khôi Phục Trọn Vẹn Bộ Chỉ Thị Dựng Hình Học Không Gian 3D (`[MATH_GRAPH_3D]`), Bảng Biến Thiên (`[VARIATION_TABLE]`) & Đồ Thị 2D (`[MATH_GRAPH]`) ([`CurriculumIngestion.prompt.txt`](../V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt))**:
+  - Khôi phục đầy đủ quy tắc **Text-to-MathLab Reconstruction** vào [`CurriculumIngestion.prompt.txt`](../V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt):
+    + Tự động tính toán tọa độ đỉnh, trung điểm/trọng tâm (`extraPoints`), nét liền/đứt (`auxLines`) cho 7 loại khối 3D (`tetrahedron`, `pyramid_rect_sa`, `pyramid_tri_sa`, `pyramid_regular_quad`, `pyramid_regular_tri`, `prism_tri`, `box_cube`) kể cả khi tài liệu gốc chỉ mô tả bằng chữ.
+    + Đặc tả chi tiết Bảng biến thiên `[VARIATION_TABLE]` (đa thức liên tục và phân thức hữu tỉ có tiệm cận đứng `||`) và Đồ thị hàm số 2D `[MATH_GRAPH]`, kèm ví dụ JSON schema mẫu có nhúng trực tiếp `[MATH_GRAPH_3D]` và `[VARIATION_TABLE]` ở cả Bài giảng (`theoryRecap`, `solutionMethod`) và Câu hỏi (`contentLatex`, `explanation`).
+
+- **Triệt Tiêu 100% Hardcode Chuyên Đề Ester - Lipid (Zero-Hardcode Policy) ([`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs), [`CurriculumIngestion.prompt.txt`](../V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt))**:
+  - Xóa bỏ hoàn toàn ~800 dòng mã nguồn hardcode chuyên đề Hóa học 12 (`EnsureComprehensiveEsterLesson`, `EnsureComprehensiveEsterLipidLessons`, `EnrichPatternWithStandard`, và các nhánh kiểm tra `isEsterLipidChapter`).
+  - Xóa bỏ mọi chỉ thị ép tên bài học/dạng bài Ester - Lipid trong `CurriculumIngestion.prompt.txt` và tên chương mặc định `"Chương 1: Ester - Lipid"`.
+  - Khi tất cả các mô hình AI không thể bóc tách được dữ liệu, hệ thống ném ngoại lệ `InvalidOperationException` rõ ràng thay vì trả về dữ liệu giả lập (mock/fallback Ester-Lipid).
+
+- **Tối Ưu Hóa Trích Xuất Ảnh Multimodal Vision & Nâng Ngưỡng Timeout Chống Rớt Fallback Sớm ([`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
+  - **Khắc phục nguyên nhân gốc gây rớt fallback**: Trước đây mỗi lượt gọi Gemini bị giới hạn `TimeSpan.FromSeconds(15)`, khiến các phản hồi JSON lớn kèm hình học 3D (~15-35s) bị ngắt kết nối sớm. Đã nâng timeout mặc định lên `120s` (cấu hình qua `AiSettings:CurriculumRequestTimeoutSeconds`).
+  - **Giảm số lượng ảnh gửi kèm nhưng tăng độ sắc nét công thức**: Giảm `maxImages` mặc định từ `8` xuống `5` trang đại diện (trang đầu, các trang giữa phân bổ đều, trang cuối) với độ phân giải `120 DPI`, kích thước tối đa `1024px`, chất lượng `JPEG 75`, giúp payload nhẹ, thời gian xử lý Vision nhanh và nhận diện chính xác chỉ số dưới/số mũ.
+  - Kiểm thử toàn bộ solution `V-Eval-Ai_Engine.sln` đạt **50/50 unit tests pass 100%** (0 warning, 0 error).
+
 ## [13/11/2026] - Khảo Sát Thực Nghiệm Live Ping Toàn Bộ Mô Hình Gemini, Tối Ưu Thứ Tự Ưu Tiên Tránh Quá Tải 503, Khử Trùng Lặp Dạng Bài & Nâng Cấp Bộ Chuẩn Hóa KaTeX/MathText
 
 - **Khảo Sát Thực Nghiệm Toàn Diện Live Ping Các Mô Hình Gemini Trên 4 API Keys**:
