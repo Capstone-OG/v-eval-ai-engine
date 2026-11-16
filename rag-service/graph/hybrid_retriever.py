@@ -31,6 +31,7 @@ import logging
 import os
 import re
 import time
+import uuid
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Optional, Sequence
 
@@ -244,95 +245,81 @@ class HybridGraphRetriever:
         traps = [TrapNode(**r) for r in cur.fetchall()]
         return exemplars[: self.max_exemplars], traps
 
+    # -- Federated Content Retrieval (v_eval_content."Materials" & "Questions") -
+
+    def _fetch_material_from_content(
+        self, cur, question_id: Optional[str], skill_id: Optional[str]
+    ) -> Optional[dict[str, Any]]:
+        """Zero-hardcode federated lookup: retrieve official textbook lesson & golden explanation from v_eval_content."""
+        def _is_valid_uuid(val: Optional[str]) -> bool:
+            if not val:
+                return False
+            try:
+                uuid.UUID(str(val))
+                return True
+            except (ValueError, AttributeError, TypeError):
+                return False
+
+        # 1. Try relational join: question_id -> Questions.skill_id -> Materials
+        if question_id and _is_valid_uuid(question_id):
+            try:
+                cur.execute(
+                    """
+                    SELECT m.material_id::text, m.title, m.content, q.explanation, q.skill_id::text
+                    FROM v_eval_content."Questions" q
+                    JOIN v_eval_content."Materials" m ON m.skill_id = q.skill_id
+                    WHERE q.question_id = %(qid)s::uuid
+                    LIMIT 1;
+                    """,
+                    {"qid": str(question_id)},
+                )
+                row = cur.fetchone()
+                if row and row.get("content"):
+                    return dict(row)
+
+                # Fallback: Check if Questions has explanation text directly
+                cur.execute(
+                    """
+                    SELECT q.question_id::text AS material_id,
+                           'Phương pháp giải bài tập khảo thí' AS title,
+                           q.explanation AS content,
+                           q.explanation,
+                           q.skill_id::text
+                    FROM v_eval_content."Questions" q
+                    WHERE q.question_id = %(qid)s::uuid
+                      AND q.explanation IS NOT NULL
+                      AND length(trim(q.explanation)) > 0
+                    LIMIT 1;
+                    """,
+                    {"qid": str(question_id)},
+                )
+                row = cur.fetchone()
+                if row and row.get("content"):
+                    return dict(row)
+            except Exception as exc:
+                logger.debug("Content material lookup by question_id failed (%s)", exc)
+
+        # 2. Try direct lookup via skill_id in Materials
+        if skill_id and _is_valid_uuid(skill_id):
+            try:
+                cur.execute(
+                    """
+                    SELECT m.material_id::text, m.title, m.content, NULL AS explanation, m.skill_id::text
+                    FROM v_eval_content."Materials" m
+                    WHERE m.skill_id = %(skill)s::uuid
+                    LIMIT 1;
+                    """,
+                    {"skill": str(skill_id)},
+                )
+                row = cur.fetchone()
+                if row and row.get("content"):
+                    return dict(row)
+            except Exception as exc:
+                logger.debug("Content material lookup by skill_id failed (%s)", exc)
+
+        return None
+
     # -- public API ------------------------------------------------------------
-
-    # -- Hop 1b: keyword fallback anchor (offline / embedding failure resilient) --
-
-    def _anchor_candidates_by_keywords(self, cur, question_text: str, skill_id: Optional[str]) -> list[ArchetypeNode]:
-        cur.execute(
-            f"""
-            SELECT id::text AS id, pattern_code, pattern_name, skill_id::text AS skill_id,
-                   core_theorems, fast_solving_heuristics, description
-            FROM {GRAPH_SCHEMA}.archetype_patterns
-            WHERE is_verified = TRUE
-              AND (%(skill)s::uuid IS NULL OR skill_id = %(skill)s::uuid);
-            """,
-            {"skill": skill_id},
-        )
-        rows = cur.fetchall()
-        if not rows and skill_id:
-            cur.execute(
-                f"""
-                SELECT id::text AS id, pattern_code, pattern_name, skill_id::text AS skill_id,
-                       core_theorems, fast_solving_heuristics, description
-                FROM {GRAPH_SCHEMA}.archetype_patterns
-                WHERE is_verified = TRUE;
-                """
-            )
-            rows = cur.fetchall()
-
-        q_lower = question_text.lower()
-        keywords_map = {
-            "ARCH_LOGIC_PROPOSITION_01": [
-                "mệnh đề", "kéo theo", "logic", "suy luận", "bảng chân trị", "phủ định", "tương đương",
-                r"p \\Rightarrow q", r"p \\land", r"p \\lor", "contrapositive", "phản đảo", "p => q", "q => r", "phát biểu"
-            ],
-            "ARCH_MATH_PROGRESSION_01": [
-                "cấp số cộng", "cấp số nhân", "công sai", "công bội", "dãy số", "u_n", "u_1", "u_5"
-            ],
-            "ARCH_MATH_LOG_EXP_01": [
-                "logarit", "log_", r"\\log", "tập xác định", "mũ", "lũy thừa"
-            ],
-            "ARCH_MATH_FUNCTION_MONOTONICITY_01": [
-                "đồng biến", "nghịch biến", "đạo hàm", "bảng biến thiên", "hàm số bậc", "đơn điệu"
-            ],
-            "MATH_ASYMPTOTE_PARAM_01": [
-                "tiệm cận", "tiệm cận đứng", "tiệm cận ngang", "tham số m"
-            ],
-            "ARCH_LANG_VIETNAMESE_01": [
-                "chính tả", "xán lạn", "sáng lạng", "từ hán việt", "viết đúng"
-            ],
-            "PHYS_SHM_MAX_SPEED_01": [
-                "dao động", "điều hòa", "tốc độ cực đại", "gia tốc cực đại", "v_max", "a_max"
-            ],
-        }
-
-        scored = []
-        for r in rows:
-            code = r["pattern_code"]
-            name = (r["pattern_name"] or "").lower()
-            desc = (r["description"] or "").lower()
-
-            score = 0.0
-            if code in keywords_map:
-                for kw in keywords_map[code]:
-                    if kw in q_lower:
-                        score += 0.35
-
-            for w in name.split():
-                if len(w) >= 3 and w in q_lower:
-                    score += 0.15
-            for w in desc.split():
-                if len(w) >= 4 and w in q_lower:
-                    score += 0.05
-
-            if score > 0:
-                similarity = min(0.92, max(0.5, 0.70 + score))
-                scored.append((similarity, r))
-
-        scored.sort(key=lambda x: x[0], reverse=True)
-        return [
-            ArchetypeNode(
-                id=r["id"],
-                pattern_code=r["pattern_code"],
-                pattern_name=r["pattern_name"],
-                skill_id=r["skill_id"],
-                core_theorems=r["core_theorems"],
-                fast_solving_heuristics=r["fast_solving_heuristics"],
-                similarity=round(sim, 6)
-            )
-            for sim, r in scored[:self.top_k]
-        ]
 
     def retrieve(
         self,
@@ -341,17 +328,26 @@ class HybridGraphRetriever:
         student_selected_option: Optional[str] = None,
         correct_option: Optional[str] = None,
         skill_id: Optional[str] = None,
+        question_id: Optional[str] = None,
     ) -> SocraticSubgraph:
-        """Return the grounded Socratic subgraph for a (wrongly answered) question."""
+        """Return the grounded Socratic subgraph for a question.
+
+        Resolution Priority:
+        1. Dynamic Federated Curriculum Material (v_eval_content."Materials")
+        2. Vector Similarity against curated Knowledge Graph (v_eval_ai.archetype_patterns >= min_similarity)
+        3. Fail-closed to STATUS_LOW_CONFIDENCE (never hallucinate unrelated topics)
+        """
+        def _is_valid_uuid(val: Optional[str]) -> bool:
+            if not val:
+                return False
+            try:
+                uuid.UUID(str(val))
+                return True
+            except (ValueError, AttributeError, TypeError):
+                return False
+
         started = time.perf_counter()
         question_text = build_question_text(question_latex, options)
-        vector_literal = None
-        try:
-            vector = self._embed(question_text)
-            if vector:
-                vector_literal = to_pgvector(vector)
-        except Exception as embed_err:
-            logger.warning("Vector embedding failed (%s). Falling back to keyword search in Knowledge Graph.", embed_err)
         sel = (student_selected_option or "").strip().upper() or None
 
         result = SocraticSubgraph(
@@ -363,35 +359,79 @@ class HybridGraphRetriever:
 
         with graph_connection() as conn:
             with conn.cursor() as cur:
-                candidates, scope = [], None
-                if vector_literal:
-                    if skill_id:
-                        candidates, scope = self._anchor_candidates(cur, vector_literal, skill_id), SCOPE_SKILL
-                    # Fall back to the whole graph when the skill scope is empty OR too weak
-                    if not candidates or candidates[0].similarity < self.min_similarity:
-                        global_candidates = self._anchor_candidates(cur, vector_literal, None)
-                        if global_candidates and (
-                            not candidates or global_candidates[0].similarity > candidates[0].similarity
-                        ):
-                            candidates, scope = global_candidates, SCOPE_GLOBAL
-
-                # Fallback to keyword-based anchor retrieval if vector search failed or yielded LOW_CONFIDENCE
-                if not candidates or candidates[0].similarity < self.min_similarity:
-                    kw_candidates = self._anchor_candidates_by_keywords(cur, question_text, skill_id)
-                    if kw_candidates and (not candidates or kw_candidates[0].similarity > candidates[0].similarity):
-                        candidates, scope = kw_candidates, (SCOPE_SKILL if skill_id else SCOPE_GLOBAL)
-
-                if candidates:
-                    result.scope = scope
-                    result.anchor, result.alternatives = candidates[0], candidates[1:]
-                    result.status = classify_anchor(result.anchor.similarity, self.min_similarity)
-
-                if result.status == STATUS_GROUNDED and result.anchor:
-                    exemplars, traps = self._expand(cur, result.anchor.id, question_text)
-                    result.exemplars = exemplars
-                    result.matched_trap, result.candidate_traps, result.trap_match_strategy = resolve_traps(
-                        traps, exemplars, sel, correct_option
+                # Priority 1: Dynamic Federated Material Retrieval from v_eval_content
+                material = self._fetch_material_from_content(cur, question_id, skill_id)
+                if material and material.get("content"):
+                    mat_id = material["material_id"]
+                    mat_skill = material.get("skill_id") or (skill_id or "")
+                    result.anchor = ArchetypeNode(
+                        id=mat_id,
+                        pattern_code=f"CURRICULUM_{mat_id[:8]}",
+                        pattern_name=material.get("title") or "Tài liệu học tập ĐGNL",
+                        skill_id=mat_skill,
+                        core_theorems=material["content"],
+                        fast_solving_heuristics=None,
+                        similarity=0.98,
                     )
+                    result.scope = "CURRICULUM_MATERIAL"
+                    result.status = STATUS_GROUNDED
+                    if material.get("explanation"):
+                        result.exemplars = [
+                            ExemplarNode(
+                                id=f"EXP_{question_id[:8]}" if question_id else "EXP_CURR",
+                                question_latex=question_latex,
+                                golden_solution=material["explanation"],
+                                correct_option=correct_option or "",
+                                explanation_steps=[],
+                                text_match_ratio=1.0,
+                            )
+                        ]
+                    if mat_skill and _is_valid_uuid(mat_skill):
+                        cur.execute(
+                            f"""
+                            SELECT id::text FROM {GRAPH_SCHEMA}.archetype_patterns
+                            WHERE skill_id = %s::uuid LIMIT 1;
+                            """,
+                            (mat_skill,),
+                        )
+                        arch_row = cur.fetchone()
+                        if arch_row:
+                            _, traps = self._expand(cur, arch_row["id"], question_text)
+                            result.matched_trap, result.candidate_traps, result.trap_match_strategy = resolve_traps(
+                                traps, result.exemplars, sel, correct_option
+                            )
+                else:
+                    # Priority 2: Vector Similarity against curated Knowledge Graph
+                    vector_literal = None
+                    try:
+                        vector = self._embed(question_text)
+                        if vector:
+                            vector_literal = to_pgvector(vector)
+                    except Exception as embed_err:
+                        logger.warning("Vector embedding failed (%s).", embed_err)
+
+                    candidates, scope = [], None
+                    if vector_literal:
+                        if skill_id and _is_valid_uuid(skill_id):
+                            candidates, scope = self._anchor_candidates(cur, vector_literal, skill_id), SCOPE_SKILL
+                        if not candidates or candidates[0].similarity < self.min_similarity:
+                            global_candidates = self._anchor_candidates(cur, vector_literal, None)
+                            if global_candidates and (
+                                not candidates or global_candidates[0].similarity > candidates[0].similarity
+                            ):
+                                candidates, scope = global_candidates, SCOPE_GLOBAL
+
+                    if candidates and candidates[0].similarity >= self.min_similarity:
+                        result.scope = scope
+                        result.anchor, result.alternatives = candidates[0], candidates[1:]
+                        result.status = STATUS_GROUNDED
+                        exemplars, traps = self._expand(cur, result.anchor.id, question_text)
+                        result.exemplars = exemplars
+                        result.matched_trap, result.candidate_traps, result.trap_match_strategy = resolve_traps(
+                            traps, exemplars, sel, correct_option
+                        )
+                    else:
+                        result.status = STATUS_LOW_CONFIDENCE
 
         result.retrieval_ms = round((time.perf_counter() - started) * 1000, 1)
         logger.info(

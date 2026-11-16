@@ -222,6 +222,7 @@ async def _resolve_dual_track(
                 student_selected_option=req.student_selected_option,
                 correct_option=req.correct_option,
                 skill_id=str(req.skill_id) if req.skill_id else None,
+                question_id=str(req.question_id) if req.question_id else None,
             )
         except Exception as exc:
             logger.warning("Knowledge retrieval failed (%s). Using resilient LOW_CONFIDENCE subgraph.", exc)

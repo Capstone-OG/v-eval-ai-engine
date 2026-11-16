@@ -1121,3 +1121,27 @@
      - Raised draft generation timeout from `8.0s` to `18.0s` in `socratic_engine.py`, accommodating real-world API latency and eliminating false-positive fallbacks during brief network spikes.
   4. **Verification**:
      - Executed test suite via `pytest tests -k "socratic"` with 18/18 tests passing 100%.
+
+### 37. Zero-Hardcode Federated Curriculum Material Retrieval & Dynamic Socratic Grounding [16/11/2026]
+- **Status**: ACCEPTED & OPERATIONAL
+- **Components Impacted**:
+  - `rag-service/graph/hybrid_retriever.py`
+  - `rag-service/routers/socratic_tutor.py`
+  - `rag-service/socratic/socratic_engine.py`
+  - `rag-service/socratic/validator_judge.py`
+- **Key Architectural Deliverables**:
+  1. **Dynamic Federated Curriculum Material Retrieval via Relational Database**:
+     - Resolved the critical flaw where questions were disconnected from textbook lesson materials (`v_eval_content."Materials"`).
+     - Implemented `_fetch_material_from_content(cur, question_id, skill_id)` in `HybridGraphRetriever`. When `question_id` is supplied, dynamically joins `v_eval_content."Questions"` with `v_eval_content."Materials"` on foreign key `skill_id`.
+     - Automatically constructs a grounded `ArchetypeNode` (`scope="CURRICULUM_MATERIAL"`, `similarity=0.98`) carrying the official textbook lesson, standard theorem formulations, and golden solution exemplar steps.
+  2. **Elimination of Keyword Overrides and Stopword Matching Flaws**:
+     - Removed the legacy static keyword map (`keywords_map`) and single-word splitting loop (`for w in name.split(): if len(w) >= 3 ... score += 0.15`), which previously caused 3D geometry questions containing the common Vietnamese preposition *"của"* to falsely score $0.85$ and attach to *"Tính đơn điệu của hàm số"*.
+     - Questions not covered by textbook materials fall back strictly to pgvector semantic cosine similarity; if $< 0.75$, the retriever fails closed safely to `STATUS_LOW_CONFIDENCE` without hallucinating unrelated topics.
+  3. **Universal Zero-Hardcode Fallback Generation**:
+     - Removed all hardcoded `if/elif` topic branches ($P \Rightarrow Q$, arithmetic progression, logarithms, orthography) in `build_fallback_guidance`.
+     - Dynamically renders guidance from the retrieved lesson theorems (`core_theorems`), or produces an objective, domain-agnostic Socratic reflection guiding the student back to problem constraints.
+  4. **Adaptive LLM Judge Grounding**:
+     - Reconfirmed `validator_judge.py` criteria: when `grounded=False` or `LOW_CONFIDENCE`, the pedagogical judge evaluates purely on mathematical/logical correctness (`CRITERION_LOGIC`) and ground truth consistency (`CRITERION_GROUND_TRUTH`) without penalizing valid multi-step reasoning against ungrounded external theorems.
+  5. **Verification**:
+     - Verified end-to-end with 3D Spatial Geometry Question `4e59df20-e11b-4d14-ab8f-0ac4cb734d0b` (pyramid $S.ABCD$, plane intersection $(SAC) \cap (SBD) = SO$): retrieved 100% accurate textbook lesson and golden solution.
+     - Automated test suite: `pytest tests/test_hybrid_retriever.py tests/test_socratic_engine.py tests/test_socratic_mentor.py` passed 26/26 tests (100%).
