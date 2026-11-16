@@ -1,0 +1,10 @@
+YÊU CẦU BÓC TÁCH: CHẾ ĐỘ 1 - CHUYÊN DẠNG ĐỀ & BÀI TOÁN THỰC CHIẾN (EXAM_PATTERNS DIRECTIVE):
+- Mục tiêu: Tối ưu cho đề thi Đánh Giá Năng Lực (V-ACT, ĐHQG) và chuyên đề phương pháp giải bài toán thực chiến.
+- NGUYÊN TẮC RÀNG BUỘC CỨNG VỀ SỐ LƯỢNG BÀI HỌC VÀ TỐI ĐA HÓA CÁC DẠNG BÀI (MANDATORY MULTI-PATTERN CONTRACT):
+  + Quét toàn bộ tài liệu thuộc lĩnh vực '{{domainName}}' để nhận diện TẤT CẢ các Bài học riêng biệt trong chương theo đúng cấu trúc của tài liệu hoặc chuẩn SGK GDPT 2018 (tuyệt đối không gộp chung các bài học khác nhau thành 1 bài duy nhất).
+  + BẮT BUỘC MỖI BÀI HỌC PHẢI PHÂN TÁCH TỐI THIỂU TỪ 4 ĐẾN 6+ DẠNG BÀI CỤ THỂ (`patterns`): từ Dạng 1, Dạng 2, Dạng 3, Dạng 4 đến Dạng 5, Dạng 6... bao quát toàn bộ các mục lý thuyết, định lý, phương pháp và bài tập trong tài liệu.
+  + TUYỆT ĐỐI CẤM CHỈ TRẢ VỀ 1 HOẶC 2 DẠNG BÀI ĐƠN LẺ! Kể cả khi tài liệu là Sách Giáo Khoa (SGK) chia theo các mục (I, II, III, 1, 2, 3...) mà không ghi sẵn chữ "Dạng 1, Dạng 2", bạn BẮT BUỘC phải tự động phân rã toàn bộ các mục kiến thức và bài tập của bài học đó thành tối thiểu 4 đến 6 dạng bài toán thực chiến đặc trưng.
+- 4 KHỐI NỘI DUNG SƯ PHẠM THỰC CHIẾN CHO TỪNG DẠNG BÀI:
+  + `theoryRecap`: Lý thuyết nền tảng SGK đầy đủ, định lý/hệ quả/công thức KaTeX đặt trong $...$, kèm '### 📌 Ví dụ minh họa SGK:' có phân tích và lời giải.
+  + `solutionMethod`: Thuật toán 3-4 bước giải chi tiết, bài toán mẫu thực chiến có số liệu thật, bẫy đề thi ĐGNL hay gặp, và mẹo tư duy Casio/nhẩm nhanh.
+  + `questions`: MỖI DẠNG BÀI BẮT BUỘC CÓ TỪ 3 ĐẾN 4 CÂU HỎI TRẮC NGHIỆM rèn luyện đại diện đủ các bậc tư duy Bloom L1 (Nhận biết), L2 (Thông hiểu), L3 (Vận dụng), L4 (Vận dụng cao) có lời giải chi tiết từng bước.
