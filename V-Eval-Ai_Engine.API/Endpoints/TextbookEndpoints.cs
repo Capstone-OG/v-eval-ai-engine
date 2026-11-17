@@ -33,6 +33,16 @@ public static class TextbookEndpoints
             string skillId = form["skillId"].ToString();
             string docType = form["docType"].ToString();
             string ocrMode = form["ocrMode"].ToString();
+            int targetDpi = 48;
+            if (int.TryParse(form["targetDpi"], out var parsedDpi) && parsedDpi >= 40 && parsedDpi <= 120)
+            {
+                targetDpi = parsedDpi;
+            }
+            int batchSize = 2;
+            if (int.TryParse(form["batchSize"], out var parsedBatch) && parsedBatch >= 1 && parsedBatch <= 15)
+            {
+                batchSize = parsedBatch;
+            }
             bool forceReingest = false;
             if (bool.TryParse(form["forceReingest"], out var parsedForce))
             {
@@ -99,6 +109,7 @@ public static class TextbookEndpoints
                 // 4. Kiểm tra Checkpoint từ CSDL Supabase
                 int startPage = 1;
                 int totalPages = 0;
+                string existingSourceId = string.Empty;
                 if (!forceReingest)
                 {
                     using (var scope = scopeFactory.CreateScope())
@@ -107,6 +118,7 @@ public static class TextbookEndpoints
                         var cp = await repo.GetCheckpointByFileHashAsync(fileHash);
                         if (cp != null && cp.Value.LastProcessedPage > 0)
                         {
+                            existingSourceId = cp.Value.SourceId.ToString();
                             totalPages = cp.Value.TotalPages;
                             startPage = cp.Value.LastProcessedPage >= cp.Value.TotalPages 
                                 ? cp.Value.TotalPages 
@@ -117,6 +129,11 @@ public static class TextbookEndpoints
 
                 // 5. Khởi tạo Background Job với trạng thái Checkpoint
                 var job = jobManager.CreateJob(file.FileName, fileHash, totalPages, startPage);
+                if (!string.IsNullOrWhiteSpace(existingSourceId))
+                {
+                    job.SourceId = existingSourceId;
+                }
+                job.TargetDpi = targetDpi;
 
                 // 6. Khởi chạy tác vụ ngầm độc lập với HTTP Request
                 _ = Task.Run(async () =>
@@ -140,7 +157,9 @@ public static class TextbookEndpoints
                             {
                                 int curPage = (int)((float)percent / 100 * (job.TotalPages > 0 ? job.TotalPages : 100));
                                 jobManager.UpdateJobProgress(job.JobId, step, percent, curPage);
-                            }
+                            },
+                            targetDpi: targetDpi,
+                            batchSize: batchSize
                         );
 
                         result.PdfUrl = $"/uploads/textbooks/{uniqueFileName}";
@@ -233,10 +252,11 @@ public static class TextbookEndpoints
         })
         .WithName("GetTextbookChunksBySourceId");
 
-        // 6. Endpoint tra cứu danh sách Chunks theo fileHash
+        // 6. Endpoint tra cứu danh sách Chunks theo fileHash kèm Cây Chương - Bài - Dạng bài đã tổng hợp
         group.MapGet("/chunks-by-hash/{fileHash}", async (
             string fileHash,
-            [FromServices] ITextbookRepository repository) =>
+            [FromServices] ITextbookRepository repository,
+            [FromServices] ITextbookParserService parserService) =>
         {
             var cp = await repository.GetCheckpointByFileHashAsync(fileHash);
             if (cp == null)
@@ -244,6 +264,12 @@ public static class TextbookEndpoints
                 return Results.NotFound(new { message = "Không tìm thấy tài liệu với mã file hash này." });
             }
             var chunks = await repository.GetChunksBySourceIdAsync(cp.Value.SourceId);
+            var first = chunks.FirstOrDefault();
+            var synthesized = parserService.SynthesizeCurriculumFromChunks(
+                $"SGK_{first?.SubjectCode ?? "MATH"}_{first?.Grade ?? 12}",
+                string.Empty,
+                chunks);
+
             return Results.Ok(new
             {
                 sourceId = cp.Value.SourceId,
@@ -252,10 +278,129 @@ public static class TextbookEndpoints
                 lastProcessedPage = cp.Value.LastProcessedPage,
                 status = cp.Value.Status,
                 totalChunks = chunks.Count,
+                detectedSubjectCode = first?.SubjectCode ?? synthesized.SubjectCode ?? "MATH",
+                detectedSubjectName = first?.SubjectName ?? synthesized.SubjectName ?? "Toán học",
+                detectedGrade = first?.Grade ?? synthesized.Grade,
+                detectedBookEdition = first?.BookEdition ?? synthesized.BookEdition,
+                dpiUsed = first?.DpiUsed ?? 56,
+                totalDiagramsDetected = chunks.Sum(c => c.ImagePlaceholders?.Count ?? 0),
+                chaptersDetected = chunks.Select(c => c.ChapterName).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList(),
+                lessonsDetected = chunks.Select(c => c.LessonName).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList(),
+                patternsDetected = chunks.Select(c => c.PatternName).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList(),
+                synthesizedCurriculum = synthesized,
                 chunks
             });
         })
         .WithName("GetTextbookChunksByFileHash");
+
+        // 7. Endpoint tổng hợp Chunks SGK thành cấu trúc Cây Chương - Bài - Dạng bài chuẩn Content Service
+        group.MapPost("/synthesize-curriculum/{fileHash}", async (
+            string fileHash,
+            [FromQuery] string? domainId,
+            [FromServices] ITextbookRepository repository,
+            [FromServices] ITextbookParserService parserService) =>
+        {
+            var cp = await repository.GetCheckpointByFileHashAsync(fileHash);
+            if (cp == null)
+            {
+                return Results.NotFound(new { message = "Không tìm thấy tài liệu SGK với mã fileHash này." });
+            }
+            var chunks = await repository.GetChunksBySourceIdAsync(cp.Value.SourceId);
+            if (chunks.Count == 0)
+            {
+                return Results.BadRequest(new { message = "Tài liệu chưa có Chunks nào được bóc tách." });
+            }
+
+            var first = chunks.FirstOrDefault();
+            var curriculumDto = parserService.SynthesizeCurriculumFromChunks(
+                $"SGK_{first?.SubjectName ?? "GDPT2018"}_Lop{first?.Grade ?? 12}",
+                domainId ?? string.Empty,
+                chunks);
+
+            return Results.Ok(curriculumDto);
+        })
+        .WithName("SynthesizeCurriculumFromTextbook");
+
+        // 8. Endpoint tra cứu Ma trận Nội dung Chương trình GDPT 2018 (Lớp 10-11-12 Chân trời sáng tạo & ĐGNL V-ACT)
+        group.MapGet("/taxonomy", () =>
+        {
+            var root = V_Eval_Ai_Engine.Infrastructure.Services.CurriculumTaxonomyRegistry.GetTaxonomyRoot();
+            if (root == null)
+            {
+                return Results.NotFound(new { message = "Không tìm thấy tệp cấu hình gdpt2018_dgnl_taxonomy.json." });
+            }
+            return Results.Content(root.ToJsonString(), "application/json");
+        })
+        .WithName("GetGdpt2018MasterTaxonomy");
+
+        // 9. Endpoint liệt kê toàn bộ các SGK đã nạp vào CSDL kèm cấu trúc Chương - Bài - Dạng bài & Chunks để UI Giáo trình chung đồng bộ tick xanh
+        group.MapGet("/sources", async ([FromServices] ITextbookRepository repository) =>
+        {
+            var sources = await repository.GetIngestedSourcesWithSummaryAsync();
+            return Results.Ok(new
+            {
+                totalSources = sources.Count,
+                sources
+            });
+        })
+        .WithName("GetIngestedTextbookSources");
+
+        // 9A. Endpoint xóa một cuốn sách SGK đã nạp khỏi CSDL và xóa toàn bộ Chunks liên quan
+        group.MapDelete("/sources/{sourceId:guid}", async (
+            Guid sourceId,
+            [FromServices] ITextbookRepository repository) =>
+        {
+            var success = await repository.DeleteSourceAsync(sourceId);
+            if (!success)
+            {
+                return Results.BadRequest(new { message = $"Không thể xóa tài liệu SGK với mã '{sourceId}'." });
+            }
+            return Results.Ok(new { success = true, message = "Đã xóa thành công tài liệu SGK khỏi hệ thống." });
+        })
+        .WithName("DeleteTextbookSource");
+
+        // 9B. Endpoint quét nhanh Khung Mục lục SGK (Stage 1: 5-10s -> Chương -> Bài -> Dạng bài + Bloom 6 cấp độ)
+        group.MapPost("/scan-skeleton", async (
+            IFormFile file,
+            [FromForm] string? subjectCode,
+            [FromForm] int? grade,
+            [FromForm] string? bookEdition,
+            [FromServices] ITextbookParserService parserService,
+            CancellationToken cancellationToken) =>
+        {
+            if (file == null || file.Length == 0)
+            {
+                return Results.BadRequest(new { message = "Vui lòng đính kèm file PDF SGK." });
+            }
+
+            await using var stream = file.OpenReadStream();
+            var skeleton = await parserService.ScanTextbookSkeletonAsync(stream, file.FileName, subjectCode, grade, bookEdition, cancellationToken);
+            return Results.Ok(skeleton);
+        })
+        .DisableAntiforgery()
+        .WithName("ScanTextbookSkeleton");
+
+        // 9C. Endpoint AI Sinh bài tập tự động theo Dạng bài & Bloom Taxonomy 6 cấp độ
+        group.MapPost("/generate-exercises", async (
+            [FromBody] GenerateExercisesRequestDto request,
+            [FromServices] ITextbookParserService parserService,
+            CancellationToken cancellationToken) =>
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.PatternName))
+            {
+                return Results.BadRequest(new { message = "Vui lòng cung cấp thông tin Dạng bài và Môn học." });
+            }
+
+            var exercises = await parserService.GeneratePatternExercisesAsync(request, cancellationToken);
+            return Results.Ok(new
+            {
+                patternName = request.PatternName,
+                bloomLevel = request.BloomLevel,
+                totalExercises = exercises.Count,
+                exercises
+            });
+        })
+        .WithName("GeneratePatternExercises");
 
         // 3. Endpoint lưu các Vector Chunks và tri thức SGK vào Database (Schema v_eval_ai)
         group.MapPost("/save-db", async (

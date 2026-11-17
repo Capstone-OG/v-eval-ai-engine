@@ -610,6 +610,22 @@
             <option value="AUTO_LOCAL">📄 Chỉ Đọc Lớp Chữ Số (Bỏ qua AI - Chỉ dùng cho file PDF chuẩn số hóa)</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Độ Phân Giải Nén Ảnh (Tối ưu 106 - 170+ trang)</label>
+          <select id="targetDpi" class="form-control" style="border-color: #06b6d4; background: rgba(6, 182, 212, 0.08);">
+            <option value="56" selected>⚡ 56 DPI - Siêu nhẹ (~20KB/trang, tối ưu Free Tier Gemini)</option>
+            <option value="48">🪶 48 DPI - Cực nhẹ (~15KB/trang, tốc độ tối đa cho 170 trang)</option>
+            <option value="72">🔍 72 DPI - Tiêu chuẩn (Chữ nhỏ / nhiều đồ thị phức tạp)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Gộp Batch Vision (Trang / Lượt gọi API)</label>
+          <select id="batchSize" class="form-control">
+            <option value="5" selected>📦 5 trang / lượt (Giảm 5x số request)</option>
+            <option value="4">📦 4 trang / lượt (Cân bằng chi tiết)</option>
+            <option value="6">📦 6 trang / lượt (Siêu tiết kiệm quota)</option>
+          </select>
+        </div>
       </div>
 
       <!-- RE-INGEST / OVERWRITE OPTION -->
@@ -773,6 +789,8 @@
       const domainId = document.getElementById('domainId').value.trim();
       const skillId = document.getElementById('skillId').value.trim();
       const ocrMode = document.getElementById('ocrMode').value;
+      const targetDpi = document.getElementById('targetDpi')?.value || '56';
+      const batchSize = document.getElementById('batchSize')?.value || '5';
       const forceReingest = document.getElementById('forceReingest')?.checked || false;
 
       const formData = new FormData();
@@ -781,6 +799,8 @@
       formData.append('skillId', skillId);
       formData.append('docType', 'TEXTBOOK');
       formData.append('ocrMode', ocrMode);
+      formData.append('targetDpi', targetDpi);
+      formData.append('batchSize', batchSize);
       formData.append('forceReingest', forceReingest);
 
       document.getElementById('btnSubmit').disabled = true;
@@ -1015,6 +1035,10 @@
             <div class="chunk-tags">
               <span class="chunk-badge-id">Chunk #${chunk.chunkIndex}</span>
               <span class="chunk-badge-page">📄 Trang ${chunk.pageNumber}</span>
+              ${chunk.subjectName ? `<span class="chunk-badge-id" style="background: rgba(16,185,129,0.18); color:#6ee7b7; border-color:rgba(16,185,129,0.4);">📚 ${escapeHtml(chunk.subjectName)} ${chunk.grade || 12}</span>` : ''}
+              ${chunk.chapterName ? `<span class="chunk-badge-meta" style="color:#c4b5fd;">• ${escapeHtml(chunk.chapterName)}</span>` : ''}
+              ${chunk.lessonName ? `<span class="chunk-badge-meta" style="color:#93c5fd;">→ ${escapeHtml(chunk.lessonName)}</span>` : ''}
+              ${chunk.hasDiagram ? `<span class="chunk-badge-id" style="background:rgba(245,158,11,0.2); color:#fcd34d; border-color:rgba(245,158,11,0.45);">🖼️ ${chunk.imagePlaceholders?.length || 1} Sơ đồ</span>` : ''}
               <span class="chunk-badge-meta">📊 ${(chunk.charCount || 0).toLocaleString()} ký tự</span>
               <span class="chunk-badge-meta" style="color: #64748b;">• ~${Math.round((chunk.charCount || 0) / 4)} tokens</span>
             </div>
@@ -1041,9 +1065,25 @@
     function renderMarkdownWithMath(rawText) {
       if (!rawText) return '<em style="color: var(--text-muted);">[Không có nội dung]</em>';
 
+      // 0. Bảo vệ các thẻ [IMAGE_PLACEHOLDER: ...] để render khung nhắc nhở FE cắt & bổ sung ảnh
+      const imagePlaceholders = [];
+      let protectedText = rawText.replace(/\[IMAGE_PLACEHOLDER\s*:\s*([^\]]+)\]/gi, (match, attrRaw) => {
+        const id = imagePlaceholders.length;
+        const getAttr = (k) => {
+          const m = attrRaw.match(new RegExp(`${k}\\s*=\\s*["']([^"']+)["']`, 'i'));
+          return m ? m[1] : '';
+        };
+        imagePlaceholders.push({
+          type: getAttr('type') || 'FIGURE',
+          page: getAttr('page') || '',
+          desc: getAttr('desc') || attrRaw
+        });
+        return `@@IMG_PLACEHOLDER_${id}@@`;
+      });
+
       // 1. Bảo vệ các khối công thức Toán LaTeX ($$...$$ và $...$)
       const mathBlocks = [];
-      let protectedText = rawText.replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
+      protectedText = protectedText.replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
         const id = mathBlocks.length;
         mathBlocks.push({ display: true, formula });
         return `@@MATH_BLOCK_${id}@@`;
@@ -1093,6 +1133,15 @@
           }
         }
         return match;
+      });
+
+      html = html.replace(/@@IMG_PLACEHOLDER_(\d+)@@/g, (match, idStr) => {
+        const item = imagePlaceholders[parseInt(idStr, 10)];
+        if (!item) return match;
+        return `<div style="margin: 12px 0; padding: 12px 16px; border-radius: 12px; border: 2px dashed rgba(245, 158, 11, 0.55); background: rgba(245, 158, 11, 0.1); color: #fde68a; font-size: 0.88rem;">
+          <div style="font-weight: 700; color: #fbbf24; margin-bottom: 4px;">🖼️ Cần FE cắt & bổ sung Hình ảnh / Sơ đồ (${escapeHtml(item.type)})${item.page ? ` • Trang ${escapeHtml(item.page)}` : ''}</div>
+          <div style="color: #fef3c7;">${escapeHtml(item.desc)}</div>
+        </div>`;
       });
 
       return html;

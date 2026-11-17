@@ -1,0 +1,1196 @@
+{
+  "version": "2026.1-GDPT2018-CTST-VACT",
+  "curriculumStandard": "Chương trình GDPT 2018 (Bộ Chân trời sáng tạo & Cấu trúc ĐGNL ĐHQG-HCM V-ACT)",
+  "outOfScopeKeywords": [
+    "âm nhạc",
+    "mỹ thuật",
+    "hội họa",
+    "giáo dục thể chất",
+    "thể dục",
+    "giáo dục quốc phòng",
+    "hoạt động trải nghiệm",
+    "hướng nghiệp"
+  ],
+  "domains": [
+    {
+      "domainId": "6f3765db-943e-4810-bf74-d6a8bdc215da",
+      "domainCode": "DOM_MATH",
+      "domainName": "Toán học & Tư duy định lượng",
+      "subjects": [
+        {
+          "subjectCode": "MATH",
+          "subjectName": "Toán học",
+          "ocrModeDefault": "STEM_FORMULAS",
+          "grades": [
+            {
+              "grade": 10,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "MATH_10_C1",
+                  "name": "Chương 1: Mệnh đề và Tập hợp",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Mệnh đề",
+                      "patterns": [
+                        "Dạng 1: Nhận diện mệnh đề, mệnh đề chứa biến và xét tính đúng sai",
+                        "Dạng 2: Lập mệnh đề phủ định, mệnh đề kéo theo, mệnh đề đảo và hai mệnh đề tương đương",
+                        "Dạng 3: Mệnh đề chứa ký hiệu với mọi (\\forall) và tồn tại (\\exists)",
+                        "Dạng 4: Suy luận logic mệnh đề trong bài toán thực tế ĐGNL"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Tập hợp và các phép toán trên tập hợp",
+                      "patterns": [
+                        "Dạng 1: Xác định tập hợp bằng cách liệt kê phần tử hoặc chỉ ra tính chất đặc trưng",
+                        "Dạng 2: Tìm tập con, hai tập hợp bằng nhau và số tập con của tập hữu hạn",
+                        "Dạng 3: Các phép toán giao (A \\cap B), hợp (A \\cup B), hiệu (A \\setminus B) và phần bù (C_U A)",
+                        "Dạng 4: Phép toán trên các tập con của \\mathbb{R} (khoảng, đoạn, nửa khoảng) chứa tham số m",
+                        "Dạng 5: Giải bài toán thực tế bằng biểu đồ Venn (nguyên lý bù trừ 2 và 3 tập hợp)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_10_C2",
+                  "name": "Chương 2: Bất phương trình và hệ bất phương trình bậc nhất hai ẩn",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Bất phương trình bậc nhất hai ẩn",
+                      "patterns": [
+                        "Dạng 1: Nhận biết bất phương trình bậc nhất hai ẩn và kiểm tra miền nghiệm",
+                        "Dạng 2: Biểu diễn hình học miền nghiệm của bất phương trình trên mặt phẳng Oxy"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Hệ bất phương trình bậc nhất hai ẩn",
+                      "patterns": [
+                        "Dạng 1: Biểu diễn miền đa giác nghiệm và tìm tọa độ các đỉnh của miền nghiệm",
+                        "Dạng 2: Tìm giá trị lớn nhất, giá trị nhỏ nhất của biểu thức F(x;y) = ax + by trên miền đa giác",
+                        "Dạng 3: Bài toán quy hoạch tuyến tính tối ưu hóa chi phí, lợi nhuận và khẩu phần dinh dưỡng"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_10_C3",
+                  "name": "Chương 3: Hàm số bậc hai và đồ thị",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Hàm số và đồ thị",
+                      "patterns": [
+                        "Dạng 1: Tìm tập xác định và tập giá trị của hàm số",
+                        "Dạng 2: Xét sự biến thiên (đồng biến, nghịch biến) và tính chẵn lẻ của hàm số"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Hàm số bậc hai",
+                      "patterns": [
+                        "Dạng 1: Xác định tọa độ đỉnh I(-\\frac{b}{2a}; -\\frac{\\Delta}{4a}), trục đối xứng và bảng biến thiên Parabol",
+                        "Dạng 2: Xác định các hệ số a, b, c của Parabol y = ax^2 + bx + c từ đồ thị hoặc điều kiện cho trước",
+                        "Dạng 3: Sự tương giao giữa Parabol và đường thẳng",
+                        "Dạng 4: Ứng dụng cực trị hàm bậc hai giải bài toán quỹ đạo chuyển động và tối ưu doanh thu"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_10_C4",
+                  "name": "Chương 4: Hệ thức lượng trong tam giác",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Giá trị lượng giác của một góc từ 0 đến 180 độ",
+                      "patterns": [
+                        "Dạng 1: Tính giá trị lượng giác và rút gọn biểu thức lượng giác hai góc phụ nhau, bù nhau"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Định lí côsin và định lí sin",
+                      "patterns": [
+                        "Dạng 1: Áp dụng định lí Côsin tính độ dài cạnh và số đo góc trong tam giác",
+                        "Dạng 2: Áp dụng định lí Sin tính cạnh, góc và bán kính đường tròn ngoại tiếp R",
+                        "Dạng 3: Tính diện tích tam giác (Heron, S = \\frac{1}{2}ab\\sin C, S = \\frac{abc}{4R}, S = pr)",
+                        "Dạng 4: Giải tam giác và ứng dụng đo đạc thực tế (chiều cao tháp, khoảng cách qua sông)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_10_C5",
+                  "name": "Chương 5: Vectơ",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Khái niệm vectơ, Tổng và hiệu của hai vectơ",
+                      "patterns": [
+                        "Dạng 1: Quy tắc ba điểm, quy tắc hình bình hành và tính độ dài vectơ tổng/hiệu",
+                        "Dạng 2: Hệ thức trung điểm, trọng tâm tam giác và cân bằng lực vật lí"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Tích của một số với một vectơ và Tích vô hướng",
+                      "patterns": [
+                        "Dạng 1: Phân tích (biểu thị) một vectơ theo hai vectơ không cùng phương",
+                        "Dạng 2: Chứng minh ba điểm thẳng hàng và tìm quỹ tích điểm thỏa đẳng thức vectơ",
+                        "Dạng 3: Tính tích vô hướng, góc giữa hai vectơ và chứng minh hai đường thẳng vuông góc"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_10_C6",
+                  "name": "Chương 6: Thống kê",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Số gần đúng và sai số",
+                      "patterns": [
+                        "Dạng 1: Xác định sai số tuyệt đối, sai số tương đối và quy tròn số gần đúng"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Các số đặc trưng đo xu thế trung tâm và mức độ phân tán",
+                      "patterns": [
+                        "Dạng 1: Tính số trung bình, trung vị (M_e), tứ phân vị (Q_1, Q_2, Q_3) và mốt (M_o)",
+                        "Dạng 2: Tính khoảng biến thiên, khoảng tứ phân vị, phương sai, độ lệch chuẩn và phát hiện giá trị bất thường"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_10_C7",
+                  "name": "Chương 7: Bất phương trình bậc hai một ẩn",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Dấu của tam thức bậc hai và Bất phương trình bậc hai",
+                      "patterns": [
+                        "Dạng 1: Xét dấu tam thức bậc hai f(x) = ax^2 + bx + c và giải bất phương trình bậc hai",
+                        "Dạng 2: Tìm tham số m để tam thức bậc hai luôn dương hoặc luôn âm trên \\mathbb{R} hoặc trên khoảng",
+                        "Dạng 3: Giải phương trình chứa căn thức quy về phương trình bậc hai (\\sqrt{f(x)} = g(x))"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_10_C8",
+                  "name": "Chương 8: Đại số tổ hợp",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Quy tắc cộng và quy tắc nhân",
+                      "patterns": [
+                        "Dạng 1: Đếm số phương án bằng quy tắc cộng, quy tắc nhân và sơ đồ hình cây",
+                        "Dạng 2: Đếm số tự nhiên thỏa mãn điều kiện chia hết, chẵn lẻ, các chữ số đôi một khác nhau"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Hoán vị, Chỉnh hợp và Tổ hợp",
+                      "patterns": [
+                        "Dạng 1: Bài toán sắp xếp hàng ngang, bàn tròn (hoán vị P_n và chỉnh hợp A_n^k)",
+                        "Dạng 2: Phương pháp buộc phần tử (ngồi cạnh nhau) và phương pháp vách ngăn (không ngồi cạnh nhau)",
+                        "Dạng 3: Bài toán chọn người, chọn vật và đếm hình học bằng tổ hợp C_n^k",
+                        "Dạng 4: Đếm bằng phần bù (biến cố đối: 'ít nhất', 'nhiều nhất')"
+                      ]
+                    },
+                    {
+                      "name": "Bài 3: Nhị thức Newton",
+                      "patterns": [
+                        "Dạng 1: Khai triển nhị thức Newton (a + b)^n với n \\in \\{4; 5\\}",
+                        "Dạng 2: Tìm hệ số của x^k và số hạng không chứa x trong khai triển"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_10_C9",
+                  "name": "Chương 9: Phương pháp tọa độ trong mặt phẳng (Oxy)",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Tọa độ của vectơ và Đường thẳng trong mặt phẳng tọa độ",
+                      "patterns": [
+                        "Dạng 1: Tọa độ điểm, vectơ, trọng tâm, trực tâm, tâm đường tròn ngoại tiếp",
+                        "Dạng 2: Viết phương trình tham số và phương trình tổng quát của đường thẳng",
+                        "Dạng 3: Vị trí tương đối, góc giữa hai đường thẳng và khoảng cách từ điểm đến đường thẳng"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Đường tròn và Ba đường conic trong mặt phẳng tọa độ",
+                      "patterns": [
+                        "Dạng 1: Tìm tâm, bán kính và viết phương trình đường tròn, phương trình tiếp tuyến",
+                        "Dạng 2: Xác định tiêu điểm, tiêu cự, trục lớn, trục bé của Elip, Hypebol, Parabol và ứng dụng quang học"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_10_C10",
+                  "name": "Chương 10: Xác suất",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Không gian mẫu, biến cố và Xác suất của biến cố",
+                      "patterns": [
+                        "Dạng 1: Tính xác suất cổ điển P(A) = \\frac{n(A)}{n(\\Omega)} bằng quy tắc đếm và tổ hợp",
+                        "Dạng 2: Tính xác suất bằng biến cố đối P(\\overline{A}) = 1 - P(A)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "grade": 11,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "MATH_11_C1",
+                  "name": "Chương 1: Hàm số lượng giác và phương trình lượng giác",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Góc lượng giác và Công thức lượng giác",
+                      "patterns": [
+                        "Dạng 1: Đổi đơn vị độ và radian, tính độ dài cung tròn và xác định điểm trên đường tròn lượng giác",
+                        "Dạng 2: Áp dụng công thức cộng, công thức nhân đôi, biến đổi tích thành tổng và tổng thành tích"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Hàm số lượng giác và Phương trình lượng giác cơ bản",
+                      "patterns": [
+                        "Dạng 1: Tập xác định, tính tuần hoàn, chu kỳ và GTLN - GTNN của hàm số lượng giác",
+                        "Dạng 2: Giải phương trình lượng giác cơ bản (\\sin x = m, \\cos x = m, \\tan x = m, \\cot x = m) và đếm nghiệm trên khoảng",
+                        "Dạng 3: Bài toán thực tế dao động điều hòa, sóng âm và chiều cao thủy triều"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_11_C2",
+                  "name": "Chương 2: Dãy số. Cấp số cộng và Cấp số nhân",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Dãy số",
+                      "patterns": [
+                        "Dạng 1: Tìm số hạng tổng quát u_n, xét tính tăng giảm và tính bị chặn của dãy số"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Cấp số cộng và Cấp số nhân",
+                      "patterns": [
+                        "Dạng 1: Xác định số hạng đầu u_1, công sai d, số hạng tổng quát u_n và tổng S_n của cấp số cộng",
+                        "Dạng 2: Xác định số hạng đầu u_1, công bội q, số hạng tổng quát u_n và tổng S_n của cấp số nhân",
+                        "Dạng 3: Bài toán lãi kép ngân hàng, tăng trưởng dân số và phân rã phóng xạ"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_11_C3",
+                  "name": "Chương 3: Giới hạn. Hàm số liên tục",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Giới hạn của dãy số và Giới hạn của hàm số",
+                      "patterns": [
+                        "Dạng 1: Tính giới hạn dãy số phân thức hữu tỉ, chứa căn thức hoặc lũy thừa mũ n",
+                        "Dạng 2: Tính giới hạn hàm số khử dạng vô định \\frac{0}{0}, \\frac{\\infty}{\\infty}, \\infty - \\infty (nhân liên hợp)",
+                        "Dạng 3: Tổng của cấp số nhân lùi vô hạn S = \\frac{u_1}{1 - q} (|q| < 1)"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Hàm số liên tục",
+                      "patterns": [
+                        "Dạng 1: Xét tính liên tục của hàm số tại một điểm và tìm tham số m để hàm số liên tục",
+                        "Dạng 2: Chứng minh phương trình có nghiệm bằng tính chất hàm số liên tục trên đoạn [a;b]"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_11_C4",
+                  "name": "Chương 4: Đường thẳng và mặt phẳng. Quan hệ song song trong không gian",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Điểm, đường thẳng và mặt phẳng trong không gian",
+                      "patterns": [
+                        "Dạng 1: Tìm giao tuyến của hai mặt phẳng",
+                        "Dạng 2: Tìm giao điểm của đường thẳng và mặt phẳng",
+                        "Dạng 3: Xác định thiết diện của hình chóp, hình lăng trụ cắt bởi mặt phẳng"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Hai đường thẳng song song, Đường thẳng và mặt phẳng song song, Hai mặt phẳng song song",
+                      "patterns": [
+                        "Dạng 1: Chứng minh đường thẳng song song với mặt phẳng và hai mặt phẳng song song",
+                        "Dạng 2: Tính tỉ số đoạn thẳng và diện tích thiết diện bằng định lí Thales trong không gian"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_11_C5",
+                  "name": "Chương 5: Các số đặc trưng đo xu thế trung tâm cho mẫu số liệu ghép nhóm",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Số trung bình và mốt của mẫu số liệu ghép nhóm",
+                      "patterns": [
+                        "Dạng 1: Tính số trung bình cộng và mốt (M_o) từ bảng tần số ghép nhóm"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Trung vị và tứ phân vị của mẫu số liệu ghép nhóm",
+                      "patterns": [
+                        "Dạng 1: Tính trung vị (M_e) và các tứ phân vị (Q_1, Q_2, Q_3) của mẫu số liệu ghép nhóm"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_11_C6",
+                  "name": "Chương 6: Hàm số mũ và hàm số lôgarit",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Phép tính lũy thừa và Phép tính lôgarit",
+                      "patterns": [
+                        "Dạng 1: Rút gọn và tính giá trị biểu thức lũy thừa số mũ hữu tỉ/thực và lôgarit",
+                        "Dạng 2: Biến đổi công thức đổi cơ số lôgarit (biểu diễn \\log_a b theo các lôgarit cho trước)"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Hàm số mũ, Hàm số lôgarit và Phương trình, Bất phương trình mũ - lôgarit",
+                      "patterns": [
+                        "Dạng 1: Tập xác định, sự biến thiên và nhận dạng đồ thị hàm số mũ y = a^x, lôgarit y = \\log_a x",
+                        "Dạng 2: Giải phương trình, bất phương trình mũ và lôgarit (đưa về cùng cơ số, đặt ẩn phụ)",
+                        "Dạng 3: Tìm tham số m và đếm nghiệm nguyên của bất phương trình mũ - lôgarit",
+                        "Dạng 4: Bài toán thực tế lãi suất ngân hàng, độ pH, mức cường độ âm (dB), độ phóng xạ"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_11_C7",
+                  "name": "Chương 7: Đạo hàm",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Đạo hàm và Các quy tắc tính đạo hàm",
+                      "patterns": [
+                        "Dạng 1: Tính đạo hàm cấp một và đạo hàm cấp hai của hàm đa thức, phân thức, căn thức, lượng giác, mũ, lôgarit",
+                        "Dạng 2: Viết phương trình tiếp tuyến của đồ thị hàm số tại một điểm, biết hệ số góc hoặc đi qua điểm",
+                        "Dạng 3: Ý nghĩa vật lí của đạo hàm (vận tốc v(t) = s'(t), gia tốc a(t) = v'(t), cường độ dòng điện i(t) = q'(t))"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_11_C8",
+                  "name": "Chương 8: Quan hệ vuông góc trong không gian",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Đường thẳng vuông góc với mặt phẳng và Hai mặt phẳng vuông góc",
+                      "patterns": [
+                        "Dạng 1: Chứng minh đường thẳng vuông góc với mặt phẳng và hai đường thẳng vuông góc",
+                        "Dạng 2: Tính góc giữa đường thẳng và mặt phẳng, góc giữa hai mặt phẳng và góc nhị diện"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Khoảng cách và Thể tích trong không gian",
+                      "patterns": [
+                        "Dạng 1: Khoảng cách từ chân đường cao đến mặt bên (kỹ thuật kẻ 2 nét vuông góc)",
+                        "Dạng 2: Khoảng cách từ điểm bất kỳ đến mặt phẳng (phương pháp đổi đỉnh qua tỉ số khoảng cách)",
+                        "Dạng 3: Khoảng cách giữa hai đường thẳng chéo nhau (dựng mặt phẳng song song hoặc đoạn vuông góc chung)",
+                        "Dạng 4: Tính thể tích khối chóp (V = \\frac{1}{3}B.h), khối lăng trụ (V = B.h) và khối chóp cụt đều",
+                        "Dạng 5: Tỉ số thể tích khối đa diện (công thức Simson cho khối chóp tam giác)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_11_C9",
+                  "name": "Chương 9: Xác suất",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Biến cố giao, biến cố hợp và Các quy tắc tính xác suất",
+                      "patterns": [
+                        "Dạng 1: Quy tắc cộng xác suất cho hai biến cố xung khắc và hai biến cố bất kỳ P(A \\cup B) = P(A) + P(B) - P(AB)",
+                        "Dạng 2: Quy tắc nhân xác suất cho các biến cố độc lập P(AB) = P(A).P(B)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "grade": 12,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "MATH_12_C1",
+                  "name": "Chương 1: Ứng dụng đạo hàm để khảo sát và vẽ đồ thị của hàm số",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Tính đơn điệu và cực trị của hàm số",
+                      "patterns": [
+                        "Dạng 1: Xét tính đơn điệu (đồng biến, nghịch biến) của hàm số từ công thức, bảng biến thiên hoặc đồ thị f'(x)",
+                        "Dạng 2: Tìm tham số m để hàm bậc ba đơn điệu trên \\mathbb{R} hoặc trên một khoảng cho trước",
+                        "Dạng 3: Tìm tham số m để hàm phân thức đơn điệu trên từng khoảng xác định hoặc trên khoảng (\\alpha; \\beta)",
+                        "Dạng 4: Tính đơn điệu của hàm số hợp y = f(u(x)) và hàm liên kết g(x) = f(u(x)) + h(x)",
+                        "Dạng 5: Tìm điểm cực trị, giá trị cực trị của hàm số từ biểu thức đạo hàm, bảng biến thiên hoặc đồ thị",
+                        "Dạng 6: Tìm tham số m để hàm bậc ba, bậc bốn trùng phương có cực trị thỏa mãn điều kiện hình học",
+                        "Dạng 7: Đếm số điểm cực trị của hàm số hợp g(x) = f(u(x)) và hàm chứa dấu giá trị tuyệt đối y = |f(x)|, y = f(|x|)"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Giá trị lớn nhất và giá trị nhỏ nhất của hàm số",
+                      "patterns": [
+                        "Dạng 1: Tìm GTLN, GTNN của hàm số trên đoạn [a; b] hoặc trên một khoảng bằng đạo hàm và Casio TABLE",
+                        "Dạng 2: Tìm GTLN, GTNN của hàm số hợp và hàm chứa dấu giá trị tuyệt đối y = |f(x) + m|",
+                        "Dạng 3: Ứng dụng đạo hàm giải bài toán tối ưu thực tế (tối ưu chi phí sản xuất, doanh thu, thể tích, quãng đường)"
+                      ]
+                    },
+                    {
+                      "name": "Bài 3: Đường tiệm cận của đồ thị hàm số",
+                      "patterns": [
+                        "Dạng 1: Xác định tiệm cận đứng và tiệm cận ngang từ công thức hàm số (kể cả hàm chứa căn) hoặc bảng biến thiên",
+                        "Dạng 2: Xác định phương trình đường tiệm cận xiên của hàm phân thức bậc hai trên bậc nhất y = \\frac{ax^2+bx+c}{mx+n}",
+                        "Dạng 3: Tìm tham số m để đồ thị hàm số có đúng k đường tiệm cận hoặc tạo với trục tọa độ diện tích cho trước"
+                      ]
+                    },
+                    {
+                      "name": "Bài 4: Khảo sát sự biến thiên và vẽ đồ thị của hàm số",
+                      "patterns": [
+                        "Dạng 1: Nhận dạng đồ thị và xét dấu các hệ số a, b, c, d của hàm bậc ba, phân thức bậc 1/1 và phân thức bậc 2/1",
+                        "Dạng 2: Bài toán tương giao đồ thị - Biện luận số nghiệm phương trình f(x) = m và phương trình hàm hợp f(u(x)) = m",
+                        "Dạng 3: Giao điểm của hai đồ thị thỏa mãn điều kiện hoành độ (định lí Viète) và độ dài đoạn thẳng"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_12_C2",
+                  "name": "Chương 2: Vectơ và hệ tọa độ trong không gian (Oxyz)",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Vectơ và các phép toán trong không gian",
+                      "patterns": [
+                        "Dạng 1: Quy tắc hình hộp, quy tắc trọng tâm tứ diện và phân tích vectơ trong không gian",
+                        "Dạng 2: Tích vô hướng của hai vectơ và tính góc, độ dài đoạn thẳng trong không gian"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Tọa độ của vectơ và Biểu thức tọa độ của các phép toán vectơ",
+                      "patterns": [
+                        "Dạng 1: Tìm tọa độ điểm, vectơ, hình chiếu vuông góc và điểm đối xứng trên các trục/mặt phẳng tọa độ Oxyz",
+                        "Dạng 2: Tích vô hướng, tích có hướng [\\vec{u}, \\vec{v}] và ứng dụng tính diện tích tam giác, thể tích tứ diện",
+                        "Dạng 3: Bài toán thực tế hệ tọa độ Oxyz (định vị máy bay, drone, lực căng dây trong không gian 3 chiều)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_12_C3",
+                  "name": "Chương 3: Các số đặc trưng đo mức độ phân tán cho mẫu số liệu ghép nhóm",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Khoảng biến thiên và khoảng tứ phân vị của mẫu số liệu ghép nhóm",
+                      "patterns": [
+                        "Dạng 1: Tính khoảng biến thiên R và khoảng tứ phân vị \\Delta_Q = Q_3 - Q_1 của mẫu số liệu ghép nhóm"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Phương sai và độ lệch chuẩn của mẫu số liệu ghép nhóm",
+                      "patterns": [
+                        "Dạng 1: Tính phương sai s^2 và độ lệch chuẩn s của mẫu số liệu ghép nhóm",
+                        "Dạng 2: Ứng dụng so sánh độ ổn định, mức độ rủi ro đầu tư giữa hai mẫu số liệu thực tế"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_12_C4",
+                  "name": "Chương 4: Nguyên hàm. Tích phân",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Nguyên hàm",
+                      "patterns": [
+                        "Dạng 1: Tìm họ nguyên hàm bằng bảng nguyên hàm cơ bản (đa thức, phân thức, lượng giác, mũ)",
+                        "Dạng 2: Tìm nguyên hàm thỏa mãn điều kiện F(x_0) = y_0 và bài toán thực tế vận tốc - quãng đường"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Tích phân",
+                      "patterns": [
+                        "Dạng 1: Tính tích phân bằng định nghĩa, tính chất tuyến tính và tách khoảng (hàm chứa trị tuyệt đối)",
+                        "Dạng 2: Tích phân hàm ẩn và ứng dụng tính giá trị hàm số f(b) khi biết đạo hàm f'(x)"
+                      ]
+                    },
+                    {
+                      "name": "Bài 3: Ứng dụng hình học của tích phân",
+                      "patterns": [
+                        "Dạng 1: Tính diện tích hình phẳng giới hạn bởi các đường cong S = \\int_a^b |f(x) - g(x)|dx",
+                        "Dạng 2: Tính diện tích hình phẳng từ đồ thị cho trước và ứng dụng thiết kế cổng Parabol, chi tiết máy",
+                        "Dạng 3: Tính thể tích vật thể bằng mặt cắt V = \\int_a^b S(x)dx và khối tròn xoay V = \\pi \\int_a^b [f(x)]^2 dx"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_12_C5",
+                  "name": "Chương 5: Phương trình mặt phẳng, đường thẳng, mặt cầu",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Phương trình mặt phẳng",
+                      "patterns": [
+                        "Dạng 1: Tìm vectơ pháp tuyến (tích có hướng) và lập phương trình tổng quát của mặt phẳng",
+                        "Dạng 2: Phương trình mặt phẳng theo đoạn chắn và vị trí tương đối giữa hai mặt phẳng",
+                        "Dạng 3: Khoảng cách từ một điểm đến mặt phẳng và góc giữa hai mặt phẳng"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Phương trình đường thẳng trong không gian",
+                      "patterns": [
+                        "Dạng 1: Tìm vectơ chỉ phương và lập phương trình tham số, phương trình chính tắc của đường thẳng",
+                        "Dạng 2: Vị trí tương đối giữa hai đường thẳng và giữa đường thẳng với mặt phẳng (tìm giao điểm, hình chiếu)",
+                        "Dạng 3: Góc giữa hai đường thẳng, góc giữa đường thẳng và mặt phẳng"
+                      ]
+                    },
+                    {
+                      "name": "Bài 3: Phương trình mặt cầu",
+                      "patterns": [
+                        "Dạng 1: Xác định tâm I(a;b;c), bán kính R và lập phương trình mặt cầu",
+                        "Dạng 2: Vị trí tương đối của mặt cầu với mặt phẳng (đường tròn giao tuyến, mặt phẳng tiếp diện)",
+                        "Dạng 3: Bài toán cực trị hình học Oxyz và ứng dụng định vị GPS / vùng phủ sóng radar"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "MATH_12_C6",
+                  "name": "Chương 6: Xác suất có điều kiện",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Xác suất có điều kiện",
+                      "patterns": [
+                        "Dạng 1: Tính xác suất có điều kiện P(A|B) = \\frac{P(AB)}{P(B)} bằng định nghĩa hoặc sơ đồ hình cây",
+                        "Dạng 2: Áp dụng công thức nhân xác suất P(AB) = P(B).P(A|B)"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Công thức xác suất toàn phần và công thức Bayes",
+                      "patterns": [
+                        "Dạng 1: Tính xác suất bằng công thức xác suất toàn phần P(A) = P(B).P(A|B) + P(\\overline{B}).P(A|\\overline{B})",
+                        "Dạng 2: Áp dụng công thức Bayes tính xác suất hậu nghiệm (chẩn đoán y khoa dương tính/âm tính giả, kiểm định lỗi dây chuyền)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "subjectCode": "LOGIC_DATA",
+          "subjectName": "Tư duy Logic & Phân tích số liệu (ĐGNL)",
+          "ocrModeDefault": "STEM_FORMULAS",
+          "grades": [
+            {
+              "grade": 12,
+              "bookEdition": "Chuẩn ĐGNL ĐHQG-HCM (V-ACT)",
+              "chapters": [
+                {
+                  "code": "LOGIC_C1",
+                  "name": "Chuyên đề 1: Tư duy Logic & Suy luận",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Suy luận logic mệnh đề và Xếp vị trí",
+                      "patterns": [
+                        "Dạng 1: Suy luận mệnh đề đúng - sai (bài toán ai nói thật, ai nói dối)",
+                        "Dạng 2: Suy luận sắp xếp thứ tự hàng ngang, bàn tròn, lịch trình trong tuần",
+                        "Dạng 3: Suy luận phân nhóm đối tượng có ràng buộc điều kiện kéo theo (Nếu... thì...)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "DATA_C2",
+                  "name": "Chuyên đề 2: Phân tích số liệu & Biểu đồ",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Đọc hiểu và xử lý bảng biểu, biểu đồ thống kê",
+                      "patterns": [
+                        "Dạng 1: Phân tích biểu đồ tròn (tính tỷ trọng %, quy đổi giá trị thực tế và tốc độ tăng trưởng)",
+                        "Dạng 2: Phân tích biểu đồ cột, cột ghép, cột chồng và biểu đồ đường",
+                        "Dạng 3: Phân tích bảng số liệu đa chiều (tài chính, xuất nhập khẩu, dân số, năng suất)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "domainId": "b581ee4c-7277-4be8-a156-c5b20a0a59f6",
+      "domainCode": "LANGUAGE",
+      "domainName": "Sử dụng Ngôn ngữ",
+      "subjects": [
+        {
+          "subjectCode": "VIET",
+          "subjectName": "Ngữ văn / Tiếng Việt",
+          "ocrModeDefault": "TEXT_HUMANITIES",
+          "grades": [
+            {
+              "grade": 10,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "VIET_10_C1",
+                  "name": "Ngữ văn 10: Đọc hiểu theo Thể loại & Thực hành Tiếng Việt",
+                  "lessons": [
+                    {
+                      "name": "Bài 1 & 2: Thần thoại và Sử thi",
+                      "patterns": [
+                        "Dạng 1: Nhận diện không gian, thời gian, cốt truyện và nhân vật thần thoại / anh hùng sử thi",
+                        "Dạng 2: Thực hành Tiếng Việt: Từ Hán Việt, biện pháp chêm xen, liệt kê và sửa lỗi dùng từ"
+                      ]
+                    },
+                    {
+                      "name": "Bài 3, 5 & 6: Thơ trữ tình, Kịch bản Chèo/Tuồng và Truyện thơ",
+                      "patterns": [
+                        "Dạng 1: Phân tích chủ thể trữ tình, vần, nhịp, từ ngữ và biện pháp tu từ trong thơ",
+                        "Dạng 2: Nhận diện xung đột kịch, lời thoại và hành động nhân vật trong Chèo/Tuồng"
+                      ]
+                    },
+                    {
+                      "name": "Bài 4, 7 & 8: Văn bản thông tin, Truyện ngắn và Văn bản nghị luận",
+                      "patterns": [
+                        "Dạng 1: Phân tích thông tin cơ bản, nhan đề, sa-pô và phương tiện phi ngôn ngữ trong văn bản thông tin",
+                        "Dạng 2: Phân tích điểm nhìn, người kể chuyện ngôi thứ nhất/thứ ba trong truyện ngắn",
+                        "Dạng 3: Nhận diện luận đề, luận điểm, lí lẽ và bằng chứng trong văn bản nghị luận"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "grade": 11,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "VIET_11_C1",
+                  "name": "Ngữ văn 11: Tùy bút, Nghị luận, Truyện thơ, Bi kịch & Thơ tượng trưng",
+                  "lessons": [
+                    {
+                      "name": "Bài 1, 3, 5 & 9: Tùy bút - Tản văn, Truyện thơ, Bi kịch và Truyện kí",
+                      "patterns": [
+                        "Dạng 1: Nhận diện yếu tố tự sự và trữ tình, cái tôi tác giả trong tùy bút, tản văn, truyện kí",
+                        "Dạng 2: Phân tích xung đột bi kịch, nhân vật bi kịch và hiệu ứng thanh lọc"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2, 4, 6 & 8: Văn bản nghị luận, Văn bản thông tin, Truyện ngắn và Thơ yếu tố tượng trưng",
+                      "patterns": [
+                        "Dạng 1: Phân tích cấu trúc hình tượng, yếu tố tượng trưng và kết hợp từ ngữ lạ hóa trong thơ hiện đại",
+                        "Dạng 2: Thực hành Tiếng Việt: Giải thích nghĩa của từ, câu rút gọn, câu đặc biệt, lỗi thành phần câu"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "grade": 12,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "VIET_12_C1",
+                  "name": "Ngữ văn 12: Thể loại Văn học, Đọc hiểu & Tiếng Việt ĐGNL",
+                  "lessons": [
+                    {
+                      "name": "Bài 1 & 6: Thơ cổ điển, Thơ lãng mạn và Thơ hiện đại",
+                      "patterns": [
+                        "Dạng 1: Nhận diện phong cách cổ điển, lãng mạn, thể thơ, hình ảnh biểu tượng và mạch cảm xúc",
+                        "Dạng 2: Phân tích tác dụng của các biện pháp tu từ (ẩn dụ, hoán dụ, điệp cấu trúc, đối, câu hỏi tu từ)"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2, 3 & 7: Truyện lãng mạn - hiện thực, Truyện truyền kì, Văn tế và Tiểu thuyết",
+                      "patterns": [
+                        "Dạng 1: Phân tích ngôi kể, điểm nhìn trần thuật, sự dịch chuyển điểm nhìn và ngôn ngữ nhân vật",
+                        "Dạng 2: Nhận diện yếu tố kì ảo trong truyện truyền kì và giọng điệu bi tráng trong văn tế"
+                      ]
+                    },
+                    {
+                      "name": "Bài 4, 5 & 8: Phóng sự, Nhật kí, Hài kịch và Văn bản thông tin - Nghị luận",
+                      "patterns": [
+                        "Dạng 1: Phân tích tính xác thực (phi hư cấu) trong phóng sự, nhật kí và thủ pháp trào phúng trong hài kịch",
+                        "Dạng 2: Thực hành Tiếng Việt ĐGNL: Sửa lỗi logic câu, lỗi mơ hồ câu, phép liên kết câu/đoạn và phong cách ngôn ngữ"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "subjectCode": "ENGL",
+          "subjectName": "Tiếng Anh",
+          "ocrModeDefault": "TEXT_HUMANITIES",
+          "grades": [
+            {
+              "grade": 12,
+              "bookEdition": "Friends Global / GDPT 2018 & V-ACT",
+              "chapters": [
+                {
+                  "code": "ENGL_12_C1",
+                  "name": "Chuyên đề 1: Ngữ pháp & Từ vựng Tiếng Anh ĐGNL",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Hệ thống ngữ pháp trọng tâm và Nhận diện lỗi sai",
+                      "patterns": [
+                        "Dạng 1: Sự phối hợp thì (Tenses), Sự hòa hợp chủ ngữ - động từ (Subject-Verb Agreement) và Câu bị động (Passive Voice)",
+                        "Dạng 2: Mệnh đề quan hệ (Relative Clauses), Rút gọn mệnh đề và Câu điều kiện / Đảo ngữ (Inversion)",
+                        "Dạng 3: Cấu tạo từ (Word Formation), Cụm động từ (Phrasal Verbs), Giới từ và Collocations",
+                        "Dạng 4: Tìm lỗi sai (Error Identification) và Viết lại câu đồng nghĩa (Sentence Transformation)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "ENGL_12_C2",
+                  "name": "Chuyên đề 2: Đọc hiểu Văn bản Tiếng Anh (Reading Comprehension & Cloze)",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Đọc điền từ (Cloze Text) và Đọc hiểu học thuật",
+                      "patterns": [
+                        "Dạng 1: Tìm ý chính / tiêu đề đoạn văn (Main Idea / Best Title)",
+                        "Dạng 2: Tìm thông tin chi tiết và câu hỏi phủ định (Factual & Negative Factual Questions)",
+                        "Dạng 3: Đoán nghĩa từ vựng và quy chiếu đại từ trong ngữ cảnh (Vocabulary & Reference in Context)",
+                        "Dạng 4: Câu hỏi suy luận và thái độ tác giả (Inference & Author's Tone)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "domainId": "77777777-7777-7777-7777-000000000001",
+      "domainCode": "NATURAL_SCIENCES",
+      "domainName": "Khoa học tự nhiên",
+      "subjects": [
+        {
+          "subjectCode": "PHYS",
+          "subjectName": "Vật lí",
+          "ocrModeDefault": "STEM_FORMULAS",
+          "grades": [
+            {
+              "grade": 10,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "PHYS_10_C1",
+                  "name": "Vật lí 10: Cơ học (Động học, Động lực học, Năng lượng, Động lượng)",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Mô tả chuyển động và Ba định luật Newton",
+                      "patterns": [
+                        "Dạng 1: Độ dịch chuyển, vận tốc, gia tốc và đồ thị chuyển động thẳng biến đổi đều, sự rơi tự do, ném ngang",
+                        "Dạng 2: Tổng hợp lực, phân tích lực và áp dụng 3 định luật Newton (lực ma sát, lực căng, lực đẩy Archimedes)"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Công, Năng lượng, Động lượng và Chuyển động tròn",
+                      "patterns": [
+                        "Dạng 1: Công, công suất, động năng, thế năng và định luật bảo toàn cơ năng",
+                        "Dạng 2: Động lượng, xung lượng của lực và định luật bảo toàn động lượng (va chạm mềm, va chạm đàn hồi)",
+                        "Dạng 3: Động học và động lực học chuyển động tròn đều (lực hướng tâm) và biến dạng đàn hồi (định luật Hooke)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "grade": 11,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "PHYS_11_C1",
+                  "name": "Vật lí 11: Dao động, Sóng, Điện trường và Dòng điện không đổi",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Dao động điều hòa và Sóng",
+                      "patterns": [
+                        "Dạng 1: Phương trình li độ, vận tốc, gia tốc, pha dao động và năng lượng dao động điều hòa",
+                        "Dạng 2: Các đại lượng đặc trưng của sóng cơ, sóng điện từ, giao thoa sóng hai nguồn kết hợp và sóng dừng"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Điện trường và Dòng điện không đổi",
+                      "patterns": [
+                        "Dạng 1: Định luật Coulomb, cường độ điện trường, điện thế, hiệu điện thế và tụ điện",
+                        "Dạng 2: Cường độ dòng điện, điện trở, định luật Ohm cho mạch điện, công và công suất nguồn điện"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "grade": 12,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "PHYS_12_C1",
+                  "name": "Chương 1: Vật lí nhiệt",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Cấu trúc chất, Sự chuyển thể và Nội năng",
+                      "patterns": [
+                        "Dạng 1: Mô hình động học phân tử, sự chuyển thể và thang nhiệt độ Celsius - Kelvin (T(K) = t(^\\circ C) + 273)",
+                        "Dạng 2: Định luật I Nhiệt động lực học (\\Delta U = Q + A) và quy ước dấu của công A, nhiệt lượng Q",
+                        "Dạng 3: Bài toán cân bằng nhiệt, nhiệt dung riêng (Q = mc\\Delta T), nhiệt nóng chảy riêng (Q = \\lambda m) và nhiệt hóa hơi riêng (Q = Lm)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "PHYS_12_C2",
+                  "name": "Chương 2: Khí lí tưởng",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Định luật Boyle, Charles và Phương trình trạng thái khí lí tưởng",
+                      "patterns": [
+                        "Dạng 1: Quá trình đẳng nhiệt (Định luật Boyle: p_1V_1 = p_2V_2) và đẳng áp (Định luật Charles: \\frac{V_1}{T_1} = \\frac{V_2}{T_2})",
+                        "Dạng 2: Phương trình trạng thái khí lí tưởng (\\frac{pV}{T} = nR) và phương trình Clapeyron - Mendeleev",
+                        "Dạng 3: Áp suất khí theo mô hình động học phân tử và động năng trung bình của phân tử khí (\\overline{E_d} = \\frac{3}{2}kT)"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "PHYS_12_C3",
+                  "name": "Chương 3: Từ trường",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Từ trường, Lực từ và Cảm ứng điện từ",
+                      "patterns": [
+                        "Dạng 1: Xác định cảm ứng từ \\vec{B} và lực từ tác dụng lên đoạn dây dẫn mang dòng điện F = BIL\\sin\\alpha",
+                        "Dạng 2: Từ thông \\Phi = NBS\\cos\\alpha, định luật Lenz và suất điện động cảm ứng e_c = -\\frac{\\Delta\\Phi}{\\Delta t}",
+                        "Dạng 3: Đại cương dòng điện xoay chiều, giá trị hiệu dụng (I = \\frac{I_0}{\\sqrt{2}}, U = \\frac{U_0}{\\sqrt{2}}) và máy biến áp"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "PHYS_12_C4",
+                  "name": "Chương 4: Vật lí hạt nhân",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Cấu trúc hạt nhân, Phản ứng hạt nhân và Phóng xạ",
+                      "patterns": [
+                        "Dạng 1: Cấu tạo hạt nhân _Z^A X, độ hụt khối \\Delta m và năng lượng liên kết riêng \\varepsilon = \\frac{W_{lk}}{A}",
+                        "Dạng 2: Định luật bảo toàn trong phản ứng hạt nhân, phản ứng phân hạch và nhiệt hạch",
+                        "Dạng 3: Định luật phóng xạ (N(t) = N_0.2^{-t/T}, m(t) = m_0.2^{-t/T}), độ phóng xạ H = \\lambda N và xác định tuổi cổ vật bằng ^{14}C"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "subjectCode": "CHEM",
+          "subjectName": "Hóa học",
+          "ocrModeDefault": "STEM_FORMULAS",
+          "grades": [
+            {
+              "grade": 10,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "CHEM_10_C1",
+                  "name": "Hóa học 10: Nguyên tử, Bảng tuần hoàn, Liên kết, Oxi hóa - khử & Nhiệt hóa học",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Cấu tạo nguyên tử, Bảng tuần hoàn và Liên kết hóa học",
+                      "patterns": [
+                        "Dạng 1: Hạt cơ bản, đồng vị, nguyên tử khối trung bình và cấu hình electron nguyên tử/ion",
+                        "Dạng 2: Biến đổi tuần hoàn tính chất nguyên tố và nhận diện liên kết ion, cộng hóa trị, liên kết hydrogen"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Phản ứng oxi hóa - khử, Năng lượng hóa học và Nhóm Halogen",
+                      "patterns": [
+                        "Dạng 1: Cân bằng phản ứng oxi hóa - khử bằng phương pháp thăng bằng electron và bảo toàn electron",
+                        "Dạng 2: Tính biến thiên enthalpy chuẩn của phản ứng \\Delta_r H^0_{298} từ nhiệt tạo thành hoặc năng lượng liên kết",
+                        "Dạng 3: Tốc độ phản ứng và tính chất hóa học của đơn chất Halogen, Hydrogen halide"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "grade": 11,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "CHEM_11_C1",
+                  "name": "Hóa học 11: Cân bằng hóa học, Nitrogen - Sulfur & Hóa học hữu cơ",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Cân bằng hóa học, pH và Hợp chất vô cơ Nitrogen - Sulfur",
+                      "patterns": [
+                        "Dạng 1: Hằng số cân bằng K_C, chuyển dịch cân bằng Le Chatelier, tính pH dung dịch và chuẩn độ acid - base",
+                        "Dạng 2: Tính chất và bài toán HNO_3, H_2SO_4 đặc, hiện tượng phú dưỡng và mưa acid"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Đại cương hữu cơ, Hydrocarbon và Dẫn xuất Alcohol - Phenol - Carbonyl - Carboxylic acid",
+                      "patterns": [
+                        "Dạng 1: Phổ hồng ngoại (IR), phổ khối lượng (MS) và lập công thức phân tử hợp chất hữu cơ",
+                        "Dạng 2: Danh pháp, đồng phân và phản ứng đặc trưng của Alkane, Alkene, Alkyne, Arene",
+                        "Dạng 3: Tính chất và bài toán của Alcohol, Phenol, Aldehyde, Ketone (tráng bạc, iodoform) và Carboxylic acid"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "grade": 12,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "CHEM_12_C1",
+                  "name": "Chương 1: Ester - Lipid",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Ester và Lipid",
+                      "patterns": [
+                        "Dạng 1: Danh pháp, đồng phân cấu tạo và tính chất vật lí của Ester - Lipid",
+                        "Dạng 2: Bài toán thủy phân Ester trong môi trường acid và xà phòng hóa trong kiềm (NaOH, KOH)",
+                        "Dạng 3: Bài toán thủy phân chất béo (triglyceride), chỉ số xà phòng hóa và sản xuất xà phòng / chất giặt rửa"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "CHEM_12_C2",
+                  "name": "Chương 2: Carbohydrate",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Glucose, Fructose, Saccharose, Maltose, Tinh bột và Cellulose",
+                      "patterns": [
+                        "Dạng 1: Cấu tạo dạng mạch hở, mạch vòng và tính chất hóa học của các Carbohydrate",
+                        "Dạng 2: Bài toán tráng bạc, lên men rượu của Glucose và thủy phân Saccharose, Tinh bột, Cellulose"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "CHEM_12_C3",
+                  "name": "Chương 3: Hợp chất chứa Nitrogen",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Amine, Amino acid, Peptide và Protein",
+                      "patterns": [
+                        "Dạng 1: So sánh lực base của Amine và tính chất lưỡng tính, tính điện di của Amino acid",
+                        "Dạng 2: Phản ứng thủy phân Peptide, phản ứng màu Biuret và bài toán Amino acid tác dụng với acid/kiềm nối tiếp"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "CHEM_12_C4",
+                  "name": "Chương 4: Polymer",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Đại cương về Polymer và Vật liệu Polymer",
+                      "patterns": [
+                        "Dạng 1: Phân loại phản ứng trùng hợp, trùng ngưng và nhận diện chất dẻo, tơ, cao su, keo dán",
+                        "Dạng 2: Tính hệ số mắt xích (hệ số trùng hợp n) và bài toán tổng hợp cao su buna-S, buna-N"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "code": "CHEM_12_C5",
+                  "name": "Chương 5, 6, 7 & 8: Pin điện - Điện phân, Đại cương Kim loại, Nhóm IA-IIA & Phức chất",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Thế điện cực chuẩn, Pin Galvani và Sự điện phân",
+                      "patterns": [
+                        "Dạng 1: Cặp oxi hóa - khử, quy tắc alpha và tính sức điện động chuẩn của pin E^0_{pin} = E^0_{+} - E^0_{-}",
+                        "Dạng 2: Thứ tự điện phân và tính khối lượng kim loại / thể tích khí theo định luật Faraday (n_e = \\frac{It}{F})"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Đại cương kim loại, Nguyên tố nhóm IA, IIA và Phức chất",
+                      "patterns": [
+                        "Dạng 1: Tách kim loại, hợp kim, ăn mòn hóa học và ăn mòn điện hóa",
+                        "Dạng 2: Tính chất kim loại kiềm, kiềm thổ, nước cứng và bài toán CO_2 tác dụng với dung dịch kiềm",
+                        "Dạng 3: Cấu tạo phức chất (nguyên tử trung tâm, phối tử, số phối trí) và tính chất kim loại chuyển tiếp dãy thứ nhất"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "subjectCode": "BIO",
+          "subjectName": "Sinh học",
+          "ocrModeDefault": "TEXT_HUMANITIES",
+          "grades": [
+            {
+              "grade": 10,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "BIO_10_C1",
+                  "name": "Sinh học 10: Sinh học tế bào và Vi sinh vật - Virus",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Thành phần hóa học, Cấu trúc tế bào, Chuyển hóa năng lượng và Phân bào",
+                      "patterns": [
+                        "Dạng 1: Các đại phân tử sinh học (Carbohydrate, Lipid, Protein, Nucleic acid) và cấu trúc tế bào nhân sơ - nhân thực",
+                        "Dạng 2: Vận chuyển các chất qua màng, Enzyme, Hô hấp tế bào, Quang hợp và Chu kì tế bào (Nguyên phân - Giảm phân)"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "grade": 11,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "BIO_11_C1",
+                  "name": "Sinh học 11: Sinh học cơ thể (Trao đổi chất, Cảm ứng, Sinh trưởng & Sinh sản)",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Trao đổi chất và chuyển hóa năng lượng ở thực vật và động vật",
+                      "patterns": [
+                        "Dạng 1: Trao đổi nước, khoáng, quang hợp (C3, C4, CAM) và hô hấp ở thực vật",
+                        "Dạng 2: Dinh dưỡng, tiêu hóa, hô hấp, tuần hoàn máu và cân bằng nội môi ở người và động vật"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "grade": 12,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "BIO_12_C1",
+                  "name": "Sinh học 12: Di truyền học, Tiến hóa và Sinh thái học",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Cơ chế di truyền phân tử, tế bào và Các quy luật di truyền",
+                      "patterns": [
+                        "Dạng 1: Tái bản DNA, phiên mã, dịch mã, điều hòa hoạt động gene (Operon Lac) và đột biến gene",
+                        "Dạng 2: Quy luật Mendel, tương tác gene, liên kết gene - hoán vị gene, di truyền liên kết giới tính và đột biến NST",
+                        "Dạng 3: Di truyền học quần thể (cân bằng Hardy - Weinberg: p^2 + 2pq + q^2 = 1) và phả hệ di truyền người"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Tiến hóa và Sinh thái học - Môi trường",
+                      "patterns": [
+                        "Dạng 1: Các bằng chứng tiến hóa, các nhân tố tiến hóa và quá trình hình thành loài mới",
+                        "Dạng 2: Đặc trưng quần thể, mối quan hệ trong quần xã, chuỗi và lưới thức ăn, hiệu suất sinh thái"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "domainId": "77777777-7777-7777-7777-000000000002",
+      "domainCode": "SOCIAL_SCIENCES",
+      "domainName": "Khoa học xã hội",
+      "subjects": [
+        {
+          "subjectCode": "HIST",
+          "subjectName": "Lịch sử",
+          "ocrModeDefault": "TEXT_HUMANITIES",
+          "grades": [
+            {
+              "grade": 12,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "HIST_12_C1",
+                  "name": "Lịch sử 10 - 11 - 12: Lịch sử Thế giới & Lịch sử Việt Nam hiện đại",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Thế giới trong và sau Chiến tranh lạnh, Liên hợp quốc và ASEAN",
+                      "patterns": [
+                        "Dạng 1: Trật tự thế giới hai cực Ianta, xu thế đa cực và vai trò của Liên hợp quốc",
+                        "Dạng 2: Quá trình hình thành, phát triển của ASEAN và Cộng đồng ASEAN"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Cách mạng tháng Tám 1945, Kháng chiến chống Pháp, chống Mỹ và Công cuộc Đổi mới",
+                      "patterns": [
+                        "Dạng 1: Cách mạng tháng Tám năm 1945 và cuộc kháng chiến chống thực dân Pháp (1945 - 1954)",
+                        "Dạng 2: Cuộc kháng chiến chống Mỹ, cứu nước (1954 - 1975) và bảo vệ Tổ quốc từ sau 1975",
+                        "Dạng 3: Công cuộc Đổi mới ở Việt Nam từ năm 1986 đến nay và hoạt động đối ngoại, tư tưởng Hồ Chí Minh"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "subjectCode": "GEO",
+          "subjectName": "Địa lí",
+          "ocrModeDefault": "TEXT_HUMANITIES",
+          "grades": [
+            {
+              "grade": 12,
+              "bookEdition": "Chân trời sáng tạo",
+              "chapters": [
+                {
+                  "code": "GEO_12_C1",
+                  "name": "Địa lí 10 - 11 - 12: Địa lí Tự nhiên, Dân cư, Ngành kinh tế và Vùng kinh tế Việt Nam",
+                  "lessons": [
+                    {
+                      "name": "Bài 1: Vị trí địa lí, Thiên nhiên nhiệt đới ẩm gió mùa và Phân hóa thiên nhiên Việt Nam",
+                      "patterns": [
+                        "Dạng 1: Đặc điểm vị trí địa lí, phạm vi lãnh thổ và thiên nhiên nhiệt đới ẩm gió mùa",
+                        "Dạng 2: Sự phân hóa đa dạng của thiên nhiên (Bắc - Nam, Đông - Tây, theo độ cao) và vấn đề sử dụng tài nguyên, môi trường"
+                      ]
+                    },
+                    {
+                      "name": "Bài 2: Địa lí dân cư, Các ngành kinh tế và Các vùng kinh tế trọng điểm",
+                      "patterns": [
+                        "Dạng 1: Dân số, lao động, việc làm, đô thị hóa và chuyển dịch cơ cấu kinh tế",
+                        "Dạng 2: Địa lí Nông - Lâm - Thủy sản, Công nghiệp, Giao thông vận tải, Thương mại và Du lịch",
+                        "Dạng 3: Khai thác thế mạnh các vùng kinh tế (Trung du miền núi Bắc Bộ, ĐB sông Hồng, Tây Nguyên, Đông Nam Bộ, ĐBSCL) và chủ quyền biển đảo"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

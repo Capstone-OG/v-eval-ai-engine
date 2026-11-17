@@ -69,6 +69,14 @@ QUY TẮC BẮT BUỘC VỀ BÀI HỌC, DẠNG BÀI, VÍ DỤ MINH HỌA, BÀI M
      params: a=1,b=0,c=-3,d=1
      [/MATH_GRAPH]
      (Các type hợp lệ: cubic [bậc ba y=ax^3+bx^2+cx+d, params: a,b,c,d], quartic [bậc bốn trùng phương y=ax^4+bx^2+c, params: a,b,c], rational [phân thức bậc 1/1 y=(ax+b)/(cx+d), params: a,b,c,d], rational_21 [phân thức bậc 2/1 y=(ax^2+bx+c)/(dx+e), params: a,b,c,d,e], quadratic [parabol y=ax^2+bx+c, params: a,b,c], custom [biểu thức tùy ý expr=...]).
+
+   - [D] NHẮC NHỞ BỔ SUNG HÌNH ẢNH / SƠ ĐỒ THÍ NGHIỆM / BIỂU ĐỒ [IMAGE_PLACEHOLDER]:
+     Khi tài liệu gốc có hình ảnh, sơ đồ thí nghiệm (Vật lí, Hóa học, Sinh học), mạch điện, bản đồ/biểu đồ (Địa lí, Xử lý số liệu) hoặc hình vẽ đặc thù không thể dựng thuần túy bằng [MATH_GRAPH_3D]/[MATH_GRAPH], BẮT BUỘC đặt thẻ nhắc nhở chuẩn tại đúng vị trí đó để Frontend nhận biết và cắt/bổ sung ảnh:
+     [IMAGE_PLACEHOLDER: id='img_p1_1' page='1' type='LAB_DIAGRAM' desc='Sơ đồ thí nghiệm điều chế ester hoặc mạch điện cần FE cắt bổ sung']
+     (Các type hợp lệ: LAB_DIAGRAM, CHART, GRAPH_2D, GEOMETRY_3D, FIGURE).
+
+   - [E] ĐỒNG NHẤT KATEX CHO MỌI MÔN TỰ NHIÊN (TOÁN, LÝ, HÓA):
+     Tất cả công thức Toán, Vật lí (F = ma, \\Delta m, \\Phi = NBS\\cos\\alpha) và Hóa học (C_2H_5OH, H_2SO_4, \\xrightarrow{t^o}) BẮT BUỘC đặt trong $...$ hoặc $$...$$ theo chuẩn KaTeX.
 4. ĐẦU RA JSON BẮT BUỘC:
 Chỉ trả về 1 chuỗi JSON hợp lệ theo schema sau:
 {

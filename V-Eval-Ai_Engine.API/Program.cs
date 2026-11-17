@@ -4,7 +4,17 @@ using V_Eval_Ai_Engine.API.GrpcServices;
 using V_Eval_Ai_Engine.Application;
 using V_Eval_Ai_Engine.Infrastructure;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory
+});
+
+builder.Configuration
+    .SetBasePath(AppContext.BaseDirectory)
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
 
 // 0. Cấu hình Kestrel & FormOptions cho phép nạp tệp SGK lớn (lên tới 250 MB)
 builder.WebHost.ConfigureKestrel(options =>

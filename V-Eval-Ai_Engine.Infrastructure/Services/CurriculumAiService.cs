@@ -237,16 +237,21 @@ public class CurriculumAiService : ICurriculumAiService
     }
 
     /// <summary>
-    /// Trích xuất và nén tối ưu hóa hình ảnh các trang PDF đại diện cho các tài liệu dạng scan/ảnh (không có lớp text số hóa)
-    /// Giữ số lượng ảnh tinh gọn (mặc định tối đa 5 trang đại diện, sắc nét 120 DPI) để giảm tải payload và tránh timeout.
+    /// Trích xuất và nén tối ưu hóa hình ảnh các trang PDF đại diện cho các tài liệu dạng scan/ảnh (106 - 170+ trang)
+    /// Hạ độ phân giải xuống mức siêu nhẹ (56 DPI, max 740px, JPEG quality 54, ~20KB/trang) để tối ưu tuyệt đối cho Gemini Free Tier.
     /// </summary>
     private List<string> ExtractDownscaledPageImages(
         byte[] pdfBytes,
         int targetStart,
         int targetEnd,
-        int maxImages = 5)
+        int maxImages = 8,
+        int targetDpi = 56)
     {
         var result = new List<string>();
+        int effectiveDpi = Math.Clamp(targetDpi > 0 ? targetDpi : 56, 42, 96);
+        int capDim = effectiveDpi <= 58 ? 720 : 860;
+        int jpegQuality = effectiveDpi <= 58 ? 52 : 62;
+
         try
         {
             using var pdf = PdfDocument.Open(pdfBytes);
@@ -302,33 +307,33 @@ public class CurriculumAiService : ICurriculumAiService
                         if (originalBitmap != null)
                         {
                             int maxDim = Math.Max(originalBitmap.Width, originalBitmap.Height);
-                            float scale = maxDim > 1024 ? 1024f / maxDim : 1.0f;
-                            int targetW = (int)(originalBitmap.Width * scale);
-                            int targetH = (int)(originalBitmap.Height * scale);
+                            float scale = maxDim > capDim ? (float)capDim / maxDim : 1.0f;
+                            int targetW = Math.Max(1, (int)(originalBitmap.Width * scale));
+                            int targetH = Math.Max(1, (int)(originalBitmap.Height * scale));
 
                             using var resized = originalBitmap.Resize(new SKImageInfo(targetW, targetH), SKSamplingOptions.Default);
                             using var skImage = SKImage.FromBitmap(resized);
-                            using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, 75);
+                            using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, jpegQuality);
                             jpegBytes = encoded.ToArray();
                         }
                     }
                 }
 
-                // 2. Nếu trang dạng vector không có ảnh nhúng, dùng PDFtoImage kết xuất sang bitmap độ phân giải rõ nét Dpi = 120
+                // 2. Nếu trang dạng vector không có ảnh nhúng, dùng PDFtoImage kết xuất sang bitmap độ phân giải siêu nhẹ (56 DPI)
                 if (jpegBytes == null)
                 {
                     using var ms = new MemoryStream(pdfBytes);
-                    using var renderedBitmap = Conversion.ToImage(ms, page: page.Number - 1, options: new RenderOptions { Dpi = 120 });
+                    using var renderedBitmap = Conversion.ToImage(ms, page: page.Number - 1, options: new RenderOptions { Dpi = effectiveDpi });
                     if (renderedBitmap != null)
                     {
                         int maxDim = Math.Max(renderedBitmap.Width, renderedBitmap.Height);
-                        float scale = maxDim > 1024 ? 1024f / maxDim : 1.0f;
-                        int targetW = (int)(renderedBitmap.Width * scale);
-                        int targetH = (int)(renderedBitmap.Height * scale);
+                        float scale = maxDim > capDim ? (float)capDim / maxDim : 1.0f;
+                        int targetW = Math.Max(1, (int)(renderedBitmap.Width * scale));
+                        int targetH = Math.Max(1, (int)(renderedBitmap.Height * scale));
 
                         using var resized = renderedBitmap.Resize(new SKImageInfo(targetW, targetH), SKSamplingOptions.Default);
                         using var skImage = SKImage.FromBitmap(resized);
-                        using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, 75);
+                        using var encoded = skImage.Encode(SKEncodedImageFormat.Jpeg, jpegQuality);
                         jpegBytes = encoded.ToArray();
                     }
                 }
@@ -345,6 +350,37 @@ public class CurriculumAiService : ICurriculumAiService
         }
 
         return result;
+    }
+
+    private static string TryLoadPreIngestedTextFromCache(byte[] pdfBytes, int startPage, int endPage)
+    {
+        try
+        {
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            string fileHash = Convert.ToHexStringLower(sha.ComputeHash(pdfBytes));
+            string cachePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "textbooks", "cache", $"{fileHash}.json");
+            if (!File.Exists(cachePath)) return string.Empty;
+
+            string json = File.ReadAllText(cachePath, Encoding.UTF8);
+            var dto = JsonSerializer.Deserialize<TextbookIngestResultDto>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            if (dto?.Chunks == null || dto.Chunks.Count == 0) return string.Empty;
+
+            var sb = new StringBuilder();
+            foreach (var c in dto.Chunks.Where(x => x.PageNumber >= startPage && x.PageNumber <= endPage))
+            {
+                sb.AppendLine($"--- Trang {c.PageNumber} [{c.ChapterName} | {c.LessonName} | {c.PatternName}] ---");
+                sb.AppendLine(c.Text);
+                if (sb.Length > 180000) break;
+            }
+            return sb.ToString();
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     public async Task<ImportCurriculumRequestDto> ExtractCurriculumAsync(
@@ -364,8 +400,10 @@ public class CurriculumAiService : ICurriculumAiService
         string extractedText = string.Empty;
         var pageImagesBase64 = new List<string>();
         byte[]? pdfBytes = null;
-        int maxVisionImages = _configuration.GetValue<int>("AiSettings:MaxVisionPages", 5);
-        if (maxVisionImages <= 0) maxVisionImages = 5;
+        int maxVisionImages = _configuration.GetValue<int>("AiSettings:MaxVisionPages", 8);
+        if (maxVisionImages <= 0) maxVisionImages = 8;
+        int visionDpi = _configuration.GetValue<int>("AiSettings:VisionDpi", 56);
+        if (visionDpi <= 0) visionDpi = 56;
 
         // 1. Đọc văn bản từ tệp nếu có
         if (fileStream != null && !string.IsNullOrEmpty(fileName))
@@ -404,16 +442,28 @@ public class CurriculumAiService : ICurriculumAiService
                     _logger.LogWarning(ex, "PdfPig không đọc được chữ số hóa, chuyển sang trích xuất thô.");
                 }
 
-                // Phát hiện PDF dạng ảnh scan / OCR không có text số hóa, mật độ chữ quá thưa (< 150 ký tự/trang) hoặc người dùng yêu cầu VISION_AI
+                // Phát hiện PDF dạng ảnh scan / OCR không có text số hóa, lỗi font InDesign/CID, hoặc người dùng yêu cầu VISION_AI
                 bool isSparsePdf = actualTextChars < 300 || (totalPagesProcessed > 0 && (actualTextChars / Math.Max(1, totalPagesProcessed)) < 150);
-                if ((isSparsePdf || ocrMode == "VISION_AI") && pdfBytes != null)
+                bool isCorruptedFont = !isSparsePdf && PdfPigTextbookParserService.IsCorruptedFontEncoding(extractedText);
+
+                if ((isSparsePdf || isCorruptedFont || ocrMode == "VISION_AI") && pdfBytes != null)
                 {
-                    _logger.LogInformation("Kích hoạt động cơ trích xuất Multimodal Vision AI (Chế độ: {Mode}, Ký tự lớp text: {Chars} trên {Pages} trang)...", ocrMode ?? "Auto", actualTextChars, totalPagesProcessed);
-                    pageImagesBase64 = ExtractDownscaledPageImages(pdfBytes, targetStart, targetEnd, maxImages: maxVisionImages);
-                    _logger.LogInformation("Đã trích xuất và tối ưu hóa {Count} trang ảnh scan chất lượng cao cho Multimodal Vision.", pageImagesBase64.Count);
-                    if (isSparsePdf || ocrMode == "VISION_AI")
+                    _logger.LogInformation("Kích hoạt động cơ trích xuất Multimodal Vision AI siêu nhẹ {Dpi} DPI (Chế độ: {Mode}, Lỗi font: {Corrupted}, Ký tự lớp text: {Chars} trên {Pages} trang)...",
+                        visionDpi, ocrMode ?? "Auto", isCorruptedFont, actualTextChars, totalPagesProcessed);
+
+                    pageImagesBase64 = ExtractDownscaledPageImages(pdfBytes, targetStart, targetEnd, maxImages: maxVisionImages, targetDpi: visionDpi);
+                    _logger.LogInformation("Đã trích xuất và nén siêu nhẹ {Count} trang ảnh ({Dpi} DPI) cho Multimodal Vision.", pageImagesBase64.Count, visionDpi);
+
+                    // Nếu có dữ liệu SGK đã nạp trước ở Local Cache (theo SHA-256 hash), nạp bổ trợ làm ngữ cảnh đầy đủ cho API
+                    string preIngestedText = TryLoadPreIngestedTextFromCache(pdfBytes, targetStart, targetEnd);
+                    if (!string.IsNullOrWhiteSpace(preIngestedText))
                     {
-                        extractedText = $"[Tài liệu PDF (Chế độ {ocrMode}) gồm {totalPagesProcessed} trang. Dữ liệu các trang đã được trích xuất tối ưu hóa hình ảnh và truyền trực tiếp qua kênh Multimodal Vision AI.]\n" + (ocrMode == "VISION_AI" ? string.Empty : extractedText);
+                        extractedText = preIngestedText;
+                    }
+                    else if (isSparsePdf || isCorruptedFont || ocrMode == "VISION_AI")
+                    {
+                        extractedText = $"[Tài liệu PDF (Chế độ {ocrMode}, nén tối ưu {visionDpi} DPI) gồm {totalPagesProcessed} trang. Dữ liệu các trang đã được trích xuất tối ưu hóa hình ảnh và truyền trực tiếp qua kênh Multimodal Vision AI.]\n"
+                                        + ((ocrMode == "VISION_AI" || isCorruptedFont) ? string.Empty : extractedText);
                     }
                 }
             }
@@ -1970,6 +2020,14 @@ public class CurriculumAiService : ICurriculumAiService
             parsed.DomainName = domainName;
         }
 
+        var docIdentity = CurriculumTaxonomyRegistry.DetectDocumentIdentity(fileName, extractedText, domainId);
+        parsed.SubjectCode = docIdentity.SubjectCode;
+        parsed.SubjectName = docIdentity.SubjectName;
+        parsed.Grade = docIdentity.Grade;
+        parsed.BookEdition = docIdentity.BookEdition;
+        parsed.IsInDgnlScope = docIdentity.IsInDgnlScope;
+        int totalDiagrams = 0;
+
         string fallbackChapName = "Chương 1: Trọng tâm chuyên đề";
         if (!string.IsNullOrWhiteSpace(fileName))
         {
@@ -2047,6 +2105,17 @@ public class CurriculumAiService : ICurriculumAiService
                     pat.TheoryRecap = NormalizeCurriculumLatex(pat.TheoryRecap);
                     pat.SolutionMethod = NormalizeCurriculumLatex(pat.SolutionMethod);
 
+                    string theoryTmp = pat.TheoryRecap;
+                    string methodTmp = pat.SolutionMethod;
+                    var patPlaceholders = new List<DiagramPlaceholderDto>();
+                    patPlaceholders.AddRange(CurriculumTaxonomyRegistry.ExtractAndNormalizeImagePlaceholders(ref theoryTmp, 1, docIdentity.SubjectCode));
+                    patPlaceholders.AddRange(CurriculumTaxonomyRegistry.ExtractAndNormalizeImagePlaceholders(ref methodTmp, 1, docIdentity.SubjectCode));
+                    pat.TheoryRecap = theoryTmp;
+                    pat.SolutionMethod = methodTmp;
+                    pat.ImagePlaceholders = patPlaceholders;
+                    pat.HasDiagram = patPlaceholders.Count > 0;
+                    totalDiagrams += patPlaceholders.Count;
+
                     if (pat.Questions != null)
                     {
                         foreach (var q in pat.Questions)
@@ -2058,11 +2127,19 @@ public class CurriculumAiService : ICurriculumAiService
                             q.OptionB = CleanOptionString(q.OptionB);
                             q.OptionC = CleanOptionString(q.OptionC);
                             q.OptionD = CleanOptionString(q.OptionD);
+
+                            string qContentTmp = q.ContentLatex;
+                            var qPlaceholders = CurriculumTaxonomyRegistry.ExtractAndNormalizeImagePlaceholders(ref qContentTmp, 1, docIdentity.SubjectCode);
+                            q.ContentLatex = qContentTmp;
+                            q.ImagePlaceholders = qPlaceholders;
+                            q.HasDiagram = qPlaceholders.Count > 0;
+                            totalDiagrams += qPlaceholders.Count;
                         }
                     }
                 }
             }
         }
+        parsed.TotalDiagramsDetected = totalDiagrams;
     }
 
     internal static string NormalizeCurriculumLatex(string? text)
@@ -2080,13 +2157,13 @@ public class CurriculumAiService : ICurriculumAiService
              .Replace("\x09", @"\t")
              .Replace("\x08", @"\b");
 
-        // 0.1. BẢO VỆ TUYỆT ĐỐI CÁC KHỐI ĐỒ THỊ & BẢNG BIẾN THIÊN ([MATH_GRAPH_3D], [MATH_GRAPH], [VARIATION_TABLE], [MATH_GEOMETRY_2D]):
+        // 0.1. BẢO VỆ TUYỆT ĐỐI CÁC KHỐI ĐỒ THỊ, BẢNG BIẾN THIÊN & THẺ NHẮC NHỞ SƠ ĐỒ ([IMAGE_PLACEHOLDER:...]):
         // Tuyệt đối không chạy regex bọc $...$ hay nối dòng `: ` vào bên trong các thẻ cấu trúc đồ thị!
         s = Regex.Replace(s, @"\[\s*\$?(\/?)\s*\$?(MATH_GRAPH_3D|MATH_GRAPH|VARIATION_TABLE|MATH_GEOMETRY_2D)\$?\s*\]", "[$1$2]", RegexOptions.IgnoreCase);
         var preservedBlocks = new List<string>();
         s = Regex.Replace(
             s,
-            @"(\[(?:MATH_GRAPH_3D|MATH_GRAPH|VARIATION_TABLE|MATH_GEOMETRY_2D)\][\s\S]*?\[\/(?:MATH_GRAPH_3D|MATH_GRAPH|VARIATION_TABLE|MATH_GEOMETRY_2D)\]|\[GRAPH:[\s\S]*?\])",
+            @"(\[(?:MATH_GRAPH_3D|MATH_GRAPH|VARIATION_TABLE|MATH_GEOMETRY_2D)\][\s\S]*?\[\/(?:MATH_GRAPH_3D|MATH_GRAPH|VARIATION_TABLE|MATH_GEOMETRY_2D)\]|\[GRAPH:[\s\S]*?\]|\[IMAGE_PLACEHOLDER:[\s\S]*?\])",
             m =>
             {
                 string rawBlock = m.Groups[1].Value;
@@ -2159,6 +2236,20 @@ public class CurriculumAiService : ICurriculumAiService
         // 4. Nối các dòng bị ngắt cụt gây gãy layout
         s = Regex.Replace(s, @"\r?\n\s*:\s*", ": ");
         s = Regex.Replace(s, @"(\*[\s]*\([A-F]\))\r?\n\s*", "$1 ");
+
+        // Nối các biến số / ký hiệu toán học / hình học bị ngắt dòng gãy layout:
+        s = Regex.Replace(s, @"\r?\n\s*([,;:\.\)])", "$1");
+        s = Regex.Replace(s, @"([\(])\s*\r?\n\s*", "$1");
+        s = Regex.Replace(s, @"(?i)(vecto|vectơ|đoạn thẳng|điểm|đỉnh|tam giác|hình bình hành)\s*\r?\n\s*([A-Za-z0-9_]{1,3})", "$1 $2");
+        s = Regex.Replace(s, @"([A-Z]{1,2})\s*\r?\n\s*([,\.\:\;])", "$1$2");
+        s = Regex.Replace(s, @"(?<=[a-zà-ỹA-Z])\s*\r?\n\s*([A-Z])\s*([,\.\:\;])", " $1$2");
+        s = Regex.Replace(s, @"[\|\∣]\s*\r?\n\s*([A-Z]{1,2})\s*\r?\n\s*[\|\∣]", "|$1|");
+        s = Regex.Replace(s, @"([A-Z]{2})\s*\r?\n\s*2\b", "$1^2");
+
+        // Chuẩn hóa vecto AB -> vectơ $\vec{AB}$, vecto a -> vectơ $\vec{a}$
+        s = Regex.Replace(s, @"(?i)(?<!\\)(?:vecto|vectơ)\s+([A-Z]{2})\b", @"vectơ $\vec{$1}$");
+        s = Regex.Replace(s, @"(?i)(?<!\\)(?:vecto|vectơ)\s+([a-z])\b", @"vectơ $\vec{$1}$");
+        s = Regex.Replace(s, @"(?<![\$\\\w])\|\s*([A-Z]{2}|[a-z])\s*\|", @"$|\vec{$1}|$");
 
         // Nối công thức ester bị ngắt giữa chuỗi C-H và Oxy (kể cả có khoảng trắng hoặc xuống dòng)
         s = Regex.Replace(s, @"(?i)(\$?C_\{?[0-9n\+\-]+\}?H_\{?[0-9a-zA-Z\+\-]+\}?\$?)\s*(?:\r?\n|\s+)\s*(\$?O_\{?[0-9]+\}?\$?)", m => "$" + m.Groups[1].Value.Replace("$", "") + m.Groups[2].Value.Replace("$", "") + "$");
