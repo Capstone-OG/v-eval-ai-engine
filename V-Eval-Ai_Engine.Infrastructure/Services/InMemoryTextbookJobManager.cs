@@ -74,6 +74,7 @@ public class InMemoryTextbookJobManager : ITextbookJobManager
             entry.Dto.ProgressPercent = 100;
             entry.Dto.CurrentStep = "Hoàn tất trích xuất và nạp tri thức SGK thành công!";
             entry.Dto.Result = result;
+            entry.Dto.SourceId = result.DocumentId;
             entry.Dto.CurrentPage = result.TotalPages;
             entry.Dto.TotalPages = result.TotalPages;
             entry.Dto.ElapsedSeconds = (int)(DateTime.UtcNow - entry.StartedAt).TotalSeconds;

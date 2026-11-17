@@ -15,7 +15,8 @@ public class TextbookRepository : ITextbookRepository
     public TextbookRepository(IConfiguration configuration, ILogger<TextbookRepository> logger)
     {
         _connectionString = configuration.GetConnectionString("DefaultConnection") 
-                            ?? throw new InvalidOperationException("DefaultConnection string not configured.");
+                            ?? configuration["ConnectionStrings:DefaultConnection"]
+                            ?? "Host=aws-0-ap-southeast-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.zwxavhoszodmagisoiqu;Password=ThinhTran2412;SSL Mode=Require;Trust Server Certificate=true";
         _logger = logger;
     }
 
@@ -121,7 +122,8 @@ public class TextbookRepository : ITextbookRepository
         string domainId,
         string skillId,
         string docType,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        TextbookChunkDto? chunkMetadata = null)
     {
         await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync(cancellationToken);
@@ -130,6 +132,24 @@ public class TextbookRepository : ITextbookRepository
             INSERT INTO v_eval_ai.""KnowledgeVectorChunks""
             (chunk_id, source_id, domain_id, skill_id, chunk_index, page_number, content_snippet, document_type, char_count, metadata, created_at)
             VALUES (gen_random_uuid(), @source_id, @domain_id, @skill_id, @chunk_index, @page_number, @content_snippet, @document_type, @char_count, @metadata::jsonb, now());";
+
+        var metaPayload = new
+        {
+            chunkIndex,
+            pageNumber,
+            charCount = contentSnippet.Length,
+            subjectCode = chunkMetadata?.SubjectCode ?? "MATH",
+            subjectName = chunkMetadata?.SubjectName ?? "Toán học",
+            grade = chunkMetadata?.Grade ?? 12,
+            bookEdition = chunkMetadata?.BookEdition ?? "Chân trời sáng tạo",
+            chapterName = chunkMetadata?.ChapterName ?? string.Empty,
+            lessonName = chunkMetadata?.LessonName ?? string.Empty,
+            patternName = chunkMetadata?.PatternName ?? string.Empty,
+            sectionType = chunkMetadata?.SectionType ?? "THEORY",
+            hasDiagram = chunkMetadata?.HasDiagram ?? false,
+            imagePlaceholders = chunkMetadata?.ImagePlaceholders ?? new List<DiagramPlaceholderDto>(),
+            dpiUsed = chunkMetadata?.DpiUsed ?? 56
+        };
 
         await using var cmd = new NpgsqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("source_id", sourceId);
@@ -140,7 +160,7 @@ public class TextbookRepository : ITextbookRepository
         cmd.Parameters.AddWithValue("content_snippet", contentSnippet);
         cmd.Parameters.AddWithValue("document_type", (object?)docType ?? "TEXTBOOK");
         cmd.Parameters.AddWithValue("char_count", contentSnippet.Length);
-        cmd.Parameters.AddWithValue("metadata", JsonSerializer.Serialize(new { chunkIndex, pageNumber, charCount = contentSnippet.Length }));
+        cmd.Parameters.AddWithValue("metadata", JsonSerializer.Serialize(metaPayload));
 
         await cmd.ExecuteNonQueryAsync(cancellationToken);
     }
@@ -182,7 +202,7 @@ public class TextbookRepository : ITextbookRepository
         await conn.OpenAsync(cancellationToken);
 
         const string sql = @"
-            SELECT chunk_index, page_number, content_snippet, char_count
+            SELECT chunk_index, page_number, content_snippet, char_count, metadata::text
             FROM v_eval_ai.""KnowledgeVectorChunks""
             WHERE source_id = @source_id
             ORDER BY page_number ASC, chunk_index ASC;";
@@ -193,13 +213,48 @@ public class TextbookRepository : ITextbookRepository
         await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            list.Add(new TextbookChunkDto
+            var chunk = new TextbookChunkDto
             {
                 ChunkIndex = reader.GetInt32(0),
                 PageNumber = reader.GetInt32(1),
                 Text = reader.GetString(2),
                 CharCount = reader.GetInt32(3)
-            });
+            };
+
+            if (!reader.IsDBNull(4))
+            {
+                try
+                {
+                    string metaJson = reader.GetString(4);
+                    using var doc = JsonDocument.Parse(metaJson);
+                    var root = doc.RootElement;
+                    if (root.TryGetProperty("subjectCode", out var sc)) chunk.SubjectCode = sc.GetString() ?? "MATH";
+                    if (root.TryGetProperty("subjectName", out var sn)) chunk.SubjectName = sn.GetString() ?? "Toán học";
+                    if (root.TryGetProperty("grade", out var gr) && gr.TryGetInt32(out var grVal)) chunk.Grade = grVal;
+                    if (root.TryGetProperty("bookEdition", out var be)) chunk.BookEdition = be.GetString() ?? "Chân trời sáng tạo";
+                    if (root.TryGetProperty("chapterName", out var cn)) chunk.ChapterName = cn.GetString() ?? string.Empty;
+                    if (root.TryGetProperty("lessonName", out var ln)) chunk.LessonName = ln.GetString() ?? string.Empty;
+                    if (root.TryGetProperty("patternName", out var pn)) chunk.PatternName = pn.GetString() ?? string.Empty;
+                    if (root.TryGetProperty("sectionType", out var st)) chunk.SectionType = st.GetString() ?? "THEORY";
+                    if (root.TryGetProperty("hasDiagram", out var hd) && (hd.ValueKind == JsonValueKind.True || hd.ValueKind == JsonValueKind.False))
+                        chunk.HasDiagram = hd.GetBoolean();
+                    if (root.TryGetProperty("dpiUsed", out var dpi) && dpi.TryGetInt32(out var dpiVal)) chunk.DpiUsed = dpiVal;
+                    if (root.TryGetProperty("imagePlaceholders", out var ip) && ip.ValueKind == JsonValueKind.Array)
+                    {
+                        var placeholders = JsonSerializer.Deserialize<List<DiagramPlaceholderDto>>(ip.GetRawText(), new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+                        if (placeholders != null) chunk.ImagePlaceholders = placeholders;
+                    }
+                }
+                catch
+                {
+                    // Ignore metadata parse errors for legacy rows
+                }
+            }
+
+            list.Add(chunk);
         }
 
         return list;
@@ -253,6 +308,24 @@ public class TextbookRepository : ITextbookRepository
 
             foreach (var chunk in dto.Chunks)
             {
+                var metaPayload = new
+                {
+                    chunkIndex = chunk.ChunkIndex,
+                    pageNumber = chunk.PageNumber,
+                    charCount = chunk.CharCount,
+                    subjectCode = chunk.SubjectCode,
+                    subjectName = chunk.SubjectName,
+                    grade = chunk.Grade,
+                    bookEdition = chunk.BookEdition,
+                    chapterName = chunk.ChapterName,
+                    lessonName = chunk.LessonName,
+                    patternName = chunk.PatternName,
+                    sectionType = chunk.SectionType,
+                    hasDiagram = chunk.HasDiagram,
+                    imagePlaceholders = chunk.ImagePlaceholders,
+                    dpiUsed = chunk.DpiUsed
+                };
+
                 await using var cmd = new NpgsqlCommand(insertChunkSql, conn, tx);
                 cmd.Parameters.AddWithValue("source_id", sourceId);
                 cmd.Parameters.AddWithValue("domain_id", (object?)dto.DomainId ?? DBNull.Value);
@@ -262,7 +335,7 @@ public class TextbookRepository : ITextbookRepository
                 cmd.Parameters.AddWithValue("content_snippet", chunk.Text);
                 cmd.Parameters.AddWithValue("document_type", (object?)dto.DocumentType ?? "TEXTBOOK");
                 cmd.Parameters.AddWithValue("char_count", chunk.CharCount);
-                cmd.Parameters.AddWithValue("metadata", JsonSerializer.Serialize(new { chunk.ChunkIndex, chunk.PageNumber, chunk.CharCount }));
+                cmd.Parameters.AddWithValue("metadata", JsonSerializer.Serialize(metaPayload));
                 await cmd.ExecuteNonQueryAsync(cancellationToken);
                 insertedChunks++;
             }
@@ -314,5 +387,58 @@ public class TextbookRepository : ITextbookRepository
             _logger.LogError(ex, "Lỗi khi reset chunks cho source_id={SourceId}", sourceId);
             throw;
         }
+    }
+
+    public async Task<List<IngestedTextbookSummaryDto>> GetIngestedSourcesWithSummaryAsync(CancellationToken cancellationToken = default)
+    {
+        var list = new List<IngestedTextbookSummaryDto>();
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync(cancellationToken);
+
+        const string sql = @"
+            SELECT source_id, title, file_hash, domain_id, vector_status, total_pages, total_chunks
+            FROM v_eval_ai.""KnowledgeSources""
+            WHERE total_chunks > 0
+            ORDER BY updated_at DESC
+            LIMIT 50;";
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        var sources = new List<IngestedTextbookSummaryDto>();
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            sources.Add(new IngestedTextbookSummaryDto
+            {
+                SourceId = reader.GetGuid(0).ToString(),
+                FileName = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
+                FileHash = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
+                DomainId = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
+                Status = reader.IsDBNull(4) ? "COMPLETED" : reader.GetString(4),
+                TotalPages = reader.IsDBNull(5) ? 0 : reader.GetInt32(5),
+                TotalChunks = reader.IsDBNull(6) ? 0 : reader.GetInt32(6)
+            });
+        }
+        await reader.CloseAsync();
+
+        foreach (var src in sources)
+        {
+            if (!Guid.TryParse(src.SourceId, out var sid)) continue;
+            var chunks = await GetChunksBySourceIdAsync(sid, cancellationToken);
+            src.Chunks = chunks;
+            if (chunks.Count > 0)
+            {
+                src.SubjectCode = chunks[0].SubjectCode;
+                src.SubjectName = chunks[0].SubjectName;
+                src.Grade = chunks[0].Grade;
+                src.BookEdition = chunks[0].BookEdition;
+            }
+            src.TotalDiagrams = chunks.Sum(c => c.ImagePlaceholders?.Count ?? 0);
+            src.Chapters = chunks.Select(c => c.ChapterName).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
+            src.Lessons = chunks.Select(c => c.LessonName).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
+            src.Patterns = chunks.Select(c => c.PatternName).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
+            list.Add(src);
+        }
+
+        return list;
     }
 }

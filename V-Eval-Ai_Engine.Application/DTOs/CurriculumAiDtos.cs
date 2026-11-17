@@ -27,6 +27,27 @@ public class ImportCurriculumRequestDto
 
     [JsonPropertyName("totalCharactersExtracted")]
     public int TotalCharactersExtracted { get; set; }
+
+    [JsonPropertyName("subjectCode")]
+    public string? SubjectCode { get; set; }
+
+    [JsonPropertyName("subjectName")]
+    public string? SubjectName { get; set; }
+
+    [JsonPropertyName("grade")]
+    public int Grade { get; set; } = 12;
+
+    [JsonPropertyName("bookEdition")]
+    public string BookEdition { get; set; } = "Chân trời sáng tạo";
+
+    [JsonPropertyName("isInDgnlScope")]
+    public bool IsInDgnlScope { get; set; } = true;
+
+    [JsonPropertyName("dpiUsed")]
+    public int DpiUsed { get; set; } = 56;
+
+    [JsonPropertyName("totalDiagramsDetected")]
+    public int TotalDiagramsDetected { get; set; }
 }
 
 public class ImportChapterDto
@@ -85,6 +106,12 @@ public class ImportPatternDto
     [JsonPropertyName("durationSeconds")]
     public int DurationSeconds { get; set; } = 600;
 
+    [JsonPropertyName("hasDiagram")]
+    public bool HasDiagram { get; set; }
+
+    [JsonPropertyName("imagePlaceholders")]
+    public List<DiagramPlaceholderDto> ImagePlaceholders { get; set; } = new();
+
     [JsonPropertyName("questions")]
     public List<ImportQuestionDto> Questions { get; set; } = new();
 }
@@ -114,6 +141,12 @@ public class ImportQuestionDto
 
     [JsonPropertyName("explanation")]
     public string? Explanation { get; set; }
+
+    [JsonPropertyName("hasDiagram")]
+    public bool HasDiagram { get; set; }
+
+    [JsonPropertyName("imagePlaceholders")]
+    public List<DiagramPlaceholderDto> ImagePlaceholders { get; set; } = new();
 }
 
 public class AnalyzePatternRequestDto

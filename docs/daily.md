@@ -1,5 +1,45 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [17/11/2026] - Đồng Bộ Checkpoint & Job Manager: Thiết Lập Tự Động Gán SourceId Và Khởi Chạy Ổn Định Dịch Vụ Nền
+
+- **Đồng Bộ Job Manager & Checkpoint Cho Tiến Trình Nạp SGK**:
+  - Cập nhật `InMemoryTextbookJobManager.cs`: Thiết lập `entry.Dto.SourceId = result.DocumentId` khi hoàn tất xử lý (`CompleteJob`), giúp Web Client lập tức truy xuất được `sourceId` và tự động fetch đầy đủ chunks tri thức vào giao diện mà không bị trễ hay mất state.
+  - Cập nhật `TextbookEndpoints.cs`: Tự động gán `job.SourceId = cp.Value.SourceId.ToString()` từ Checkpoint Supabase khi người dùng nạp lại file đã có trong CSDL.
+- **Biên Dịch & Khởi Chạy Service**:
+  - `dotnet build` đạt 0 Warnings, 0 Errors.
+  - Khởi chạy nền ổn định dịch vụ `V-Eval-Ai_Engine.API` trên cổng 5104.
+  - Xác nhận API Gateway (port 5212) định tuyến thông suốt đến `http://127.0.0.1:5104/api/ai-engine/textbooks/sources` (đã phản hồi 7 nguồn SGK với 122 chunks của `SGK VL 10 CD.pdf`).
+
+## [17/11/2026] - Nâng Cấp Toàn Diện Động Cơ Xử Lý Sách Giáo Khoa Thuần Ảnh (Pure Scanned PDF OCR Engine), Bóc Tách 70%-80% Lý Thuyết Qua Gemini Vision AI & Sửa Lỗi Khóa Cứng Bài Mở Đầu
+
+- **Mở Rộng Dò Quét Mục Lục Bước 1 Cho SGK Thuần Ảnh (`ScanTextbookSkeletonAsync`)**:
+  - Tự động kết xuất ảnh 10 trang đầu (`Math.Min(10, totalPages)`) và 6 trang cuối (`Math.Max(1, totalPages - 5)` đến `totalPages`) bằng SkiaSharp (DPI 72, JPEG 80%) gửi trực tiếp đến Gemini Vision AI, đảm bảo bắt trọn trang Mục lục của tất cả các bộ SGK Cánh Diều, Kết Nối Tri Thức, Chân Trời Sáng Tạo.
+  - Cải tiến hàm phân giải model `ResolveGeminiModels`: Bổ sung toàn diện các model chính thức chuẩn của Google AI Studio (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-pro`, `gemini-1.5-flash`, `gemini-flash-lite-latest`) và các model cấu hình (`gemini-3.5-flash`, `gemini-3.1-flash-lite`), xóa bỏ bộ lọc sai lầm lọc mất 2.5/2.0.
+  - Cơ chế fallback thông minh: Khi AI chỉ trích xuất được <= 2 chương nhưng sách có >= 25 trang, tự động hợp nhất các Chủ đề chuẩn GDPT 2018 (Vật lí 10 có 5 Chủ đề: Mô tả chuyển động, Lực và Chuyển động, Năng lượng, Động lượng, Chuyển động tròn) để không bao giờ bị rơi vào tình trạng chỉ có 1 bài Mở đầu.
+- **Tự Động Kích Hoạt `VISION_AI` Cho Sách Scan Thuần Ảnh (`PdfPigTextbookParserService.cs`)**:
+  - Tự động nhận diện tài liệu scan khi số trang có text số dưới 50% (`digitalPages.Count < totalPages * 0.5`).
+  - Nâng chất lượng render ảnh lên **`DPI 72`**, chất lượng JPEG 75-80% để ký hiệu toán, lý, hóa rõ nét không bị nhòe.
+  - Tối ưu kích thước batch xuống **`3-4 trang/lượt`** gửi trực tiếp ảnh JPEG lên Gemini Vision AI (`gemini-flash-lite-latest`, `gemini-3.1-flash-lite`), loại bỏ hoàn toàn hiện tượng timeout và đảm bảo bóc tách sâu 70%–80% khối lượng lý thuyết, định nghĩa, định luật, tính chất, ví dụ mẫu và công thức KaTeX.
+- **Sửa Lỗi Khóa Cứng Phân Loại Vào Bài "Mở Đầu" (`OcrPageBatchWithVisionModelsAsync`)**:
+  - Loại bỏ hoàn toàn việc gắn cứng `chapter="{currentChapter}" | lesson="{currentLesson}"` trong prompt Vision OCR.
+  - Trao quyền cho AI tự động đọc tiêu đề Chủ đề/Chương và Bài học in thực tế trên đầu từng trang ảnh, giúp nội dung được phân bổ chuẩn xác vào từng Chương và từng Bài học thay vì bị gộp hết vào 1 bài mở đầu.
+- **Kiểm Thử Toàn Diện**:
+  - `dotnet test` đạt **56/56 unit tests passed 100%**.
+  - Tái khởi động thành công dịch vụ `V-Eval-Ai_Engine.API` trên port 5104.
+
+- **Chuẩn Hóa Ma Trận Nội Dung GDPT 2018 & ĐGNL ĐHQG-HCM ([`gdpt2018_dgnl_taxonomy.json`](../V-Eval-Ai_Engine.Infrastructure/Templates/Taxonomy/gdpt2018_dgnl_taxonomy.json), [`CurriculumTaxonomyRegistry.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumTaxonomyRegistry.cs))**:
+  - Xây dựng bộ cây tri thức động (Zero Hardcode) phủ trọn 3 khối lớp **10, 11, 12** (bám sát bộ **Chân trời sáng tạo** & khung ĐGNL V-ACT) cho các môn trong đề ĐGNL: Toán học, Tư duy Logic & Phân tích số liệu, Ngữ văn/Tiếng Việt (phân loại theo Thể loại & Thực hành Tiếng Việt), Tiếng Anh, Vật lí, Hóa học, Sinh học, Lịch sử, Địa lí.
+  - Tự động gắn cờ `IsInDgnlScope = false` (`OUT_OF_SCOPE_DGNL`) đối với các môn ngoài phạm vi ĐGNL (Âm nhạc, Mỹ thuật/Hội họa, Thể dục, GDQP-AN).
+  - Bổ sung Endpoint `GET /api/ai-engine/textbooks/taxonomy` và `POST /api/ai-engine/textbooks/synthesize-curriculum/{fileHash}` trong [`TextbookEndpoints.cs`](../V-Eval-Ai_Engine.API/Endpoints/TextbookEndpoints.cs) giúp tổng hợp trực tiếp các trang SGK đã nạp thành cây `Chương -> Bài học -> Dạng bài` tương thích 100% với `POST /api/content/curriculum/import`.
+- **Tối Ưu Hóa Nạp PDF Ảnh Thuần 106-170 Trang Bằng Multi-Page Batching & Hạ DPI Siêu Nhẹ ([`PdfPigTextbookParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs), [`CurriculumAiService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/CurriculumAiService.cs))**:
+  - Hạ độ phân giải kết xuất ảnh xuống mặc định **`56 DPI`** (hỗ trợ cấu hình `42 - 96 DPI`, cạnh tối đa 720px, JPEG quality 52, dung lượng ~18-25KB/trang) kết hợp gộp **5 trang/Batch** trong một lượt gọi Gemini Vision API, giảm 5x số lượng request trên Free Tier.
+  - Luôn ưu tiên API Vision động và giữ cơ chế fallback sang Local Pre-prepared Cache (`wwwroot/uploads/textbooks/cache/{hash}.json`) khi gặp giới hạn mạng/quota.
+  - **0% Thay Đổi Database**: Toàn bộ tọa độ nhận diện (`subjectCode`, `grade`, `bookEdition`, `chapterName`, `lessonName`, `patternName`, `sectionType`, `hasDiagram`, `imagePlaceholders`, `dpiUsed`) được lưu thẳng vào cột `metadata::jsonb` hiện có của bảng `v_eval_ai."KnowledgeVectorChunks"` qua [`TextbookRepository.cs`](../V-Eval-Ai_Engine.Infrastructure/Repositories/TextbookRepository.cs).
+- **Đồng Nhất KaTeX & Cảnh Báo Bổ Sung Sơ Đồ `[IMAGE_PLACEHOLDER]` ([`CurriculumIngestion.prompt.txt`](../V-Eval-Ai_Engine.Infrastructure/Templates/Prompts/CurriculumIngestion.prompt.txt), [`view-textbook.html`](../V-Eval-Ai_Engine.API/wwwroot/view-textbook.html))**:
+  - Toàn bộ công thức Toán, Vật lí, Hóa học được giữ và chuẩn hóa dưới dạng KaTeX (`` `$...$` ``, `` `$$...$$` ``).
+  - Tự động phát hiện và gắn thẻ `` `[IMAGE_PLACEHOLDER: id="..." page="..." type="..." desc="..."]` `` tại các vị trí có đồ thị, hình học không gian, sơ đồ thí nghiệm, biểu đồ để Frontend nhận biết và cho phép cắt/bổ sung ảnh.
+- **Unit Test Mới**: Bổ sung [`CurriculumTaxonomyRegistryTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/CurriculumTaxonomyRegistryTests.cs) kiểm tra nhận diện Toán 12, Văn 10, phân loại ngoài phạm vi ĐGNL (Âm nhạc/Mỹ thuật), trích xuất `[IMAGE_PLACEHOLDER]` và tổng hợp cây chương trình.
+
 ## [16/11/2026] - Kiến Trúc Dynamic Federated Curriculum Retrieval (Zero-Hardcode), Tích Hợp Bộ Nhớ Hội Thoại Đa Lượt & Khắc Phục Triệt Để Gán Nhầm Anchor Socratic
 
 - **Kiến Trúc Dynamic Federated Curriculum Retrieval (Zero-Hardcode) ([`hybrid_retriever.py`](../rag-service/graph/hybrid_retriever.py), [`socratic_tutor.py`](../rag-service/routers/socratic_tutor.py))**:

@@ -1172,3 +1172,33 @@
   5. **Verification**:
      - Verified end-to-end with 3D Spatial Geometry Question `4e59df20-e11b-4d14-ab8f-0ac4cb734d0b` (pyramid $S.ABCD$, plane intersection $(SAC) \cap (SBD) = SO$): retrieved 100% accurate textbook lesson and golden solution.
      - Automated test suite: `pytest tests/test_hybrid_retriever.py tests/test_socratic_engine.py tests/test_socratic_mentor.py` passed 26/26 tests (100%).
+
+
+---
+
+## Acceptance Update: GDPT 2018 Multi-Level Textbook Ingestion (56 DPI Batch Vision, Zero DB Migration & Diagram Placeholders) - 17/11/2026
+
+1. **Dynamic GDPT 2018 & V-ACT Master Taxonomy (`gdpt2018_dgnl_taxonomy.json`, `CurriculumTaxonomyRegistry.cs`)**:
+   - Implemented a zero-hardcode hierarchical curriculum registry covering Grades 10, 11, and 12 (Chân trời sáng tạo & V-ACT ĐGNL scope: Mathematics, Logic & Data Analysis, Literature/Vietnamese by genre, English, Physics, Chemistry, Biology, History, Geography).
+   - Non-DGNL subjects (Music, Fine Arts/Painting, Physical Education, National Defense) are automatically tagged as `OUT_OF_SCOPE_DGNL` (`IsInDgnlScope = false`).
+   - Added `GET /api/ai-engine/textbooks/taxonomy` and `POST /api/ai-engine/textbooks/synthesize-curriculum/{fileHash}` to synthesize extracted chunks directly into `ImportCurriculumRequestDto` (`Chapter -> Lesson -> Pattern`).
+
+2. **Ultra-Low DPI Multi-Page Batch Vision OCR (106-170+ Scanned Image Pages)**:
+   - Lowered default image rendering to **56 DPI** (configurable `42 - 96 DPI`, max 720px, JPEG quality 52, ~18-25KB/page) in `PdfPigTextbookParserService.cs` and `CurriculumAiService.cs`.
+   - Grouped up to 5 scanned pages per Gemini Vision API call, cutting request volume by 5x for free-tier stability while preserving per-page PostgreSQL checkpointing and local cache fallback (`wwwroot/uploads/textbooks/cache/`).
+
+3. **Zero Database Schema Changes & Diagram Placeholders (`[IMAGE_PLACEHOLDER]`)**:
+   - All taxonomy coordinates (`subjectCode`, `grade`, `bookEdition`, `chapterName`, `lessonName`, `patternName`, `sectionType`, `hasDiagram`, `imagePlaceholders`, `dpiUsed`) are stored inside the existing `metadata::jsonb` column of `v_eval_ai."KnowledgeVectorChunks"`.
+   - Enforced consistent KaTeX formatting across Math, Physics, and Chemistry, and emitted structured `[IMAGE_PLACEHOLDER: id="..." page="..." type="..." desc="..."]` markers whenever diagrams/graphs/charts are detected so the Frontend can prompt users to crop or supplement images.
+
+4. **Pure Scanned PDF Direct Vision Routing & Expanded TOC Range (10 Start & 6 End Pages) [17/11/2026]**:
+   - `PdfPigTextbookParserService.cs`: Automatically routes documents to `VISION_AI` mode when digital text layers are missing (`digitalPages < 50%`), rendering 72 DPI images in batches of 4 pages directly to Gemini Vision AI without text heuristics.
+   - Expanded Table of Contents (TOC) candidate rendering in `ScanTextbookSkeletonAsync` to always render the first 10 pages and the last 6 pages, ensuring full coverage for textbooks that place their TOC at the end (e.g. Cánh Diều, Kết Nối Tri Thức).
+   - Removed model filters in `ResolveGeminiModels`, expanding the model pipeline to officially supported Google AI Studio models (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-pro`, `gemini-1.5-flash`, `gemini-flash-lite-latest`).
+   - Integrated intelligent fallback: when extraction yields <= 2 chapters for documents with >= 25 pages, automatically merges standard GDPT 2018 topics (e.g. 5 core Physics 10 chapters) to prevent truncated single-lesson outputs.
+   - Verified with 56/56 unit tests passing (`dotnet test`).
+
+5. **SourceId Propagation & Checkpoint Synchronization (`InMemoryTextbookJobManager.cs`, `TextbookEndpoints.cs`) [17/11/2026]**:
+   - Explicitly assigned `entry.Dto.SourceId = result.DocumentId` on job completion (`CompleteJob`) and propagated existing `SourceId` from Supabase Checkpoint during `UploadAndIngestTextbookPdf`.
+   - Ensures Web Client immediately receives the primary UUID `sourceId` upon completion of polling, eliminating the blank theory state and establishing end-to-end alignment between Supabase `KnowledgeVectorChunks` and the frontend UI.
+   - Build verified: `dotnet build` succeeded with 0 warnings and 0 errors; service running continuously as a background daemon on port 5104.
