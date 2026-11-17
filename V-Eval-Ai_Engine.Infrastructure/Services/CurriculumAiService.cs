@@ -2237,6 +2237,20 @@ public class CurriculumAiService : ICurriculumAiService
         s = Regex.Replace(s, @"\r?\n\s*:\s*", ": ");
         s = Regex.Replace(s, @"(\*[\s]*\([A-F]\))\r?\n\s*", "$1 ");
 
+        // Nối các biến số / ký hiệu toán học / hình học bị ngắt dòng gãy layout:
+        s = Regex.Replace(s, @"\r?\n\s*([,;:\.\)])", "$1");
+        s = Regex.Replace(s, @"([\(])\s*\r?\n\s*", "$1");
+        s = Regex.Replace(s, @"(?i)(vecto|vectơ|đoạn thẳng|điểm|đỉnh|tam giác|hình bình hành)\s*\r?\n\s*([A-Za-z0-9_]{1,3})", "$1 $2");
+        s = Regex.Replace(s, @"([A-Z]{1,2})\s*\r?\n\s*([,\.\:\;])", "$1$2");
+        s = Regex.Replace(s, @"(?<=[a-zà-ỹA-Z])\s*\r?\n\s*([A-Z])\s*([,\.\:\;])", " $1$2");
+        s = Regex.Replace(s, @"[\|\∣]\s*\r?\n\s*([A-Z]{1,2})\s*\r?\n\s*[\|\∣]", "|$1|");
+        s = Regex.Replace(s, @"([A-Z]{2})\s*\r?\n\s*2\b", "$1^2");
+
+        // Chuẩn hóa vecto AB -> vectơ $\vec{AB}$, vecto a -> vectơ $\vec{a}$
+        s = Regex.Replace(s, @"(?i)(?<!\\)(?:vecto|vectơ)\s+([A-Z]{2})\b", @"vectơ $\vec{$1}$");
+        s = Regex.Replace(s, @"(?i)(?<!\\)(?:vecto|vectơ)\s+([a-z])\b", @"vectơ $\vec{$1}$");
+        s = Regex.Replace(s, @"(?<![\$\\\w])\|\s*([A-Z]{2}|[a-z])\s*\|", @"$|\vec{$1}|$");
+
         // Nối công thức ester bị ngắt giữa chuỗi C-H và Oxy (kể cả có khoảng trắng hoặc xuống dòng)
         s = Regex.Replace(s, @"(?i)(\$?C_\{?[0-9n\+\-]+\}?H_\{?[0-9a-zA-Z\+\-]+\}?\$?)\s*(?:\r?\n|\s+)\s*(\$?O_\{?[0-9]+\}?\$?)", m => "$" + m.Groups[1].Value.Replace("$", "") + m.Groups[2].Value.Replace("$", "") + "$");
 

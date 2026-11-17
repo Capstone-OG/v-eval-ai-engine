@@ -383,20 +383,20 @@ public static class CurriculumTaxonomyRegistry
     {
         string text = chunk.Text ?? string.Empty;
 
-        // 1. Kiểm tra thẻ [TAXONOMY: subject="..." | grade="..." | chapter="..." | lesson="..." | pattern="..." | section="..."]
-        var taxMatch = Regex.Match(text, @"\[TAXONOMY\s*:\s*([^\]]+)\]", RegexOptions.IgnoreCase);
+        // 1. Kiểm tra tất cả thẻ [TAXONOMY: subject="..." | grade="..." | chapter="..." | lesson="..." | pattern="..." | section="..."]
+        var taxMatches = Regex.Matches(text, @"\[TAXONOMY\s*:\s*([^\]]+)\]", RegexOptions.IgnoreCase);
         string? explicitSection = null;
-        if (taxMatch.Success)
+        foreach (Match taxMatch in taxMatches)
         {
             string attrBlock = taxMatch.Groups[1].Value;
-            text = text.Remove(taxMatch.Index, taxMatch.Length).Trim();
 
             string? sub = ExtractAttr(attrBlock, "subject");
             string? gr = ExtractAttr(attrBlock, "grade");
             string? chap = ExtractAttr(attrBlock, "chapter");
             string? les = ExtractAttr(attrBlock, "lesson");
             string? pat = ExtractAttr(attrBlock, "pattern");
-            explicitSection = ExtractAttr(attrBlock, "section");
+            var sec = ExtractAttr(attrBlock, "section");
+            if (!string.IsNullOrWhiteSpace(sec)) explicitSection = sec;
 
             if (!string.IsNullOrWhiteSpace(sub))
             {
@@ -419,6 +419,25 @@ public static class CurriculumTaxonomyRegistry
             {
                 runningPattern = pat.Trim();
             }
+        }
+
+        // Xóa sạch 100% tất cả các thẻ [TAXONOMY: ...] khỏi nội dung văn bản
+        text = Regex.Replace(text, @"\[TAXONOMY\s*:[^\]]+\]", string.Empty, RegexOptions.IgnoreCase).Trim();
+
+        // 1.1. Loại bỏ các dòng rác thông tin xuất bản, bản quyền, số trang kết thúc bài học
+        text = Regex.Replace(text, @"(?m)^[ \t]*(?:Tên sách|Bộ sách|Tổng chủ biên|Chủ biên|Các tác giả|Nhà xuất bản|Chịu trách nhiệm xuất bản|Mã số sách|Giấy phép xuất bản|In tại)\s*:.*$", string.Empty, RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"\(Trang\s+\d+\s+là\s+trang\s+kết\s+thúc\s+bài\s+học[^\)]*\)", string.Empty, RegexOptions.IgnoreCase);
+
+        // Nhận diện nếu toàn bộ trang chỉ là trang bìa hoặc thông tin xuất bản
+        bool isPublishingPage = Regex.IsMatch(text, @"\b(tổng chủ biên|chủ biên|nhà xuất bản|chịu trách nhiệm xuất bản|trình bày bìa|mã số sách)\b", RegexOptions.IgnoreCase) &&
+                                !text.Contains("định nghĩa", StringComparison.OrdinalIgnoreCase) &&
+                                !text.Contains("công thức", StringComparison.OrdinalIgnoreCase);
+        if (isPublishingPage)
+        {
+            explicitSection = "COVER";
+            runningChapter = "Thông tin xuất bản";
+            runningLesson = "Bìa & Bản quyền";
+            runningPattern = "Thông tin xuất bản";
         }
 
         // 2. Quét tiêu đề Chương / Bài / Dạng trực tiếp trong văn bản trang sách
@@ -544,11 +563,16 @@ public static class CurriculumTaxonomyRegistry
         if (!string.IsNullOrWhiteSpace(explicitSection))
         {
             string upper = explicitSection.Trim().ToUpperInvariant();
-            if (upper is "THEORY" or "FORMULA" or "EXAMPLE" or "EXERCISE" or "PASSAGE")
+            if (upper is "THEORY" or "FORMULA" or "EXAMPLE" or "EXERCISE" or "PASSAGE" or "COVER")
                 return upper;
         }
 
         string lower = text.ToLowerInvariant();
+        if (Regex.IsMatch(lower, @"\b(tổng chủ biên|chủ biên|nhà xuất bản|chịu trách nhiệm xuất bản|trình bày bìa|mã số sách|giấy phép xuất bản|lời nói đầu|hướng dẫn sử dụng sách|bìa 1|bìa 4|mục lục|table of contents)\b")
+            || (lower.Contains("tên sách:") && lower.Contains("bộ sách:")))
+        {
+            return "COVER";
+        }
         if (Regex.IsMatch(lower, @"\b(bài tập cuối|luyện tập\s+\d+|câu\s+1[\.\:]\s+.*câu\s+2[\.\:])", RegexOptions.Singleline))
             return "EXERCISE";
         if (Regex.IsMatch(lower, @"\b(ví dụ\s+\d+|bài toán mẫu|lời giải|hướng dẫn giải)\b"))

@@ -12,4 +12,5 @@ public interface ITextbookRepository
     Task<List<TextbookChunkDto>> GetChunksBySourceIdAsync(Guid sourceId, CancellationToken cancellationToken = default);
     Task<List<IngestedTextbookSummaryDto>> GetIngestedSourcesWithSummaryAsync(CancellationToken cancellationToken = default);
     Task ResetSourceChunksAsync(Guid sourceId, int totalPages, CancellationToken cancellationToken = default);
+    Task<bool> DeleteSourceAsync(Guid sourceId, CancellationToken cancellationToken = default);
 }

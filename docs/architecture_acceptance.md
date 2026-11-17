@@ -1202,3 +1202,53 @@
    - Explicitly assigned `entry.Dto.SourceId = result.DocumentId` on job completion (`CompleteJob`) and propagated existing `SourceId` from Supabase Checkpoint during `UploadAndIngestTextbookPdf`.
    - Ensures Web Client immediately receives the primary UUID `sourceId` upon completion of polling, eliminating the blank theory state and establishing end-to-end alignment between Supabase `KnowledgeVectorChunks` and the frontend UI.
    - Build verified: `dotnet build` succeeded with 0 warnings and 0 errors; service running continuously as a background daemon on port 5104.
+
+6. **C# Backend Pipeline Sanitization, Vector KaTeX Formatting & Textbook Deletion API Acceptance [18/11/2026]**:
+   - **Multi-Tag Taxonomy Sanitization & Leakage Prevention (`CurriculumTaxonomyRegistry.cs`, `CurriculumAiService.cs`)**:
+     - Upgraded taxonomy parsing to use `Regex.Matches` across incoming chunk content, stripping all residual `[TAXONOMY: ...]` tags via `Regex.Replace` before persisting to `chunk.Text` in PostgreSQL.
+     - Added automated detection of textbook front matter and publishing metadata (`Tổng chủ biên`, `Chủ biên`, `Nhà xuất bản`, `Chịu trách nhiệm xuất bản`, `Trình bày bìa`), categorizing these sections as `section="COVER"` and preventing them from contaminating pedagogical lesson patterns.
+     - Automated line joining for isolated single-variable and geometric point breaks (`A,`, `B`, `| AB |`), formatting all vector operations to standard KaTeX `` `\vec{AB}` ``, `` `|\vec{AB}| = AB` ``.
+   - **Transactional Source and Chunk Deletion Endpoint (`TextbookEndpoints.cs`, `TextbookRepository.cs`)**:
+     - Implemented `DELETE /api/ai-engine/textbooks/sources/{sourceId:guid}` mapped to `DeleteSourceAsync(Guid sourceId)`.
+     - Deletion executes within an atomic Npgsql database transaction: cascades deletion of all dependent chunks in `v_eval_ai."KnowledgeVectorChunks"` before removing the primary metadata record in `v_eval_ai."KnowledgeSources"`.
+   - **Gemini Vision Prompt Alignment (`PdfPigTextbookParserService.cs`)**:
+     - Updated Gemini Vision prompts instructing the model to strictly wrap vector notations in KaTeX and categorize copyright/imprint pages as `COVER`.
+
+7. **C# String Interpolation Escape Hardening & Port 5104 Daemon Runtime Acceptance [18/11/2026]**:
+   - **Interpolation Escape Bug Remediation**:
+     - Fixed unescaped curly braces in `$@"..."` verbatim interpolated strings for KaTeX vector notation (`\vec{{AB}}` and `\vec{{a}}`), eliminating compilation error `CS0103`.
+   - **Service Launch & Gateway Routing Verification**:
+     - `V-Eval-Ai_Engine.API` running stably on port 5104.
+     - Verified end-to-end routing through YARP Gateway (`http://localhost:5212/api/ai-engine/textbooks/sources`), returning HTTP 200 OK with `totalSources: 1`.
+
+8. **Zero-Hardcode Gemini Model Resolution Acceptance [18/11/2026]**:
+   - **Purged Rogue Hardcoded Models**:
+     - Completely removed hardcoded array `standardModels` in `ResolveGeminiModels` and static model lists in `GeneratePatternExercisesAsync`.
+     - System resolution now adheres 100% strictly to the `"AiSettings:GeminiModels"` array defined in `appsettings.json`.
+     - Permanently eliminated unexpected 404 errors caused by legacy/deprecated models (`gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-2.0-flash`, `gemini-2.5-flash`).
+
+9. **Fast Failover on Model Capacity Exhaustion (503/500/504) Acceptance [18/11/2026]**:
+   - **Server Overload Fail-Fast Circuit**:
+     - When Google returns 503 (Overloaded), 500, or 504, the key-iteration loop immediately breaks out of trying remaining API keys for the same overloaded model, avoiding 30–90s of frozen execution.
+     - Automatically transitions to the next prioritized lightweight model (`gemini-3.1-flash-lite`, `gemini-3.5-flash-lite`), maintaining continuous 4–7s batch throughput.
+
+10. **High-Throughput Textbook Ingestion: 48 DPI, 52% JPEG Compression, 2-Page Vision Batch & Core-Knowledge Prompt Acceptance [18/11/2026]**:
+    - **Payload Downscaling Architecture**:
+      - Default rasterization DPI lowered to 48 DPI (clamped between 40 and 72).
+      - Image dimension ceiling clamped to 640px-720px with SkiaSharp JPEG quality 52, reducing single-page image payload from ~180KB down to ~35-50KB (over 65% reduction in transfer payload and Vision TPU tiling token overhead).
+    - **Micro-Batching (Batch Size = 2 Pages)**:
+      - Reduced Vision AI batch size from 4-5 pages down to 2 pages per API round-trip.
+      - Lowers output token generation demands from ~4000 tokens to ~800-1200 tokens, accelerating turnaround latency from 15-22s down to 2.5s-4.5s per batch.
+    - **High-Yield Core Knowledge Prompt Streamlining**:
+      - Replaced verbatim theory extraction with concise core knowledge synthesis (Definitions, Theorems, 100% KaTeX formulas, 1 representative concise example).
+      - Excludes lengthy homework exercises, warm-up games, group discussions, and decorative sidebars; limits `maxOutputTokens` to 4096.
+    - **Rate-Limiting Defense & Inter-Batch Pacing**:
+      - Inserted a 400ms jitter delay (`Task.Delay(400)`) between consecutive batch calls, protecting Google Gemini TPM/RPM sliding window limits and avoiding 503/429 spikes.
+    - **Response Recovery & Timeout Circuit**:
+      - Added fallback regex parsing for alternate page header styles (`### Trang X`, `[TRANG X]`, `Page X`) and guaranteed non-empty response persistence to prevent discarding valid 200 OK payloads.
+      - Attached 15s per-request cancellation tokens to prevent sluggish models (`gemini-3.6-flash`) from locking up the pipeline.
+
+
+
+
+

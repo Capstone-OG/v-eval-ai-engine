@@ -50,8 +50,8 @@ public class PdfPigTextbookParserService : ITextbookParserService
         bool forceReingest = false,
         Action<string, int>? onProgress = null,
         CancellationToken cancellationToken = default,
-        int targetDpi = 56,
-        int batchSize = 10)
+        int targetDpi = 48,
+        int batchSize = 2)
     {
         onProgress?.Invoke("📖 [TOC-First] Đang đọc PDF, tính mã Hash SHA-256 và quét Mục lục...", 4);
 
@@ -88,10 +88,10 @@ public class PdfPigTextbookParserService : ITextbookParserService
             ocrMode = "VISION_AI";
         }
 
-        int effectiveDpi = Math.Clamp(targetDpi > 0 ? targetDpi : (isPureScanPdf ? 72 : 56), 42, 120);
-        int effectiveBatchSize = isPureScanPdf
-            ? Math.Clamp(batchSize > 0 ? batchSize : 4, 1, 5)
-            : Math.Clamp(batchSize > 0 ? batchSize : 10, 1, 15);
+        int effectiveDpi = Math.Clamp(targetDpi > 0 ? targetDpi : 48, 40, 72);
+        int effectiveBatchSize = isPureScanPdf || ocrMode == "VISION_AI"
+            ? Math.Clamp(batchSize > 0 && batchSize <= 3 ? batchSize : 2, 1, 3)
+            : Math.Clamp(batchSize > 0 ? batchSize : 6, 1, 10);
 
         string tocSample = BuildTocSample(digitalPages, totalPages);
         var docIdentity = CurriculumTaxonomyRegistry.DetectDocumentIdentity(fileName, tocSample, domainId);
@@ -151,9 +151,9 @@ public class PdfPigTextbookParserService : ITextbookParserService
             $"⚡ [Text-First] Phát hiện {digitalPages.Count}/{totalPages} trang có chữ số ({scanPages.Count} trang scan). Bắt đầu hệ thống hóa {(isStemSubject ? "Toán/Lý/Hóa (KaTeX)" : "Lý thuyết thuần")}...",
             10);
 
-        // 3. Xử lý các trang theo cụm (12 trang/lượt cho Text AI, hoặc Vision cho trang scan thuần)
+        // 3. Xử lý các trang theo cụm (6 trang/lượt cho Text AI, hoặc 2 trang cho Vision scan thuần)
         int currentPage = startPage;
-        int textClusterSize = 12;
+        int textClusterSize = 6;
 
         while (currentPage <= totalPages)
         {
@@ -220,6 +220,8 @@ public class PdfPigTextbookParserService : ITextbookParserService
                     sourceId, totalPages, state.RunningCharCount, state.RunningChunkCount, "PROCESSING", cancellationToken);
 
                 currentPage = endClusterPage + 1;
+                // Nghỉ nhẹ 400ms giữa các cụm để bảo vệ hạn ngạch TPM/RPM của Google Gemini API, tránh bị 503/429
+                await Task.Delay(400, cancellationToken);
                 continue;
             }
 
@@ -269,6 +271,8 @@ public class PdfPigTextbookParserService : ITextbookParserService
                 sourceId, totalPages, state.RunningCharCount, state.RunningChunkCount, "PROCESSING", cancellationToken);
 
             currentPage = batchEndPage + 1;
+            // Nghỉ nhẹ 400ms giữa các batch để bảo vệ hạn ngạch TPM/RPM của Google Gemini API, tránh bị 503/429
+            await Task.Delay(400, cancellationToken);
         }
 
         // 4. Hoàn tất 100%
@@ -411,8 +415,9 @@ QUY TẮC BẮT BUỘC:
    [TAXONOMY: subject=""{subjectCode}"" | grade=""{grade}"" | chapter=""Tên chương"" | lesson=""Tên bài"" | pattern=""Tên dạng bài"" | section=""THEORY|FORMULA|EXAMPLE|EXERCISE|PASSAGE""]
    (Nội dung trọng tâm đã hệ thống hóa...)
    <<<PAGE_END:Số_Trang>>>
-2. {(isStemSubject ? "CHUẨN HÓA 100% CÔNG THỨC TOÁN/LÝ/HÓA SANG KATEX ($...$ hoặc $$...$$)." : "TÓM TẮT Ý CHÍNH, LUẬN ĐIỂM, THỂ LOẠI VÀ KIẾN THỨC CỐT LÕI.")}
+2. {(isStemSubject ? "CHUẨN HÓA 100% CÔNG THỨC TOÁN/LÝ/HÓA SANG KATEX ($...$ hoặc $$...$$). Ký hiệu vectơ, độ dài vectơ, biến số phải được bọc trong KaTeX chuẩn (VD: $\\vec{AB}$, $\\vec{a}$, $|\\vec{AB}|$, điểm $A$). KHÔNG ngắt biến số/ký hiệu toán xuống dòng đơn lẻ." : "TÓM TẮT Ý CHÍNH, LUẬN ĐIỂM, THỂ LOẠI VÀ KIẾN THỨC CỐT LÕI.")}
 3. Ngữ cảnh hiện tại: Chương '{currentChapter}', Bài '{currentLesson}'.
+4. TUYỆT ĐỐI BỎ QUA các trang bìa sách, thông tin xuất bản, bản quyền, danh sách tác giả/chủ biên/NXB (đánh dấu section=""COVER"" nếu gặp).
 
 MỤC LỤC THAM KHẢO:
 {(tocSample.Length > 1500 ? tocSample[..1500] : tocSample)}
@@ -456,6 +461,15 @@ NỘI DUNG CÁC TRANG:
                         {
                             ParseMultiPageBatchResponse(textOut, pageNumbers, result);
                             if (result.Count > 0) return result;
+                        }
+                    }
+                    else
+                    {
+                        int statusCode = (int)response.StatusCode;
+                        if (statusCode is 503 or 500 or 504 or 404 or 400)
+                        {
+                            _logger.LogWarning("Model {Model} trả về HTTP {Status}. Đổi ngay model tiếp theo, không retry key", model, statusCode);
+                            break;
                         }
                     }
                 }
@@ -581,15 +595,16 @@ NỘI DUNG CÁC TRANG:
             if (pageImagesBase64.Count == 0) return result;
 
             string batchPrompt = $@"BẠN LÀ CHUYÊN GIA SỐ HÓA TRI THỨC SÁCH GIÁO KHOA GDPT 2018 (MÔN {currentSubjectCode}, LỚP {currentGrade}).
-Nhiệm vụ: Đọc kỹ {pageImagesBase64.Count} trang ảnh đính kèm (Trang: {string.Join(", ", pageNumbers)}).
-Đây là tài liệu SGK quét ảnh, bạn PHẢI trích xuất ĐẦY ĐỦ VÀ CHI TIẾT (độ phủ 70%-80%) nội dung tri thức:
-1. Định nghĩa, khái niệm, tính chất, định luật, giải thích hiện tượng và lý thuyết cốt lõi của bài học.
-2. Công thức Toán/Lý/Hóa chuẩn hóa 100% sang KaTeX ($...$ hoặc $$...$$).
-3. Các ví dụ mẫu kèm lời giải từng bước trong sách.
-4. BỎ QUA hình minh họa rườm rà và các hoạt động khởi động/trò chơi bên lề.
+Nhiệm vụ: Đọc nhanh {pageImagesBase64.Count} trang ảnh đính kèm (Trang: {string.Join(", ", pageNumbers)}).
+Trích xuất CÔ ĐỌNG, SÚC TÍCH, ĐÚNG TRỌNG TÂM TRI THỨC (giảm tải nội dung rườm rà để tăng tốc tối đa):
+1. Định nghĩa, khái niệm, tính chất, định luật cốt lõi của bài học (trình bày súc tích, đủ ý, không chép lời dẫn lê thê).
+2. Công thức Toán/Lý/Hóa chuẩn hóa 100% sang KaTeX ($...$ hoặc $$...$$). Ký hiệu vectơ, độ dài vectơ, biến số phải được bọc trong KaTeX chuẩn (VD: $\vec{{AB}}$, $\vec{{a}}$, $|\vec{{AB}}|$, điểm $A$). KHÔNG ngắt biến số/ký hiệu toán xuống dòng đơn lẻ.
+3. Ví dụ mẫu: Chỉ giữ tối đa 1 ví dụ tiêu biểu nhất kèm lời giải ngắn gọn (2-3 bước).
+4. BỎ QUA HOÀN TOÀN: Toàn bộ bài tập tự luyện/rèn luyện dài dòng, hoạt động khởi động/trò chơi/thảo luận nhóm, hình vẽ minh họa bên lề.
+5. TUYỆT ĐỐI KHÔNG bóc tách trang bìa, lời nói đầu, mục lục, thông tin xuất bản/bản quyền/NXB (đánh dấu section=""COVER"" nếu gặp).
 
 QUY TẮC BÓC TÁCH CẤU TRÚC:
-- Hãy nhìn vào TIÊU ĐỀ IN TRÊN TỪNG TRANG ẢNH để tự nhận diện:
+- Nhìn vào TIÊU ĐỀ IN TRÊN TỪNG TRANG ẢNH để tự nhận diện:
   + chapter: Tên Chủ đề hoặc Chương (VD: 'Chủ đề 1: Mô tả chuyển động' hoặc 'Chương 1: ...'). Nếu trang nằm giữa chương, kế thừa: '{currentChapter}'.
   + lesson: Tên Bài học cụ thể (VD: 'Bài 1: Khái quát về môn Vật lí', 'Bài 2: Vận tốc và độ dịch chuyển'...). Nếu nằm giữa bài, kế thừa: '{currentLesson}'.
   + pattern: Tên dạng bài hoặc mục kiến thức trọng tâm.
@@ -598,7 +613,7 @@ QUY TẮC BÓC TÁCH CẤU TRÚC:
 Bắt buộc bọc mỗi trang trong:
 <<<PAGE_START:Số_Trang>>>
 [TAXONOMY: subject=""{currentSubjectCode}"" | grade=""{currentGrade}"" | chapter=""Tên chương bóc tách được"" | lesson=""Tên bài học bóc tách được"" | pattern=""Tên dạng bài"" | section=""THEORY|FORMULA|EXAMPLE|EXERCISE""]
-(Toàn bộ nội dung lý thuyết, công thức KaTeX, ví dụ của trang...)
+(Nội dung trọng tâm cô đọng, công thức KaTeX, ví dụ ngắn gọn...)
 <<<PAGE_END:Số_Trang>>>";
 
             var partsArray = new JsonArray { new JsonObject { ["text"] = batchPrompt } };
@@ -618,7 +633,7 @@ Bắt buộc bọc mỗi trang trong:
             var payloadObj = new JsonObject
             {
                 ["contents"] = new JsonArray { new JsonObject { ["parts"] = partsArray } },
-                ["generationConfig"] = new JsonObject { ["temperature"] = 0.0, ["maxOutputTokens"] = 16384 }
+                ["generationConfig"] = new JsonObject { ["temperature"] = 0.0, ["maxOutputTokens"] = 4096 }
             };
             string jsonString = payloadObj.ToJsonString();
             var orderedKeys = GetRotatedKeys(geminiKeys);
@@ -629,9 +644,12 @@ Bắt buộc bọc mỗi trang trong:
                 {
                     try
                     {
+                        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                        cts.CancelAfter(TimeSpan.FromSeconds(15)); // Timeout 15s cho Vision request để tránh bị kẹt hàng đợi Google
+
                         string url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
                         using var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
-                        var response = await _httpClient.PostAsync(url, content, cancellationToken);
+                        var response = await _httpClient.PostAsync(url, content, cts.Token);
                         if (response.IsSuccessStatusCode)
                         {
                             string responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -654,6 +672,20 @@ Bắt buộc bọc mỗi trang trong:
                                 if (result.Count > 0) return result;
                             }
                         }
+                        else
+                        {
+                            int statusCode = (int)response.StatusCode;
+                            if (statusCode is 503 or 500 or 504 or 404 or 400)
+                            {
+                                _logger.LogWarning("Vision Model {Model} trả về HTTP {Status}. Đổi ngay model tiếp theo, không retry key", model, statusCode);
+                                break;
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        _logger.LogWarning("Vision Model {Model} quá hạn 15s. Đổi ngay model tiếp theo", model);
+                        break;
                     }
                     catch
                     {
@@ -679,8 +711,8 @@ Bắt buộc bọc mỗi trang trong:
             if (skBitmap == null) return null;
 
             int maxDim = Math.Max(skBitmap.Width, skBitmap.Height);
-            int capDim = targetDpi <= 58 ? 860 : 1100;
-            int jpegQuality = targetDpi <= 58 ? 68 : 80;
+            int capDim = targetDpi <= 50 ? 640 : (targetDpi <= 60 ? 720 : 800);
+            int jpegQuality = 52; // Tối ưu nén JPEG 52%: Giảm ~65% dung lượng ảnh mà chữ và công thức KaTeX vẫn rõ nét 100%
 
             if (maxDim > capDim)
             {
@@ -710,6 +742,7 @@ Bắt buộc bọc mỗi trang trong:
     {
         if (string.IsNullOrWhiteSpace(fullText)) return;
 
+        // 1. Khớp chuẩn thẻ phân trang <<<PAGE_START:xx>>> ... <<<PAGE_END:xx>>>
         var matches = Regex.Matches(
             fullText,
             @"<<<PAGE_START\s*:\s*(\d+)>>>([\s\S]*?)(?:<<<PAGE_END\s*:\s*\1>>>|(?=<<<PAGE_START\s*:\s*\d+>>>)|\z)",
@@ -724,7 +757,26 @@ Bắt buộc bọc mỗi trang trong:
             }
         }
 
-        if (outputMap.Count == 0 && expectedPages.Count == 1)
+        // 2. Dự phòng: nếu thẻ chuẩn bị thiếu, thử bắt theo tiêu đề ### Trang X, [TRANG X], Page X
+        if (outputMap.Count == 0)
+        {
+            var fallbackMatches = Regex.Matches(
+                fullText,
+                @"(?:###?\s*(?:Trang|Page)|\[(?:TRANG|PAGE)|<<<PAGE_START:?)\s*(\d+)[\]:]?([\s\S]*?)(?=(?:###?\s*(?:Trang|Page)|\[(?:TRANG|PAGE)|<<<PAGE_START:?)\s*\d+|\z)",
+                RegexOptions.IgnoreCase);
+
+            foreach (Match m in fallbackMatches)
+            {
+                if (int.TryParse(m.Groups[1].Value, out int pageNum) && expectedPages.Contains(pageNum))
+                {
+                    string content = m.Groups[2].Value.Trim();
+                    if (!string.IsNullOrWhiteSpace(content)) outputMap[pageNum] = content;
+                }
+            }
+        }
+
+        // 3. Bảo hiểm an toàn: Nếu output hợp lệ nhưng không chứa thẻ nhận diện trang, gán cho trang đầu tiên trong batch
+        if (outputMap.Count == 0 && expectedPages.Count > 0 && !string.IsNullOrWhiteSpace(fullText))
         {
             outputMap[expectedPages[0]] = fullText.Trim();
         }
@@ -751,40 +803,21 @@ Bắt buộc bọc mỗi trang trong:
 
     private List<string> ResolveGeminiModels()
     {
-        var result = new List<string>();
         var models = _configuration.GetSection("AiSettings:GeminiModels").Get<string[]>();
         if (models != null && models.Length > 0)
         {
-            foreach (var m in models)
-            {
-                if (!string.IsNullOrWhiteSpace(m) && !result.Contains(m.Trim()))
-                {
-                    result.Add(m.Trim());
-                }
-            }
+            return models
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Select(m => m.Trim())
+                .Distinct()
+                .ToList();
         }
 
-        // Ưu tiên các model mới nhất & chuẩn chính thức của Google AI Studio (2.5, 2.0, 1.5, flash-lite)
-        var standardModels = new[]
-        {
-            "gemini-2.5-flash",
-            "gemini-2.0-flash",
-            "gemini-1.5-pro",
-            "gemini-1.5-flash",
-            "gemini-flash-lite-latest",
-            "gemini-3.5-flash",
-            "gemini-3.5-flash-lite"
-        };
+        var single = _configuration["AiSettings:GeminiModel"];
+        if (!string.IsNullOrWhiteSpace(single))
+            return new List<string> { single.Trim() };
 
-        foreach (var sm in standardModels)
-        {
-            if (!result.Contains(sm))
-            {
-                result.Add(sm);
-            }
-        }
-
-        return result;
+        return new List<string> { "gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-flash-lite-latest" };
     }
 
     private static readonly HashSet<char> VietnameseVowels = new HashSet<char>
@@ -911,10 +944,10 @@ Bắt buộc bọc mỗi trang trong:
                 try
                 {
                     using var pageStream = new MemoryStream(pdfBytes);
-                    using var skBitmap = Conversion.ToImage(pageStream, page: p - 1, options: new RenderOptions { Dpi = 72 });
+                    using var skBitmap = Conversion.ToImage(pageStream, page: p - 1, options: new RenderOptions { Dpi = 56 });
                     if (skBitmap != null)
                     {
-                        using var imgData = skBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 80);
+                        using var imgData = skBitmap.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 60);
                         tocImages.Add((p, imgData.ToArray()));
                     }
                 }
@@ -1011,7 +1044,16 @@ MỤC LỤC THÔ (NẾU CÓ):
                     string url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}";
                     using var httpContent = new StringContent(JsonSerializer.Serialize(reqBody), Encoding.UTF8, "application/json");
                     using var resp = await client.PostAsync(url, httpContent, cancellationToken);
-                    if (!resp.IsSuccessStatusCode) continue;
+                    if (!resp.IsSuccessStatusCode)
+                    {
+                        int statusCode = (int)resp.StatusCode;
+                        if (statusCode is 503 or 500 or 504 or 404 or 400)
+                        {
+                            _logger.LogWarning("TOC Scan Model {Model} trả về HTTP {Status}. Đổi ngay model tiếp theo", model, statusCode);
+                            break;
+                        }
+                        continue;
+                    }
 
                     using var docJson = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(cancellationToken));
                     string? rawJson = docJson.RootElement
@@ -1081,12 +1123,7 @@ MỤC LỤC THÔ (NẾU CÓ):
     {
         var exercises = new List<GeneratedExerciseDto>();
         var geminiKeys = ResolveGeminiKeys();
-        var geminiModels = new[]
-        {
-            "gemini-3.6-flash",
-            "gemini-3.5-flash",
-            "gemini-3.5-flash-lite"
-        }.Concat(ResolveGeminiModels()).Distinct().ToList();
+        var geminiModels = ResolveGeminiModels();
 
         string prompt = $@"Bạn là chuyên gia sư phạm ra đề thi GDPT 2018 Việt Nam môn {request.Subject} Lớp {request.Grade}.
 Hãy biên soạn {request.Count} bài tập (trắc nghiệm 4 lựa chọn) cho:
@@ -1124,7 +1161,16 @@ Chỉ trả về JSON thuần, không kèm văn bản giải thích thừa.";
                     string url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}";
                     using var httpContent = new StringContent(JsonSerializer.Serialize(reqBody), Encoding.UTF8, "application/json");
                     using var resp = await client.PostAsync(url, httpContent, cancellationToken);
-                    if (!resp.IsSuccessStatusCode) continue;
+                    if (!resp.IsSuccessStatusCode)
+                    {
+                        int statusCode = (int)resp.StatusCode;
+                        if (statusCode is 503 or 500 or 504 or 404 or 400)
+                        {
+                            _logger.LogWarning("TOC Scan Model {Model} trả về HTTP {Status}. Đổi ngay model tiếp theo", model, statusCode);
+                            break;
+                        }
+                        continue;
+                    }
 
                     using var docJson = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(cancellationToken));
                     string? rawJson = docJson.RootElement

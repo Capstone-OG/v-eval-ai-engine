@@ -441,4 +441,37 @@ public class TextbookRepository : ITextbookRepository
 
         return list;
     }
+
+    public async Task<bool> DeleteSourceAsync(Guid sourceId, CancellationToken cancellationToken = default)
+    {
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            const string deleteChunksSql = @"DELETE FROM v_eval_ai.""KnowledgeVectorChunks"" WHERE source_id = @source_id;";
+            await using (var delChunksCmd = new NpgsqlCommand(deleteChunksSql, conn, tx))
+            {
+                delChunksCmd.Parameters.AddWithValue("source_id", sourceId);
+                await delChunksCmd.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            const string deleteSourceSql = @"DELETE FROM v_eval_ai.""KnowledgeSources"" WHERE source_id = @source_id;";
+            await using (var delSrcCmd = new NpgsqlCommand(deleteSourceSql, conn, tx))
+            {
+                delSrcCmd.Parameters.AddWithValue("source_id", sourceId);
+                await delSrcCmd.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await tx.CommitAsync(cancellationToken);
+            _logger.LogInformation("Đã xóa hoàn toàn tài liệu SGK source_id={SourceId} và toàn bộ chunks liên quan", sourceId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await tx.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Lỗi khi xóa tài liệu SGK source_id={SourceId}", sourceId);
+            return false;
+        }
+    }
 }

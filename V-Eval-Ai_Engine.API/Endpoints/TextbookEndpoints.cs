@@ -33,12 +33,12 @@ public static class TextbookEndpoints
             string skillId = form["skillId"].ToString();
             string docType = form["docType"].ToString();
             string ocrMode = form["ocrMode"].ToString();
-            int targetDpi = 56;
+            int targetDpi = 48;
             if (int.TryParse(form["targetDpi"], out var parsedDpi) && parsedDpi >= 40 && parsedDpi <= 120)
             {
                 targetDpi = parsedDpi;
             }
-            int batchSize = 10;
+            int batchSize = 2;
             if (int.TryParse(form["batchSize"], out var parsedBatch) && parsedBatch >= 1 && parsedBatch <= 15)
             {
                 batchSize = parsedBatch;
@@ -344,6 +344,20 @@ public static class TextbookEndpoints
             });
         })
         .WithName("GetIngestedTextbookSources");
+
+        // 9A. Endpoint xóa một cuốn sách SGK đã nạp khỏi CSDL và xóa toàn bộ Chunks liên quan
+        group.MapDelete("/sources/{sourceId:guid}", async (
+            Guid sourceId,
+            [FromServices] ITextbookRepository repository) =>
+        {
+            var success = await repository.DeleteSourceAsync(sourceId);
+            if (!success)
+            {
+                return Results.BadRequest(new { message = $"Không thể xóa tài liệu SGK với mã '{sourceId}'." });
+            }
+            return Results.Ok(new { success = true, message = "Đã xóa thành công tài liệu SGK khỏi hệ thống." });
+        })
+        .WithName("DeleteTextbookSource");
 
         // 9B. Endpoint quét nhanh Khung Mục lục SGK (Stage 1: 5-10s -> Chương -> Bài -> Dạng bài + Bloom 6 cấp độ)
         group.MapPost("/scan-skeleton", async (

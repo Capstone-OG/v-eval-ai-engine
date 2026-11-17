@@ -17,8 +17,8 @@ public interface ITextbookParserService
         bool forceReingest = false,
         Action<string, int>? onProgress = null,
         CancellationToken cancellationToken = default,
-        int targetDpi = 56,
-        int batchSize = 5);
+        int targetDpi = 48,
+        int batchSize = 2);
 
     ImportCurriculumRequestDto SynthesizeCurriculumFromChunks(
         string fileName,

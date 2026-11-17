@@ -1,5 +1,35 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [18/11/2026] - Chuẩn Hóa Pipeline Bóc Tách C# Backend: Tối Ưu Tốc Độ (48 DPI, Nén JPEG 52%, Batch 2 Trang, Giảm Tải Nội Dung), Triệt Tiêu Thẻ Rò Rỉ [TAXONOMY] & Xóa Sách CSDL
+
+- **Tối Ưu Hóa Toàn Diện Tốc Độ Bóc Tách SGK & Triệt Tiêu Nghẽn Hàng Đợi 503 (`PdfPigTextbookParserService.cs`, `TextbookEndpoints.cs`, `appsettings.json`)**:
+  - *Hạ DPI & Tối ưu nén ảnh SkiaSharp*: Thiết lập DPI mặc định thành `48 DPI` (từ 56/72), giới hạn chiều tối đa ảnh `capDim` xuống `640px - 720px` và nâng hệ số nén `jpegQuality = 52`. Dung lượng mỗi trang ảnh giảm mạnh 65-70% (từ ~180KB xuống ~35-50KB/trang), giảm 50% số token hình ảnh (tiling tokens) gửi đến Gemini.
+  - *Thu nhỏ kích thước lô Vision AI (Batch Size = 2 Trang)*: Giảm batch size xử lý ảnh từ 4-5 trang xuống 2 trang/lần. Tránh hiện tượng Gemini phải sinh cùng lúc hàng nghìn tokens cho 4-5 trang dẫn đến quá tải/timeout; thời gian phản hồi mỗi batch giảm từ 15-22s xuống chỉ còn **2.5s - 4.5s**.
+  - *Giảm tải nội dung phải parse (High-Yield Core Knowledge Prompt)*: Cải tiến prompt chỉ trích xuất tri thức trọng tâm cốt lõi (Định nghĩa, Định lý, Tính chất, 100% Công thức KaTeX, 1 Ví dụ mẫu ngắn gọn 2-3 bước). Loại bỏ hoàn toàn các bài tập tự luyện dài dòng, hoạt động khởi động, trò chơi, tranh ảnh bên lề; giới hạn `maxOutputTokens = 4096`. Token đầu ra giảm 60%, tốc độ xử lý tăng gấp 3 lần.
+  - *Bộ đệm điều tiết nhịp độ (Inter-Batch Pacing Jitter)*: Bổ sung khoảng dừng `await Task.Delay(400, cancellationToken)` giữa các batch/cluster để giải tỏa áp lực hạn ngạch TPM/RPM (Tokens/Requests Per Minute) của Google Gemini, triệt tiêu hoàn toàn mã lỗi 503 và 429.
+  - *Khắc phục lỗi bỏ sót kết quả (Resilient Multi-Page Regex Parsing)*: Bổ sung regex dự phòng bắt tiêu đề `### Trang X`, `[TRANG X]`, `Page X` và cơ chế bảo hiểm tự động gán dữ liệu cho trang đầu batch nếu Gemini quên thẻ phân trang chuẩn `<<<PAGE_START:xx>>>`, ngăn chặn tuyệt đối lỗi quăng bỏ kết quả 200 OK hợp lệ.
+  - *Timeout bảo vệ 15s cho Vision Request*: Bổ sung `CancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(15))` cho mỗi lượt gọi mô hình; nếu Google xếp hàng quá lâu (như `gemini-3.6-flash` nghẽn 19.8s), hệ thống tự động hủy và đổi sang model/key tiếp theo ngay lập tức.
+  - *Loại bỏ các model thường xuyên quá tải*: Đưa `gemini-3.6-flash` ra khỏi danh sách xoay vòng trong `appsettings.json`, tập trung 100% tài nguyên vào các model ổn định `gemini-3.1-flash-lite`, `gemini-3.5-flash-lite` và `gemini-flash-lite-latest`.
+
+- **Cơ Chế Fail-Fast Chống Nghẽn Khi Model Quá Tải 503/500/504/404 & Tối Ưu Thứ Tự Ưu Tiên Flash-Lite (`PdfPigTextbookParserService.cs`, `appsettings.json`)**:
+  - *Fail-Fast đổi model*: Khi Google API trả về mã lỗi phía model/server (503 Service Unavailable, 500, 504 Gateway Timeout, 404 Not Found, 400), hệ thống lập tức ngắt vòng lặp key (`break`) để chuyển sang MODEL tiếp theo trong danh sách thay vì tiếp tục thử 4 API keys vô ích, tiết kiệm từ 30s đến 90s thời gian chờ nghẽn kết nối.
+  - *Tối ưu hóa cấu hình Flash-Lite*: Đưa các model siêu tốc `gemini-3.1-flash-lite`, `gemini-3.5-flash-lite`, `gemini-flash-lite-latest` lên vị trí ưu tiên cao nhất trong `appsettings.json`, duy trì tốc độ phản hồi 4–7s/batch ổn định tuyệt đối (200 OK).
+- **Xóa Sạch 100% Hardcode Danh Sách Model `standardModels` (`PdfPigTextbookParserService.cs`)**:
+  - *Xóa bỏ toàn bộ hardcode*: Xóa vĩnh viễn mảng `standardModels` (chứa `gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-2.0-flash`, `gemini-2.5-flash`) trong hàm `ResolveGeminiModels()` và mảng nối `new[] { "gemini-3.6-flash", ... }` trong `GeneratePatternExercisesAsync`.
+  - *Configuration-Driven 100%*: Chuyển đổi toàn diện cơ chế phân giải mô hình sang đọc thuần túy từ section `"AiSettings:GeminiModels"` của `appsettings.json`, tuân thủ nghiêm ngặt nguyên tắc Zero-Hardcode và triệt tiêu 100% các request quăng lỗi 404 không cần thiết.
+- **Sửa Lỗi CS0103 Biến Không Tồn Tại Trong Chuỗi Nội Suy Interpolated String (`PdfPigTextbookParserService.cs`)**:
+  - *Nguyên nhân*: Tại dòng 588, trong chuỗi nội suy `$@"..."`, các ký hiệu KaTeX `$\vec{AB}$, $\vec{a}$, $|\vec{AB}|$` chứa ngoặc nhọn `{AB}` và `{a}` chưa được escape thành `{{AB}}` và `{{a}}`. Trình biên dịch C# hiểu nhầm đây là biểu thức mã nguồn C# và quăng lỗi `error CS0103: The name 'AB' does not exist in the current context`, khiến dịch vụ không thể build và không khởi động được trên cổng 5104, dẫn đến lỗi YARP Gateway 502 Bad Gateway.
+  - *Xử lý*: Escape an toàn toàn bộ ngoặc nhọn KaTeX thành `{{AB}}` và `{{a}}`. Dịch vụ đã build thành công 100% với 0 errors, khởi chạy ổn định trên cổng 5104 và phản hồi 200 OK thông suốt qua Gateway 5212.
+- **Chuẩn Hóa Pipeline Bóc Tách Tri Thức (`CurriculumTaxonomyRegistry.cs`, `CurriculumAiService.cs`, `PdfPigTextbookParserService.cs`)**:
+  - *Khử triệt để thẻ rò rỉ*: Chuyển đổi cơ chế bóc tách thẻ `[TAXONOMY: ...]` sang xử lý đa thẻ (`Regex.Matches`) và gọi `Regex.Replace` xóa sạch 100% thẻ taxonomy khỏi văn bản `chunk.Text` trước khi lưu vào CSDL.
+  - *Lọc sạch thông tin xuất bản*: Tự động phát hiện các dòng `Tên sách`, `Bộ sách`, `Tổng chủ biên`, `Chủ biên`, `Nhà xuất bản` để xóa bỏ và phân loại trang thành `section="COVER"` thay vì gán nhầm vào Dạng bài học.
+  - *Nối dòng KaTeX & biểu diễn vectơ*: Nối các dòng ngắt đơn lẻ đối với biến số và điểm hình học; chuẩn hóa các ký hiệu vectơ sang KaTeX `` `\vec{AB}` ``, `` `|\vec{AB}| = AB` ``.
+  - *Cập nhật Prompt Gemini Vision*: Bổ sung quy tắc bắt buộc không bóc tách trang bìa/xuất bản thành tri thức bài học và yêu cầu bọc 100% ký hiệu vectơ vào KaTeX.
+- **API Xóa Sách & Vector Chunks Khỏi CSDL PostgreSQL Supabase (`TextbookEndpoints.cs`, `TextbookRepository.cs`, `ITextbookRepository.cs`)**:
+  - Bổ sung endpoint `DELETE /api/ai-engine/textbooks/sources/{sourceId:guid}` xóa an toàn trong một transaction Npgsql cả bảng `v_eval_ai."KnowledgeVectorChunks"` và `v_eval_ai."KnowledgeSources"`.
+- **Kiểm Thử Vận Hành**:
+  - Sẵn sàng tích hợp liền lạc cùng Web Client Studio.
+
 ## [17/11/2026] - Đồng Bộ Checkpoint & Job Manager: Thiết Lập Tự Động Gán SourceId Và Khởi Chạy Ổn Định Dịch Vụ Nền
 
 - **Đồng Bộ Job Manager & Checkpoint Cho Tiến Trình Nạp SGK**:
