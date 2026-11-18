@@ -1249,6 +1249,16 @@
       - Attached 15s per-request cancellation tokens to prevent sluggish models (`gemini-3.6-flash`) from locking up the pipeline.
 
 
+11. **Textbook Skeleton Multi-Pattern & Cognitive Bloom Taxonomy Diversification Acceptance [18/11/2026]**:
+    - **Pedagogical Root Cause Remediation**:
+      - Previously, the initial table of contents / skeleton scan prompt (`ScanTextbookSkeletonAsync`) provided a simplified JSON template featuring only a single pattern per lesson defaulted to `bloomLevel: 2`. Consequently, Gemini Vision consistently synthesized a single generic pattern across all lessons.
+    - **Prompt Engineering & Schema Enrichment**:
+      - Formulated an explicit pedagogical directive instructing the model: *"Mỗi bài học PHẢI có từ 2 đến 4 dạng bài trọng tâm với bloomLevel đa dạng từ 1 đến 4 (1: Nhận biết, 2: Thông hiểu, 3: Vận dụng, 4: Vận dụng cao), tuyệt đối không để 1 dạng duy nhất hoặc toàn bộ bloomLevel=2"*.
+      - Enriched the illustrative JSON template to mandate multiple heterogeneous patterns per lesson showcasing distinct Bloom taxonomy levels (Level 1 Remembering and Level 3 Applying).
+    - **Verification**: Service code builds cleanly in `V-Eval-Ai_Engine.Infrastructure`.
+
+
+
 
 
 

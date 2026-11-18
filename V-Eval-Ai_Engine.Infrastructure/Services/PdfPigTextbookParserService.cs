@@ -982,7 +982,7 @@ Bạn được cung cấp {tocImages.Count} trang ảnh đính kèm (các trang 
 NHIỆM VỤ BẮT BUỘC:
 1. Hãy tìm kỹ trang MỤC LỤC (Table of Contents) trong các trang ảnh và trích xuất TOÀN BỘ TẤT CẢ CÁC CHỦ ĐỀ / CHƯƠNG và CÁC BÀI HỌC CỦA CUỐN SÁCH!
 2. TUYỆT ĐỐI KHÔNG ĐƯỢC CHỈ DỪNG LẠI Ở BÀI 'Mở đầu'! Một cuốn sách SGK {totalPages} trang luôn có từ 4 đến 8 Chương (hoặc Chủ đề) và 10 đến 25 Bài học.
-3. Mỗi bài học phải kèm 2-4 Dạng bài cụ thể, ước tính khoảng trang hợp lý (pageStart, pageEnd), và công thức KaTeX đặc trưng ($...$).
+3. Mỗi bài học BẮT BUỘC có từ 2 đến 4 Dạng bài cụ thể với các cấp độ Bloom Taxonomy đa dạng từ Cấp 1 đến Cấp 4 (1: Nhớ/Nhận biết, 2: Hiểu/Giải thích, 3: Vận dụng/Tính toán, 4: Vận dụng cao/Phân tích). TUYỆT ĐỐI KHÔNG để tất cả dạng bài đều là bloomLevel=2!
 4. Chỉ trả về JSON thuần:
 {{
   ""chapters"": [
@@ -1001,10 +1001,17 @@ NHIỆM VỤ BẮT BUỘC:
           ""patterns"": [
             {{
               ""patternCode"": ""C1_B1_D1"",
-              ""name"": ""Tên dạng bài cụ thể"",
-              ""bloomLevel"": 2,
-              ""description"": ""Mô tả ngắn kỹ năng"",
-              ""method"": ""Phương pháp giải vắn tắt""
+              ""name"": ""Dạng 1: Nhận biết khái niệm và hiện tượng cốt lõi"",
+              ""bloomLevel"": 1,
+              ""description"": ""Nhận diện định nghĩa, đơn vị và hiện tượng"",
+              ""method"": ""Áp dụng định nghĩa chuẩn GDPT 2018""
+            }},
+            {{
+              ""patternCode"": ""C1_B1_D2"",
+              ""name"": ""Dạng 2: Bài toán định lượng và đồ thị vận dụng"",
+              ""bloomLevel"": 3,
+              ""description"": ""Vận dụng công thức giải các bài toán thực tiễn"",
+              ""method"": ""Lập phương trình và giải""
             }}
           ]
         }}

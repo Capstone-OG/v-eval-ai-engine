@@ -1,7 +1,11 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
-## [18/11/2026] - Chuẩn Hóa Pipeline Bóc Tách C# Backend: Tối Ưu Tốc Độ (48 DPI, Nén JPEG 52%, Batch 2 Trang, Giảm Tải Nội Dung), Triệt Tiêu Thẻ Rò Rỉ [TAXONOMY] & Xóa Sách CSDL
+## [18/11/2026] - Nâng Cấp Prompt Bóc Tách Cấu Trúc SGK Skeleton Đa Dạng Hóa Dạng Bài (2–4 Dạng) & Bloom L1–L4, Chuẩn Hóa Pipeline Bóc Tách C# Backend: Tối Ưu Tốc Độ (48 DPI, Nén JPEG 52%, Batch 2 Trang, Giảm Tải Nội Dung), Triệt Tiêu Thẻ Rò Rỉ [TAXONOMY] & Xóa Sách CSDL
 
+- **Cải Tiến Prompt Gemini Vision Bóc Tách Cấu Trúc Skeleton Đa Dạng Hóa Dạng Bài (2–4 Dạng) & Phân Tầng Nhận Thức Bloom L1–L4 (`PdfPigTextbookParserService.cs`)**:
+  - *Giải quyết nguyên nhân gốc rễ chỉ có 1 dạng bài L2*: Trước đây prompt bóc tách cấu trúc tổng thể (`ScanTextbookSkeletonAsync`) cung cấp schema ví dụ chỉ gồm 1 dạng bài với `bloomLevel: 2`, dẫn đến việc mô hình Gemini thường sinh mặc định đúng 1 dạng duy nhất cho mỗi bài học và đều gán Bloom level 2.
+  - *Ép buộc 2–4 dạng bài với Bloom đa dạng*: Bổ sung quy tắc sư phạm tường minh trong prompt: *"Quan trọng: Mỗi bài học PHẢI có từ 2 đến 4 dạng bài trọng tâm với bloomLevel đa dạng từ 1 đến 4 (1: Nhận biết, 2: Thông hiểu, 3: Vận dụng, 4: Vận dụng cao), tuyệt đối không để 1 dạng duy nhất hoặc toàn bộ bloomLevel=2"*.
+  - *Mở rộng schema JSON minh họa*: Bổ sung ít nhất 2 dạng bài thực tế với `bloomLevel: 1` và `bloomLevel: 3` trong ví dụ mẫu gửi đến Gemini Vision, định hướng mô hình phân tầng nhận thức chính xác theo chuẩn GDPT 2018.
 - **Tối Ưu Hóa Toàn Diện Tốc Độ Bóc Tách SGK & Triệt Tiêu Nghẽn Hàng Đợi 503 (`PdfPigTextbookParserService.cs`, `TextbookEndpoints.cs`, `appsettings.json`)**:
   - *Hạ DPI & Tối ưu nén ảnh SkiaSharp*: Thiết lập DPI mặc định thành `48 DPI` (từ 56/72), giới hạn chiều tối đa ảnh `capDim` xuống `640px - 720px` và nâng hệ số nén `jpegQuality = 52`. Dung lượng mỗi trang ảnh giảm mạnh 65-70% (từ ~180KB xuống ~35-50KB/trang), giảm 50% số token hình ảnh (tiling tokens) gửi đến Gemini.
   - *Thu nhỏ kích thước lô Vision AI (Batch Size = 2 Trang)*: Giảm batch size xử lý ảnh từ 4-5 trang xuống 2 trang/lần. Tránh hiện tượng Gemini phải sinh cùng lúc hàng nghìn tokens cho 4-5 trang dẫn đến quá tải/timeout; thời gian phản hồi mỗi batch giảm từ 15-22s xuống chỉ còn **2.5s - 4.5s**.
