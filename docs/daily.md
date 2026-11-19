@@ -1,5 +1,32 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [19/11/2026] - Nâng Cấp Động Cơ Quét Mục Lục SGK, Cải Tiến Prompt Multi-Lesson & Triển Khai Lesson Guard Ngăn Chặn Sót Bài Học
+
+- **Nâng Cấp Prompt Bóc Tách Mục Lục SGK (`PdfPigTextbookParserService.cs`)**:
+  - *Ràng Buộc Đa Bài Học (Multi-Lessons Contract)*: Cải tiến prompt Gemini Vision ép buộc trích xuất đầy đủ 100% tất cả các bài học con (Bài 1, Bài 2, Bài 3, Bài 4...) trong mỗi Chương, nghiêm cấm việc chỉ lấy 1 bài đại diện hoặc gộp bài.
+  - *Cung Cấp Schema JSON Mẫu Đa Bài Học*: Bổ sung ví dụ chương chứa nhiều bài học (`Bài 1`, `Bài 2`...) giúp LLM noi theo cấu trúc chuẩn xác và không bị "nghẽn token".
+- **Triển Khai Lesson Guard C# Bù Bài Học Khuyết Thiếu (`PdfPigTextbookParserService.cs`)**:
+  - Khi AI parse ra tổng số bài học quá thấp (`totalParsedLessons < 10` hoặc trung bình $\le 1.2$ bài/chương đối với sách $\ge 25$ trang), hệ thống tự động đối soát và hòa nhập (backfill/merge) toàn bộ các bài học chuẩn còn thiếu từ `gdpt2018_dgnl_taxonomy.json` vào từng chương, bảo toàn trọn vẹn 10–25 bài học cho toàn bộ cuốn sách.
+- **Biên Dịch & Kiểm Thử Vận Hành**:
+  - `dotnet build`: Succeeded 100%, 0 Error, 0 Warning.
+
+---
+
+## [19/11/2026] - Đồng Bộ Hoàn Toàn Ma Trận Tri Thức GDPT 2018 (Chân Trời Sáng Tạo) 139 Chương Vào Cấu Hình Taxonomy JSON Của AI Engine
+
+- **Đồng Bộ Hoàn Chỉnh Ma Trận Tri Thức GDPT 2018 Toàn Diện (`gdpt2018_dgnl_taxonomy.json`)**:
+  - *Mở rộng toàn diện 139 Chương trên cả 4 miền tri thức*: Cập nhật đồng bộ cấu trúc 139 Chương và 337 Bài học theo chuẩn mục lục 17 SGK Chân trời sáng tạo, loại bỏ hoàn toàn các khung placeholder rút gọn.
+  - *Toán học (26 Chương)*: Bao quát đầy đủ Toán 10 (10 Chương), Toán 11 (9 Chương), Toán 12 (7 Chương) kèm chuyên đề Tư duy Logic & Phân tích số liệu ĐGNL.
+  - *Khoa học tự nhiên (50 Chương)*: Nạp đủ 17 Chương Vật lí (Lớp 10 [9 chương, 23 bài], Lớp 11 [4 chương], Lớp 12 [4 chương]), 21 Chương Hóa học (10-12), 12 Chương Sinh học (10-12).
+  - *Sử dụng Ngôn ngữ (33 Chương)*: 27 Chương Ngữ văn (9 Bài thể loại lớn cho từng khối 10, 11, 12) và 6 Chương Tiếng Anh THPT (ngữ pháp, từ vựng học thuật, đọc hiểu ĐGNL).
+  - *Khoa học xã hội (30 Chương)*: 9 Chương Lịch sử (10-12), 12 Chương Địa lí (10-12), 9 Chương Giáo dục Kinh tế và Pháp luật (10-12).
+  - *Hỗ trợ AI OCR & Ingestion Pipeline*: Đảm bảo `CurriculumTaxonomyRegistry.cs` nhận diện chính xác 100% khi phân loại tự động các trang PDF SGK và đề thi nạp vào hệ thống.
+- **Kiểm Thử & Vận Hành**:
+  - File taxonomy JSON được parse hợp lệ 100% qua `JsonNode.Parse`.
+  - Dịch vụ AI Engine sẵn sàng phục vụ OCR, RAG và bóc tách cấu trúc bài học.
+
+---
+
 ## [18/11/2026] - Nâng Cấp Prompt Bóc Tách Cấu Trúc SGK Skeleton Đa Dạng Hóa Dạng Bài (2–4 Dạng) & Bloom L1–L4, Chuẩn Hóa Pipeline Bóc Tách C# Backend: Tối Ưu Tốc Độ (48 DPI, Nén JPEG 52%, Batch 2 Trang, Giảm Tải Nội Dung), Triệt Tiêu Thẻ Rò Rỉ [TAXONOMY] & Xóa Sách CSDL
 
 - **Cải Tiến Prompt Gemini Vision Bóc Tách Cấu Trúc Skeleton Đa Dạng Hóa Dạng Bài (2–4 Dạng) & Phân Tầng Nhận Thức Bloom L1–L4 (`PdfPigTextbookParserService.cs`)**:

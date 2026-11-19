@@ -1257,6 +1257,30 @@
       - Enriched the illustrative JSON template to mandate multiple heterogeneous patterns per lesson showcasing distinct Bloom taxonomy levels (Level 1 Remembering and Level 3 Applying).
     - **Verification**: Service code builds cleanly in `V-Eval-Ai_Engine.Infrastructure`.
 
+12. **Complete GDPT 2018 Secondary School Taxonomy Matrix Synchronization [19/11/2026]**:
+    - **Architectural Motivation**:
+      - Establish absolute taxonomy alignment between the AI Engine's heuristic parser (`CurriculumTaxonomyRegistry.cs`), the persistent JSON taxonomy (`gdpt2018_dgnl_taxonomy.json`), and the live Supabase PostgreSQL curriculum database across all 17 official "Chân trời sáng tạo" textbook volumes.
+    - **Implementation Details**:
+      - Populated complete chapter-and-lesson listings across all secondary science and humanities disciplines (139 Chapters, 337 Lessons):
+        - Mathematics (26 chapters): Algebra, Geometry, Calculus, Probability, and V-ACT Formal Logic & Data Interpretation.
+        - Natural Sciences (50 chapters): Physics (17 chapters, 61 lessons), Chemistry (21 chapters, 57 lessons), Biology (12 chapters, 39 lessons).
+        - Languages (33 chapters): Vietnamese Literature (27 chapters, 54 lessons) and High School English (6 chapters, 18 lessons).
+        - Social Sciences (30 chapters): History (9 chapters), Geography (12 chapters), and Civics / Legal Education (9 chapters).
+      - Integrated seamless JSON parsing and caching within `CurriculumTaxonomyRegistry.GetTaxonomyRoot()`.
+    - **Verification**: Clean JSON syntax validation via Python and .NET `System.Text.Json.Nodes`.
+
+13. **Multi-Lesson Prompt Engineering & Lesson Guard Remediation [19/11/2026]**:
+    - **Architectural Motivation**:
+      - Resolves the structural collapsing anomaly where textbook skeleton scans correctly identified official chapters (e.g. 7 chapters) but compressed 19 lessons down to 6-7 lessons (1 lesson per chapter).
+    - **Implementation Details**:
+      - **Multi-Lesson Prompt Directive & Schema**:
+        - Formulated explicit few-shot JSON templates in [`PdfPigTextbookParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs) demonstrating multiple lessons (`Lesson 1`, `Lesson 2`...) per chapter.
+        - Inserted strict contractual constraints forbidding chapter collapsing, single-lesson representations, or lesson omissions.
+      - **Backend Lesson Guard & Backfill Mechanism**:
+        - Introduced a dynamic heuristic guard inspecting total parsed lessons: if `totalParsedLessons < 10` (or average lessons per chapter is $\le 1.2$ for books with $\ge 25$ pages), the engine automatically audits and backfills missing lessons from [`gdpt2018_dgnl_taxonomy.json`](../V-Eval-Ai_Engine.Infrastructure/Templates/Taxonomy/gdpt2018_dgnl_taxonomy.json), ensuring that all 10–25 authentic curriculum lessons are fully preserved.
+    - **Verification**: Clean .NET 9 compilation with 0 Warnings and 0 Errors.
+
+
 
 
 
