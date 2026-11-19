@@ -1,11 +1,10 @@
 # UPDATE - V-Eval-Ai_Engine
 
-## [19/11/2026]
-- **Sửa Lỗi Khớp Sai Khối Lớp (Grade 11 -> Grade 10), Loại Bỏ Stub Placeholder & Hỗ Trợ Dấu `hoá`/`hóa` (`./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumTaxonomyRegistry.cs`, `./V-Eval-Ai_Engine.Tests/Infrastructure/CurriculumTaxonomyRegistryTests.cs`)**:
-  - *Sửa lỗi lọc khối lớp trong `GetStandardSkeletonChapters`*: Ưu tiên khớp chính xác `grade` trước khi fallback sang lớp 10/12, khắc phục triệt để lỗi yêu cầu Hóa học Lớp 11 bị trả về 7 chương của Hóa học Lớp 10 (`Tốc độ phản ứng hoá học`, `Halogen`).
-  - *Xóa bỏ chuỗi stub mặc định*: Trả về `string.Empty` cho `Description` và `Method` thay vì chèn `"Mục tiêu nhận thức và kỹ năng áp dụng cho ..."` và `"Áp dụng phương pháp sư phạm chuẩn SGK GDPT 2018."`.
-  - *Nhận diện dấu thanh tiếng Việt cũ/mới*: Cập nhật `DetectDocumentIdentity` và `DetectGradeNumber` hỗ trợ cả `hoá học` và `hóa học`; bổ sung 2 unit test hồi quy trong `CurriculumTaxonomyRegistryTests.cs`.
-- **Nâng Cấp Động Cơ Quét Mục Lục SGK & Khắc Phục Lỗi Sót Bài Học (`./V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs`)**:
-  - Cải tiến prompt Gemini Vision ép buộc trích xuất đầy đủ các bài học con trong mỗi Chương kết hợp Lesson Guard C# tự động backfill bài học chuẩn từ `gdpt2018_dgnl_taxonomy.json` khi `totalParsedLessons < 10` hoặc trung bình `` `\le 1.2` `` bài/chương (sách `` `\ge 25` `` trang).
-- **Đồng Bộ Ma Trận Tri Thức GDPT 2018 (`./V-Eval-Ai_Engine.Infrastructure/Templates/Taxonomy/gdpt2018_dgnl_taxonomy.json`)**:
-  - Bao phủ đầy đủ 139 Chương và 337 Bài học theo chuẩn mục lục 17 SGK Chân trời sáng tạo trên cả 4 miền tri thức.
+## [20/11/2026]
+- **Nâng Cấp Động Cơ Parse Đề PDF Sang Page-Batched Gemini Vision AI + Tự Giải Đáp Án Đồng Bộ 100% Với SGK (`MultiCloudExamParserService.cs`, `PdfPigLocalExamParser.cs`, `IExamParserService.cs`, `ExamEndpoints.cs`, `PdfPigTextbookParserService.cs`, `PdfPigLocalExamParserTests.cs`)**:
+  - **Đồng bộ 100% model & payload SGK**: Dùng đúng `AiSettings:GeminiModels` trên `generativelanguage.googleapis.com/v1beta`, vòng lặp model ngoài / xoay vòng key trong (`GetRotatedKeys`), loại bỏ `thinkingConfig` & nested `responseSchema` gây HTTP 400 trên model Lite, và tự lọc bỏ khối `thought: true` (`ExtractTextPartsIgnoringThoughts`).
+  - **Page-Batched Vision 2 Trang/Cụm (115 DPI, 1400px, JPEG 78%) & AI Tự Giải Đáp Án**: Chạy song song 2 cụm kèm báo tiến trình trực tiếp (`onProgress`), đọc chuẩn 100% công thức KaTeX (`\sqrt`, `\frac`, `\begin{cases}`, `\int`, `\lim`, `\log`), bảng Markdown/HTML, bảng trọng số sơ đồ mạng lưới, gạch chân tiếng Anh `<u>...</u> (A)`, **bỏ qua nét khoanh bút học sinh** để tự giải chọn đúng `correct_option` (`A/B/C/D`), viết `explanation` kèm KaTeX và phân bậc Bloom `difficulty_level` (`1–6`).
+  - **Ghép chùm liên trang & Dự phòng thuần C# không cần `pymupdf`**: `MergeBatchExamResults` ghép tự động các chùm đọc hiểu trải qua nhiều trang; `PdfPigLocalExamParser` (`UglyToad.PdfPig`) dự phòng riêng theo từng cụm trang nếu Cloud lỗi, chấm dứt 100% lỗi `ModuleNotFoundError: No module named 'pymupdf'`.
+- **Triển Khai Endpoint AI Phân Loại Hàng Loạt Câu Hỏi Đề Thi Vào Cây Node Khung Chương Trình (`POST /api/ai-engine/exams/classify-nodes`) (`ExamNodeClassificationDtos.cs`, `ExamEndpoints.cs`, `ExamNodeClassificationTests.cs`)**:
+  - Phân lô 30 câu/lượt qua Gemini + fallback từ vựng tiếng Việt `ClassifyQuestionLexically`.
+- **Kiểm Thử & Biên Dịch**: `dotnet build --no-restore` thành công (`0 Error`), `dotnet test --no-build` pass `5/5` (`PdfPigLocalExamParserTests` 3/3 + `ExamNodeClassificationTests` 2/2).
