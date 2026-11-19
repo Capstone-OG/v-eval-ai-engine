@@ -980,31 +980,64 @@ Bắt buộc bọc mỗi trang trong:
         string prompt = $@"BẠN LÀ CHUYÊN GIA SƯ PHẠM HÀNG ĐẦU THIẾT KẾ CHƯƠNG TRÌNH GDPT 2018 VIỆT NAM (MÔN {skeleton.SubjectName} LỚP {skeleton.Grade}).
 Bạn được cung cấp {tocImages.Count} trang ảnh đính kèm (các trang đầu và các trang cuối của sách '{fileName}', gồm Bìa, Lời nói đầu, Hướng dẫn sử dụng và MỤC LỤC).
 NHIỆM VỤ BẮT BUỘC:
-1. Hãy tìm kỹ trang MỤC LỤC (Table of Contents) trong các trang ảnh và trích xuất TOÀN BỘ TẤT CẢ CÁC CHỦ ĐỀ / CHƯƠNG và CÁC BÀI HỌC CỦA CUỐN SÁCH!
-2. TUYỆT ĐỐI KHÔNG ĐƯỢC CHỈ DỪNG LẠI Ở BÀI 'Mở đầu'! Một cuốn sách SGK {totalPages} trang luôn có từ 4 đến 8 Chương (hoặc Chủ đề) và 10 đến 25 Bài học.
-3. Mỗi bài học phải kèm 2-4 Dạng bài cụ thể, ước tính khoảng trang hợp lý (pageStart, pageEnd), và công thức KaTeX đặc trưng ($...$).
+1. Hãy tìm kỹ trang MỤC LỤC (Table of Contents) trong các trang ảnh và trích xuất TOÀN BỘ TẤT CẢ CÁC CHỦ ĐỀ / CHƯƠNG và TẤT CẢ CÁC BÀI HỌC CỦA CUỐN SÁCH!
+2. RÀNG BUỘC CỨNG VỀ BÀI HỌC (MANDATORY MULTI-LESSONS PER CHAPTER - ZERO LESSON DROPPING):
+   - Một cuốn sách SGK {totalPages} trang luôn có từ 4 đến 8 Chương và TỔNG CỘNG TỪ 10 ĐẾN 25 BÀI HỌC.
+   - Mỗi Chương BẮT BUỘC phải trích xuất TOÀN BỘ tất cả các bài học con (Bài 1, Bài 2, Bài 3, Bài 4...) có trong mục lục của chương đó!
+   - CẢNH BÁO: TUYỆT ĐỐI CẤM GỘP BÀI, TUYỆT ĐỐI CẤM CHỈ LẤY 1 BÀI ĐẠI DIỆN CHO MỖI CHƯƠNG! Nếu chương có 4 bài học, mảng lessons của chương đó BẮT BUỘC phải có đủ 4 phần tử bài học.
+3. Mỗi bài học có từ 2 đến 3 Dạng bài tinh gọn đại diện các mức độ Bloom Taxonomy (1: Nhớ/Nhận biết, 2: Hiểu/Giải thích, 3: Vận dụng/Tính toán, 4: Vận dụng cao/Phân tích).
 4. Chỉ trả về JSON thuần:
 {{
   ""chapters"": [
     {{
       ""chapterNumber"": 1,
-      ""title"": ""Chủ đề 1 (hoặc Chương 1): ..."",
+      ""title"": ""Chương 1: [Tên chương 1 theo mục lục]"",
       ""pageStart"": 5,
       ""pageEnd"": 35,
       ""lessons"": [
         {{
           ""lessonNumber"": 1,
-          ""title"": ""Bài 1: ..."",
+          ""title"": ""Bài 1: [Tên bài 1 theo mục lục]"",
           ""pageStart"": 5,
           ""pageEnd"": 15,
           ""keyFormulas"": [""$v = \\frac{{s}}{{t}}$""],
           ""patterns"": [
             {{
               ""patternCode"": ""C1_B1_D1"",
-              ""name"": ""Tên dạng bài cụ thể"",
+              ""name"": ""Dạng 1: Nhận biết khái niệm và hiện tượng cốt lõi"",
+              ""bloomLevel"": 1,
+              ""description"": ""Nhận diện định nghĩa, đơn vị và hiện tượng"",
+              ""method"": ""Áp dụng định nghĩa chuẩn GDPT 2018""
+            }},
+            {{
+              ""patternCode"": ""C1_B1_D2"",
+              ""name"": ""Dạng 2: Bài toán định lượng và đồ thị vận dụng"",
+              ""bloomLevel"": 3,
+              ""description"": ""Vận dụng công thức giải các bài toán thực tiễn"",
+              ""method"": ""Lập phương trình và giải""
+            }}
+          ]
+        }},
+        {{
+          ""lessonNumber"": 2,
+          ""title"": ""Bài 2: [Tên bài 2 theo mục lục]"",
+          ""pageStart"": 16,
+          ""pageEnd"": 25,
+          ""keyFormulas"": [],
+          ""patterns"": [
+            {{
+              ""patternCode"": ""C1_B2_D1"",
+              ""name"": ""Dạng 1: Nhận biết tính chất và quy luật"",
+              ""bloomLevel"": 1,
+              ""description"": ""Nhận diện các đặc trưng cốt lõi"",
+              ""method"": ""Áp dụng quy tắc lý thuyết""
+            }},
+            {{
+              ""patternCode"": ""C1_B2_D2"",
+              ""name"": ""Dạng 2: Phân tích bài toán chuyên sâu"",
               ""bloomLevel"": 2,
-              ""description"": ""Mô tả ngắn kỹ năng"",
-              ""method"": ""Phương pháp giải vắn tắt""
+              ""description"": ""Vận dụng phân tích trường hợp cụ thể"",
+              ""method"": ""Quy trình giải quyết vấn đề""
             }}
           ]
         }}
@@ -1074,10 +1107,12 @@ MỤC LỤC THÔ (NẾU CÓ):
                     var parsed = JsonSerializer.Deserialize<TextbookSkeletonDto>(rawJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                     if (parsed?.Chapters is { Count: > 0 })
                     {
-                        // Nếu AI chỉ trích xuất được <= 2 chương nhưng sách có >= 25 trang, bổ sung các chương chuẩn của GDPT 2018
+                        var stdChaps = CurriculumTaxonomyRegistry.GetStandardSkeletonChapters(skeleton.SubjectCode, skeleton.Grade);
+                        int totalParsedLessons = parsed.Chapters.Sum(c => c.Lessons?.Count ?? 0);
+
+                        // 1. Nếu AI chỉ trích xuất được <= 2 chương nhưng sách có >= 25 trang, bổ sung các chương chuẩn của GDPT 2018
                         if (parsed.Chapters.Count <= 2 && totalPages >= 25)
                         {
-                            var stdChaps = CurriculumTaxonomyRegistry.GetStandardSkeletonChapters(skeleton.SubjectCode, skeleton.Grade);
                             if (stdChaps.Count > 1)
                             {
                                 var combinedChaps = new List<SkeletonChapterDto>(parsed.Chapters);
@@ -1089,8 +1124,41 @@ MỤC LỤC THÔ (NẾU CÓ):
                                         combinedChaps.Add(sc);
                                     }
                                 }
-                                skeleton.Chapters = combinedChaps;
-                                return skeleton;
+                                parsed.Chapters = combinedChaps;
+                            }
+                        }
+
+                        // 2. LESSON GUARD: Nếu các chương parse ra bị thiếu bài (tổng số bài < 10 nhưng sách có >= 25 trang hoặc trung bình <= 1.2 bài/chương)
+                        // Bổ sung các bài học chuẩn từ GDPT 2018 Taxonomy để bảo toàn trọn vẹn 10-25 bài học của cuốn sách
+                        if (totalPages >= 25 && (totalParsedLessons < 10 || (parsed.Chapters.Count >= 3 && (double)totalParsedLessons / parsed.Chapters.Count <= 1.2)))
+                        {
+                            if (stdChaps.Count > 0)
+                            {
+                                foreach (var chap in parsed.Chapters)
+                                {
+                                    chap.Lessons ??= new List<SkeletonLessonDto>();
+                                    // Tìm chương tương ứng trong taxonomy chuẩn
+                                    var matchingStdChap = stdChaps.FirstOrDefault(sc => 
+                                        sc.ChapterNumber == chap.ChapterNumber || 
+                                        sc.Title.Contains(chap.Title, StringComparison.OrdinalIgnoreCase) || 
+                                        chap.Title.Contains(sc.Title, StringComparison.OrdinalIgnoreCase));
+
+                                    if (matchingStdChap?.Lessons != null && matchingStdChap.Lessons.Count > chap.Lessons.Count)
+                                    {
+                                        // Giữ các bài AI đã parse, bổ sung các bài chuẩn còn thiếu
+                                        foreach (var stdLes in matchingStdChap.Lessons)
+                                        {
+                                            bool exists = chap.Lessons.Any(l => 
+                                                l.Title.Contains(stdLes.Title, StringComparison.OrdinalIgnoreCase) || 
+                                                stdLes.Title.Contains(l.Title, StringComparison.OrdinalIgnoreCase));
+                                            if (!exists)
+                                            {
+                                                stdLes.LessonNumber = chap.Lessons.Count + 1;
+                                                chap.Lessons.Add(stdLes);
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -1147,6 +1215,7 @@ Yêu cầu xuất ra JSON duy nhất:
 Chỉ trả về JSON thuần, không kèm văn bản giải thích thừa.";
 
         var client = _httpClient;
+        string? configuredGeminiBaseUrl = _configuration["AiSettings:GeminiBaseUrl"];
         foreach (var model in geminiModels)
         {
             foreach (var key in geminiKeys)
@@ -1156,9 +1225,13 @@ Chỉ trả về JSON thuần, không kèm văn bản giải thích thừa.";
                     var reqBody = new
                     {
                         contents = new[] { new { parts = new[] { new { text = prompt } } } },
-                        generationConfig = new { temperature = 0.3, responseMimeType = "application/json" }
+                        generationConfig = new
+                        {
+                            temperature = 0.35,
+                            responseMimeType = "application/json"
+                        }
                     };
-                    string url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}";
+                    string url = MultiCloudExamParserService.ResolveGeminiEndpointUrl(model, key, configuredGeminiBaseUrl);
                     using var httpContent = new StringContent(JsonSerializer.Serialize(reqBody), Encoding.UTF8, "application/json");
                     using var resp = await client.PostAsync(url, httpContent, cancellationToken);
                     if (!resp.IsSuccessStatusCode)
@@ -1166,19 +1239,26 @@ Chỉ trả về JSON thuần, không kèm văn bản giải thích thừa.";
                         int statusCode = (int)resp.StatusCode;
                         if (statusCode is 503 or 500 or 504 or 404 or 400)
                         {
-                            _logger.LogWarning("TOC Scan Model {Model} trả về HTTP {Status}. Đổi ngay model tiếp theo", model, statusCode);
+                            _logger.LogWarning("GenerateExercises Model {Model} trả về HTTP {Status}. Đổi ngay model tiếp theo", model, statusCode);
                             break;
                         }
                         continue;
                     }
 
-                    using var docJson = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(cancellationToken));
-                    string? rawJson = docJson.RootElement
-                        .GetProperty("candidates")[0]
-                        .GetProperty("content")
-                        .GetProperty("parts")[0]
-                        .GetProperty("text")
-                        .GetString();
+                    string respBody = await resp.Content.ReadAsStringAsync(cancellationToken);
+                    var jsonNode = JsonNode.Parse(respBody);
+                    var partsNode = jsonNode?["candidates"]?[0]?["content"]?["parts"]?.AsArray();
+                    var sb = new StringBuilder();
+                    if (partsNode != null)
+                    {
+                        foreach (var part in partsNode)
+                        {
+                            if (part?["thought"]?.GetValue<bool>() == true) continue;
+                            var txt = part?["text"]?.GetValue<string>();
+                            if (!string.IsNullOrWhiteSpace(txt)) sb.AppendLine(txt);
+                        }
+                    }
+                    string? rawJson = sb.ToString();
 
                     if (string.IsNullOrWhiteSpace(rawJson)) continue;
                     rawJson = rawJson.Trim();
@@ -1201,16 +1281,36 @@ Chỉ trả về JSON thuần, không kèm văn bản giải thích thừa.";
             }
         }
 
-        // Fallback mẫu chất lượng nếu chưa có mạng / lỗi key
-        exercises.Add(new GeneratedExerciseDto
+        // Fallback mẫu chất lượng theo đúng số lượng & cấp Bloom 1–6 nếu chưa có mạng / lỗi key
+        int safeCount = Math.Clamp(request.Count, 1, 10);
+        string bloomVerb = request.BloomLevel switch
         {
-            Id = "fb_1",
-            Stem = $"[Luyện tập Bloom L{request.BloomLevel}] Vận dụng kiến thức dạng bài '{request.PatternName}' để xác định kết luận đúng:",
-            Options = new List<string> { "A. Kết luận chuẩn xác theo định nghĩa SGK", "B. Thiếu điều kiện xác định", "C. Sai dấu trong biến đổi đại số", "D. Chỉ đúng trong trường hợp đặc biệt" },
-            CorrectIndex = 0,
-            BloomLevel = request.BloomLevel,
-            Solution = $"Áp dụng quy tắc trọng tâm của {request.PatternName} trong {request.Lesson} để giải quyết bài toán."
-        });
+            1 => "Nhận biết khái niệm và công thức nền tảng",
+            2 => "Giải thích bản chất và thông hiểu mối liên hệ",
+            3 => "Vận dụng quy tắc tính toán vào bài toán cụ thể",
+            4 => "Phân tích điều kiện, dữ kiện và mối quan hệ nhân quả",
+            5 => "Đánh giá tính đúng/sai và lựa chọn phương án tối ưu",
+            6 => "Tổng hợp kiến thức và thiết kế hướng giải quyết tình huống mới",
+            _ => "Vận dụng kiến thức trọng tâm"
+        };
+        for (int i = 1; i <= safeCount; i++)
+        {
+            exercises.Add(new GeneratedExerciseDto
+            {
+                Id = $"fb_l{request.BloomLevel}_{i}",
+                Stem = $"[Bloom L{request.BloomLevel} · Mẫu #{i}] Hãy {bloomVerb.ToLowerInvariant()} cho dạng bài '{request.PatternName}' ({request.Lesson}):",
+                Options = new List<string>
+                {
+                    "A. Kết luận chuẩn xác theo định nghĩa và quy tắc SGK GDPT 2018",
+                    "B. Bỏ sót điều kiện xác định hoặc giả thiết quan trọng",
+                    "C. Nhầm dấu / đơn vị trong quá trình biến đổi",
+                    "D. Chỉ đúng trong trường hợp đặc biệt, không tổng quát"
+                },
+                CorrectIndex = 0,
+                BloomLevel = request.BloomLevel,
+                Solution = $"Bước 1: Xác định trọng tâm của {request.PatternName} ({request.Lesson}). Bước 2: Đối chiếu yêu cầu bậc nhận thức Bloom L{request.BloomLevel} ({bloomVerb}) để chọn phương án A."
+            });
+        }
 
         return exercises;
     }

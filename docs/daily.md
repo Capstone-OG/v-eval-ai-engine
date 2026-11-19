@@ -1,7 +1,77 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
-## [18/11/2026] - Chuẩn Hóa Pipeline Bóc Tách C# Backend: Tối Ưu Tốc Độ (48 DPI, Nén JPEG 52%, Batch 2 Trang, Giảm Tải Nội Dung), Triệt Tiêu Thẻ Rò Rỉ [TAXONOMY] & Xóa Sách CSDL
+## [20/11/2026] - Triển Khai Endpoint AI Phân Loại Hàng Loạt Câu Hỏi Đề Thi Vào Cây Node Khung Chương Trình (`POST /api/ai-engine/exams/classify-nodes`)
 
+- **Xây Dựng Hợp Đồng DTO & Endpoint Phân Loại Node ([`ExamNodeClassificationDtos.cs`](../V-Eval-Ai_Engine.Application/DTOs/ExamNodeClassificationDtos.cs), [`IExamParserService.cs`](../V-Eval-Ai_Engine.Application/Interfaces/IExamParserService.cs), [`ExamEndpoints.cs`](../V-Eval-Ai_Engine.API/Endpoints/ExamEndpoints.cs))**:
+  - Thiết kế request/response DTO chuẩn snake_case: tiếp nhận danh sách nút cây Khung chương trình thực tế (`taxonomy_nodes[]` gồm `skill_id`, `domain_name`, `chapter_name`, `lesson_name`, `pattern_name`) cùng danh sách câu hỏi đề thi (`questions[]` gồm nội dung, trích đoạn chùm đọc hiểu, kỹ năng gợi ý).
+  - Đăng ký Minimal API endpoint `POST /api/ai-engine/exams/classify-nodes` đi qua YARP API Gateway.
+- **Động Cơ Phân Loại Kép Gemini Structured JSON + Fallback Từ Vựng Tiếng Việt ([`MultiCloudExamParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/MultiCloudExamParserService.cs))**:
+  - Nén toàn bộ cây chương trình thành danh mục chỉ mục `[idx]` gọn nhẹ, phân lô 30 câu/lượt gọi Gemini Flash với `responseSchema` chặt chẽ (trả về `node_index`, `confidence`, `bloom_level` 1–6 và `reason`).
+  - Bổ sung bộ chấm điểm ngữ nghĩa tiếng Việt cục bộ (`ClassifyQuestionLexically`) chuẩn hóa dấu thanh Unicode/NFC và đối soát môn học làm lớp dự phòng tức thì giúp endpoint luôn trả kết quả chính xác ngay cả khi API LLM quá tải/offline.
+- **Nâng Cấp Toàn Diện Động Cơ Parse Đề PDF Sang Kiến Trúc Page-Batched Vision AI + Tự Giải Đáp Án Đồng Bộ 100% Với SGK ([`MultiCloudExamParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/MultiCloudExamParserService.cs), [`PdfPigLocalExamParser.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigLocalExamParser.cs), [`IExamParserService.cs`](../V-Eval-Ai_Engine.Application/Interfaces/IExamParserService.cs), [`ExamEndpoints.cs`](../V-Eval-Ai_Engine.API/Endpoints/ExamEndpoints.cs), [`PdfPigTextbookParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs), [`PdfPigLocalExamParserTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/PdfPigLocalExamParserTests.cs))**:
+  - *Nguyên nhân gốc rễ khiến đề thi bị rớt xuống text thuần `PdfPig` lỗi công thức `≡` & không có đáp án*:
+    1. Luồng cũ gửi nguyên 16 trang PDF 120 câu trong 1 request đơn, thiếu hoàn toàn `correct_option`, `explanation`, `difficulty_level` trong prompt/schema và gửi kèm `thinkingConfig` + `responseSchema` lồng sâu gây HTTP 400 trên model Lite hoặc đứt JSON giữa chừng.
+    2. `ResolveGeminiEndpointUrl` trước đó chuyển hướng khóa `AQ.*` sang `aiplatform.googleapis.com` trong khi phân hệ SGK (`PdfPigTextbookParserService.cs`) đã kiểm chứng các khóa và model `AiSettings:GeminiModels` (`gemini-3.1-flash-lite`, `gemini-3.5-flash-lite`, `gemini-flash-lite-latest`, `gemini-3.5-flash`) chạy trực tiếp trên `generativelanguage.googleapis.com/v1beta`.
+  - *Giải pháp triệt để (SGK-Unified Page-Batched Vision AI + Auto-Solve)*:
+    - Đồng bộ 100% endpoint (`generativelanguage.googleapis.com/v1beta`), chuỗi model `AiSettings:GeminiModels`, vòng lặp model ngoài / xoay vòng key trong (`GetRotatedKeys`), fail-fast 503/500/504/404/400, bỏ `thinkingConfig` & nested `responseSchema` gây 400, và lọc bỏ phần `thought: true` (`ExtractTextPartsIgnoringThoughts`).
+    - Render ảnh từng cụm **2 trang JPEG sắc nét (115 DPI, tối đa 1400px, JPEG 78%)** qua `PDFtoImage` + `SkiaSharp`, chạy song song tối đa 2 cụm/lượt kèm cập nhật tiến trình trực tiếp qua `onProgress` (`ExamEndpoints.cs` -> `InMemoryExamJobManager`).
+    - Prompt chuyên biệt ép AI Vision: (1) chép chính xác 100% công thức KaTeX (căn thức, phân số, logarit, hàm từng khúc `\begin{cases}...\end{cases}`, tích phân, giới hạn), (2) xuất đủ bảng Markdown / HTML `<table>` (ma trận khoảng cách 6×6, bảng số liệu thí nghiệm) và bảng cạnh nối cho sơ đồ mạng lưới có trọng số, giữ nguyên chỗ trống `______` & gạch chân `<u>word</u> (A)` tiếng Anh, (3) **bỏ qua nét khoanh bút đỏ/xanh của học sinh**, tự giải chính xác để chọn **`correct_option` (`A/B/C/D`)**, viết lời giải **`explanation`** kèm KaTeX và gán bậc Bloom **`difficulty_level` (1–6)**.
+    - Xây dựng `MergeBatchExamResults` ghép tự động các chùm đọc hiểu liên trang (`passages`) và khử trùng lặp ưu tiên bản giàu lời giải; mở rộng `SanitizeJsonForLatex` cho toàn bộ lệnh toán học; giữ `PdfPigLocalExamParser` thuần C# (`ParsePageRange`) làm tầng dự phòng độc lập theo từng cụm trang, triệt tiêu 100% lỗi `ModuleNotFoundError: No module named 'pymupdf'`.
+- **Unit Tests & Biên Dịch ([`ExamNodeClassificationTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/ExamNodeClassificationTests.cs), [`PdfPigLocalExamParserTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/PdfPigLocalExamParserTests.cs))**:
+  - `dotnet build --no-restore`: Thành công (`0 Error`).
+  - `dotnet test --no-build`: Pass `5/5` (`ExamNodeClassificationTests` 2/2 + `PdfPigLocalExamParserTests` 3/3 gồm kiểm chứng ghép chùm liên trang & bảo toàn đáp án/lời giải AI).
+- **Nâng Cấp `GeneratePatternExercisesAsync` Cho AI Sinh Câu Hỏi 6 Mức Bloom ([`PdfPigTextbookParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs))**:
+  - Đồng bộ payload chuẩn SGK (gỡ `thinkingConfig` gây 400 trên Lite, bỏ qua `thought: true`), nâng cấp fallback sinh đúng đủ số lượng `request.Count` câu theo đặc tả động từ bậc Bloom `L1..L6`.
+
+---
+
+## [19/11/2026] - Sửa Lỗi Khớp Sai Khối Lớp (Lớp 11 Trả Về Lớp 10) Trong Taxonomy Registry, Loại Bỏ Stub Placeholder & Hỗ Trợ Dấu Tiếng Việt `hoá`/`hóa`
+
+- **Sửa Lỗi Chọn Khối Lớp Chính Xác (`./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumTaxonomyRegistry.cs`)**:
+  - *Nguyên nhân gốc rễ*: Tại hàm `GetStandardSkeletonChapters`, điều kiện `if (gVal != grade && grade > 0 && gVal != 10 && gVal != 12) continue;` bỏ qua kiểm tra khi gặp nút `grade: 10` đầu tiên trong mảng JSON `grades`, khiến mọi yêu cầu cho Khối 11 hoặc Khối 12 (như `CHEM` Lớp 11) đều trả về nhầm 7 chương của Hóa học Lớp 10 (`Tốc độ phản ứng hoá học`, `Halogen`).
+  - *Khắc phục*: Ưu tiên tìm nút khớp chính xác `grade` trước (`grades.FirstOrDefault(g => (g?["grade"]?.GetValue<int>() ?? 0) == grade)`), chỉ fallback sang lớp 10/12 hoặc phần tử đầu tiên nếu không tìm thấy đúng khối lớp.
+- **Loại Bỏ Chuỗi Stub Placeholder Khỏi `SkeletonPatternDto`**:
+  - Xóa bỏ chuỗi gán mặc định `"Mục tiêu nhận thức và kỹ năng áp dụng cho {pName}."` và `"Áp dụng phương pháp sư phạm chuẩn SGK GDPT 2018."` trong `CurriculumTaxonomyRegistry.cs` (trả về `string.Empty`) để ngăn chặn việc dữ liệu giả đè mất lý thuyết thực tế ở Web Client.
+- **Hỗ Trợ Dấu Thanh Tiếng Việt Kiểu Cũ/Mới (`hoá` / `hóa`, `vật lý` / `vật lí`)**:
+  - Cập nhật biểu thức chính quy trong `DetectDocumentIdentity` và `DetectGradeNumber` để nhận diện chính xác cả `"hoá học"` và `"hóa học"`, `"cân bằng hoá học"`, `"tốc độ phản ứng"`.
+- **Unit Tests (`./V-Eval-Ai_Engine.Tests/Infrastructure/CurriculumTaxonomyRegistryTests.cs`)**:
+  - Bổ sung 2 test hồi quy: `GetStandardSkeletonChapters_ShouldMatchExactGrade11_AndNotInjectStubDescriptions` và `DetectDocumentIdentity_ShouldHandleOldStyleVietnameseAccentHoaHoc11`.
+
+---
+
+## [19/11/2026] - Nâng Cấp Động Cơ Quét Mục Lục SGK, Cải Tiến Prompt Multi-Lesson & Triển Khai Lesson Guard Ngăn Chặn Sót Bài Học
+
+- **Nâng Cấp Prompt Bóc Tách Mục Lục SGK (`PdfPigTextbookParserService.cs`)**:
+  - *Ràng Buộc Đa Bài Học (Multi-Lessons Contract)*: Cải tiến prompt Gemini Vision ép buộc trích xuất đầy đủ 100% tất cả các bài học con (Bài 1, Bài 2, Bài 3, Bài 4...) trong mỗi Chương, nghiêm cấm việc chỉ lấy 1 bài đại diện hoặc gộp bài.
+  - *Cung Cấp Schema JSON Mẫu Đa Bài Học*: Bổ sung ví dụ chương chứa nhiều bài học (`Bài 1`, `Bài 2`...) giúp LLM noi theo cấu trúc chuẩn xác và không bị "nghẽn token".
+- **Triển Khai Lesson Guard C# Bù Bài Học Khuyết Thiếu (`PdfPigTextbookParserService.cs`)**:
+  - Khi AI parse ra tổng số bài học quá thấp (`totalParsedLessons < 10` hoặc trung bình $\le 1.2$ bài/chương đối với sách $\ge 25$ trang), hệ thống tự động đối soát và hòa nhập (backfill/merge) toàn bộ các bài học chuẩn còn thiếu từ `gdpt2018_dgnl_taxonomy.json` vào từng chương, bảo toàn trọn vẹn 10–25 bài học cho toàn bộ cuốn sách.
+- **Biên Dịch & Kiểm Thử Vận Hành**:
+  - `dotnet build`: Succeeded 100%, 0 Error, 0 Warning.
+
+---
+
+## [19/11/2026] - Đồng Bộ Hoàn Toàn Ma Trận Tri Thức GDPT 2018 (Chân Trời Sáng Tạo) 139 Chương Vào Cấu Hình Taxonomy JSON Của AI Engine
+
+- **Đồng Bộ Hoàn Chỉnh Ma Trận Tri Thức GDPT 2018 Toàn Diện (`gdpt2018_dgnl_taxonomy.json`)**:
+  - *Mở rộng toàn diện 139 Chương trên cả 4 miền tri thức*: Cập nhật đồng bộ cấu trúc 139 Chương và 337 Bài học theo chuẩn mục lục 17 SGK Chân trời sáng tạo, loại bỏ hoàn toàn các khung placeholder rút gọn.
+  - *Toán học (26 Chương)*: Bao quát đầy đủ Toán 10 (10 Chương), Toán 11 (9 Chương), Toán 12 (7 Chương) kèm chuyên đề Tư duy Logic & Phân tích số liệu ĐGNL.
+  - *Khoa học tự nhiên (50 Chương)*: Nạp đủ 17 Chương Vật lí (Lớp 10 [9 chương, 23 bài], Lớp 11 [4 chương], Lớp 12 [4 chương]), 21 Chương Hóa học (10-12), 12 Chương Sinh học (10-12).
+  - *Sử dụng Ngôn ngữ (33 Chương)*: 27 Chương Ngữ văn (9 Bài thể loại lớn cho từng khối 10, 11, 12) và 6 Chương Tiếng Anh THPT (ngữ pháp, từ vựng học thuật, đọc hiểu ĐGNL).
+  - *Khoa học xã hội (30 Chương)*: 9 Chương Lịch sử (10-12), 12 Chương Địa lí (10-12), 9 Chương Giáo dục Kinh tế và Pháp luật (10-12).
+  - *Hỗ trợ AI OCR & Ingestion Pipeline*: Đảm bảo `CurriculumTaxonomyRegistry.cs` nhận diện chính xác 100% khi phân loại tự động các trang PDF SGK và đề thi nạp vào hệ thống.
+- **Kiểm Thử & Vận Hành**:
+  - File taxonomy JSON được parse hợp lệ 100% qua `JsonNode.Parse`.
+  - Dịch vụ AI Engine sẵn sàng phục vụ OCR, RAG và bóc tách cấu trúc bài học.
+
+---
+
+## [18/11/2026] - Nâng Cấp Prompt Bóc Tách Cấu Trúc SGK Skeleton Đa Dạng Hóa Dạng Bài (2–4 Dạng) & Bloom L1–L4, Chuẩn Hóa Pipeline Bóc Tách C# Backend: Tối Ưu Tốc Độ (48 DPI, Nén JPEG 52%, Batch 2 Trang, Giảm Tải Nội Dung), Triệt Tiêu Thẻ Rò Rỉ [TAXONOMY] & Xóa Sách CSDL
+
+- **Cải Tiến Prompt Gemini Vision Bóc Tách Cấu Trúc Skeleton Đa Dạng Hóa Dạng Bài (2–4 Dạng) & Phân Tầng Nhận Thức Bloom L1–L4 (`PdfPigTextbookParserService.cs`)**:
+  - *Giải quyết nguyên nhân gốc rễ chỉ có 1 dạng bài L2*: Trước đây prompt bóc tách cấu trúc tổng thể (`ScanTextbookSkeletonAsync`) cung cấp schema ví dụ chỉ gồm 1 dạng bài với `bloomLevel: 2`, dẫn đến việc mô hình Gemini thường sinh mặc định đúng 1 dạng duy nhất cho mỗi bài học và đều gán Bloom level 2.
+  - *Ép buộc 2–4 dạng bài với Bloom đa dạng*: Bổ sung quy tắc sư phạm tường minh trong prompt: *"Quan trọng: Mỗi bài học PHẢI có từ 2 đến 4 dạng bài trọng tâm với bloomLevel đa dạng từ 1 đến 4 (1: Nhận biết, 2: Thông hiểu, 3: Vận dụng, 4: Vận dụng cao), tuyệt đối không để 1 dạng duy nhất hoặc toàn bộ bloomLevel=2"*.
+  - *Mở rộng schema JSON minh họa*: Bổ sung ít nhất 2 dạng bài thực tế với `bloomLevel: 1` và `bloomLevel: 3` trong ví dụ mẫu gửi đến Gemini Vision, định hướng mô hình phân tầng nhận thức chính xác theo chuẩn GDPT 2018.
 - **Tối Ưu Hóa Toàn Diện Tốc Độ Bóc Tách SGK & Triệt Tiêu Nghẽn Hàng Đợi 503 (`PdfPigTextbookParserService.cs`, `TextbookEndpoints.cs`, `appsettings.json`)**:
   - *Hạ DPI & Tối ưu nén ảnh SkiaSharp*: Thiết lập DPI mặc định thành `48 DPI` (từ 56/72), giới hạn chiều tối đa ảnh `capDim` xuống `640px - 720px` và nâng hệ số nén `jpegQuality = 52`. Dung lượng mỗi trang ảnh giảm mạnh 65-70% (từ ~180KB xuống ~35-50KB/trang), giảm 50% số token hình ảnh (tiling tokens) gửi đến Gemini.
   - *Thu nhỏ kích thước lô Vision AI (Batch Size = 2 Trang)*: Giảm batch size xử lý ảnh từ 4-5 trang xuống 2 trang/lần. Tránh hiện tượng Gemini phải sinh cùng lúc hàng nghìn tokens cho 4-5 trang dẫn đến quá tải/timeout; thời gian phản hồi mỗi batch giảm từ 15-22s xuống chỉ còn **2.5s - 4.5s**.

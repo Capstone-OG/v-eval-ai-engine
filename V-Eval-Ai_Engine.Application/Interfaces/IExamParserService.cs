@@ -14,5 +14,16 @@ public interface IExamParserService
     /// <param name="fileName">Tên gốc của tệp</param>
     /// <param name="cancellationToken">Token hủy tác vụ</param>
     /// <returns>Đối tượng ParsedExamDto chứa các passages và questions</returns>
-    Task<ParsedExamDto> ParsePdfAsync(Stream pdfStream, string fileName, CancellationToken cancellationToken = default);
+    Task<ParsedExamDto> ParsePdfAsync(
+        Stream pdfStream,
+        string fileName,
+        CancellationToken cancellationToken = default,
+        Action<string>? onProgress = null);
+
+    /// <summary>
+    /// Phân loại danh sách câu hỏi đề thi vào đúng nút Miền -> Chương -> Bài -> Dạng bài của Khung chương trình
+    /// </summary>
+    Task<ClassifyExamNodesResponseDto> ClassifyQuestionsToNodesAsync(
+        ClassifyExamNodesRequestDto request,
+        CancellationToken cancellationToken = default);
 }

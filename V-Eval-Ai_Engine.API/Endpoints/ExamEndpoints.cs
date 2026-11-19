@@ -56,10 +56,14 @@ public static class ExamEndpoints
                         using var scope = scopeFactory.CreateScope();
                         var parserService = scope.ServiceProvider.GetRequiredService<IExamParserService>();
 
-                        jobManager.UpdateJobProgress(job.JobId, "Đang tải dữ liệu và phân tích đề thi bằng Gemini AI (có thể mất 1-3 phút)...");
+                        jobManager.UpdateJobProgress(job.JobId, "Đang nạp PDF & khởi chạy Gemini Vision AI đọc từng cụm trang, công thức KaTeX và giải đáp án...");
 
                         await using var readStream = new FileStream(savedFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                        var parsedExam = await parserService.ParsePdfAsync(readStream, file.FileName);
+                        var parsedExam = await parserService.ParsePdfAsync(
+                            readStream,
+                            file.FileName,
+                            CancellationToken.None,
+                            stepMsg => jobManager.UpdateJobProgress(job.JobId, stepMsg));
                         parsedExam.PdfUrl = $"/uploads/{uniqueFileName}";
 
                         jobManager.CompleteJob(job.JobId, parsedExam);
@@ -99,6 +103,23 @@ public static class ExamEndpoints
             return Results.Ok(job);
         })
         .WithName("GetExamJobStatus");
+
+        // 2.5. Endpoint AI phân loại câu hỏi đề thi vào đúng nút Miền -> Chương -> Bài -> Dạng bài của Khung chương trình
+        group.MapPost("/exams/classify-nodes", async (
+            [FromBody] V_Eval_Ai_Engine.Application.DTOs.ClassifyExamNodesRequestDto request,
+            [FromServices] IExamParserService parserService,
+            CancellationToken cancellationToken) =>
+        {
+            if (request == null || request.Questions == null || request.Questions.Count == 0)
+            {
+                return Results.BadRequest(new { message = "Danh sách câu hỏi cần phân loại không được rỗng." });
+            }
+
+            var result = await parserService.ClassifyQuestionsToNodesAsync(request, cancellationToken);
+            return Results.Ok(result);
+        })
+        .WithName("ClassifyExamQuestionsToCurriculumNodes")
+        .DisableAntiforgery();
 
         // 3. Endpoint phục vụ giao diện xem trước đề thi trực quan
         group.MapGet("/view-exam", async (IWebHostEnvironment env) =>
