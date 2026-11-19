@@ -119,5 +119,34 @@ public class CurriculumTaxonomyRegistryTests
         dto.Chapters[0].Lessons[0].Patterns.Should().HaveCount(1);
         dto.Chapters[0].Lessons[0].Patterns[0].TheoryRecap.Should().Contain("RCOOR'");
     }
+
+    [Fact]
+    public void GetStandardSkeletonChapters_ShouldMatchExactGrade11_AndNotInjectStubDescriptions()
+    {
+        var chem11 = CurriculumTaxonomyRegistry.GetStandardSkeletonChapters("CHEM", 11);
+
+        chem11.Should().NotBeEmpty();
+        chem11[0].Title.Should().Contain("Cân bằng");
+        chem11.Should().NotContain(c => c.Title.Contains("Halogen", StringComparison.OrdinalIgnoreCase));
+
+        var allPatterns = chem11
+            .SelectMany(c => c.Lessons)
+            .SelectMany(l => l.Patterns)
+            .ToList();
+        allPatterns.Should().NotBeEmpty();
+        allPatterns.Should().OnlyContain(p => string.IsNullOrEmpty(p.Description) && string.IsNullOrEmpty(p.Method));
+    }
+
+    [Fact]
+    public void DetectDocumentIdentity_ShouldHandleOldStyleVietnameseAccentHoaHoc11()
+    {
+        var identity = CurriculumTaxonomyRegistry.DetectDocumentIdentity(
+            "SGK_Hoá_học_11_CTST.pdf",
+            "Chương 1: Cân bằng hoá học. Bài 1: Khái niệm về cân bằng hoá học.");
+
+        identity.SubjectCode.Should().Be("CHEM");
+        identity.Grade.Should().Be(11);
+        identity.IsInDgnlScope.Should().BeTrue();
+    }
 }
 

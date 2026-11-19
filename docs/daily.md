@@ -1,5 +1,19 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [19/11/2026] - Sửa Lỗi Khớp Sai Khối Lớp (Lớp 11 Trả Về Lớp 10) Trong Taxonomy Registry, Loại Bỏ Stub Placeholder & Hỗ Trợ Dấu Tiếng Việt `hoá`/`hóa`
+
+- **Sửa Lỗi Chọn Khối Lớp Chính Xác (`./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumTaxonomyRegistry.cs`)**:
+  - *Nguyên nhân gốc rễ*: Tại hàm `GetStandardSkeletonChapters`, điều kiện `if (gVal != grade && grade > 0 && gVal != 10 && gVal != 12) continue;` bỏ qua kiểm tra khi gặp nút `grade: 10` đầu tiên trong mảng JSON `grades`, khiến mọi yêu cầu cho Khối 11 hoặc Khối 12 (như `CHEM` Lớp 11) đều trả về nhầm 7 chương của Hóa học Lớp 10 (`Tốc độ phản ứng hoá học`, `Halogen`).
+  - *Khắc phục*: Ưu tiên tìm nút khớp chính xác `grade` trước (`grades.FirstOrDefault(g => (g?["grade"]?.GetValue<int>() ?? 0) == grade)`), chỉ fallback sang lớp 10/12 hoặc phần tử đầu tiên nếu không tìm thấy đúng khối lớp.
+- **Loại Bỏ Chuỗi Stub Placeholder Khỏi `SkeletonPatternDto`**:
+  - Xóa bỏ chuỗi gán mặc định `"Mục tiêu nhận thức và kỹ năng áp dụng cho {pName}."` và `"Áp dụng phương pháp sư phạm chuẩn SGK GDPT 2018."` trong `CurriculumTaxonomyRegistry.cs` (trả về `string.Empty`) để ngăn chặn việc dữ liệu giả đè mất lý thuyết thực tế ở Web Client.
+- **Hỗ Trợ Dấu Thanh Tiếng Việt Kiểu Cũ/Mới (`hoá` / `hóa`, `vật lý` / `vật lí`)**:
+  - Cập nhật biểu thức chính quy trong `DetectDocumentIdentity` và `DetectGradeNumber` để nhận diện chính xác cả `"hoá học"` và `"hóa học"`, `"cân bằng hoá học"`, `"tốc độ phản ứng"`.
+- **Unit Tests (`./V-Eval-Ai_Engine.Tests/Infrastructure/CurriculumTaxonomyRegistryTests.cs`)**:
+  - Bổ sung 2 test hồi quy: `GetStandardSkeletonChapters_ShouldMatchExactGrade11_AndNotInjectStubDescriptions` và `DetectDocumentIdentity_ShouldHandleOldStyleVietnameseAccentHoaHoc11`.
+
+---
+
 ## [19/11/2026] - Nâng Cấp Động Cơ Quét Mục Lục SGK, Cải Tiến Prompt Multi-Lesson & Triển Khai Lesson Guard Ngăn Chặn Sót Bài Học
 
 - **Nâng Cấp Prompt Bóc Tách Mục Lục SGK (`PdfPigTextbookParserService.cs`)**:

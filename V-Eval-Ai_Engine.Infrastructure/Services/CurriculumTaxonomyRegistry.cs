@@ -74,71 +74,73 @@ public static class CurriculumTaxonomyRegistry
                     if (!string.Equals(code, subjectCode, StringComparison.OrdinalIgnoreCase)) continue;
 
                     var grades = sub?["grades"]?.AsArray();
-                    if (grades == null) continue;
+                    if (grades == null || grades.Count == 0) continue;
 
-                    foreach (var gNode in grades)
+                    // Ưu tiên khớp chính xác khối lớp được yêu cầu trước; chỉ fallback sang lớp 10/12 hoặc phần tử đầu tiên khi không tìm thấy đúng lớp
+                    JsonNode? targetGradeNode = grade > 0
+                        ? grades.FirstOrDefault(g => (g?["grade"]?.GetValue<int>() ?? 0) == grade)
+                        : null;
+                    targetGradeNode ??= grades.FirstOrDefault(g => (g?["grade"]?.GetValue<int>() ?? 0) == 10)
+                        ?? grades.FirstOrDefault(g => (g?["grade"]?.GetValue<int>() ?? 0) == 12)
+                        ?? grades.FirstOrDefault();
+
+                    var chaps = targetGradeNode?["chapters"]?.AsArray();
+                    if (chaps == null) continue;
+
+                    int chIdx = 1;
+                    foreach (var cNode in chaps)
                     {
-                        int gVal = gNode?["grade"]?.GetValue<int>() ?? 0;
-                        if (gVal != grade && grade > 0 && gVal != 10 && gVal != 12) continue;
-
-                        var chaps = gNode?["chapters"]?.AsArray();
-                        if (chaps == null) continue;
-
-                        int chIdx = 1;
-                        foreach (var cNode in chaps)
+                        string cName = cNode?["name"]?.GetValue<string>() ?? $"Chương {chIdx}";
+                        var chapDto = new SkeletonChapterDto
                         {
-                            string cName = cNode?["name"]?.GetValue<string>() ?? $"Chương {chIdx}";
-                            var chapDto = new SkeletonChapterDto
-                            {
-                                ChapterNumber = chIdx,
-                                Title = cName,
-                                PageStart = chIdx * 20 - 15,
-                                PageEnd = chIdx * 20 + 10
-                            };
+                            ChapterNumber = chIdx,
+                            Title = cName,
+                            PageStart = chIdx * 20 - 15,
+                            PageEnd = chIdx * 20 + 10
+                        };
 
-                            var lessons = cNode?["lessons"]?.AsArray();
-                            if (lessons != null)
+                        var lessons = cNode?["lessons"]?.AsArray();
+                        if (lessons != null)
+                        {
+                            int lesIdx = 1;
+                            foreach (var lNode in lessons)
                             {
-                                int lesIdx = 1;
-                                foreach (var lNode in lessons)
+                                string lName = lNode?["name"]?.GetValue<string>() ?? $"Bài {lesIdx}";
+                                var lesDto = new SkeletonLessonDto
                                 {
-                                    string lName = lNode?["name"]?.GetValue<string>() ?? $"Bài {lesIdx}";
-                                    var lesDto = new SkeletonLessonDto
-                                    {
-                                        LessonNumber = lesIdx,
-                                        Title = lName,
-                                        PageStart = chapDto.PageStart + (lesIdx - 1) * 8,
-                                        PageEnd = chapDto.PageStart + lesIdx * 8
-                                    };
+                                    LessonNumber = lesIdx,
+                                    Title = lName,
+                                    PageStart = chapDto.PageStart + (lesIdx - 1) * 8,
+                                    PageEnd = chapDto.PageStart + lesIdx * 8
+                                };
 
-                                    var patterns = lNode?["patterns"]?.AsArray();
-                                    if (patterns != null)
+                                var patterns = lNode?["patterns"]?.AsArray();
+                                if (patterns != null)
+                                {
+                                    int pIdx = 1;
+                                    foreach (var pNode in patterns)
                                     {
-                                        int pIdx = 1;
-                                        foreach (var pNode in patterns)
+                                        string pName = pNode?.GetValue<string>() ?? $"Dạng {pIdx}";
+                                        lesDto.Patterns.Add(new SkeletonPatternDto
                                         {
-                                            string pName = pNode?.GetValue<string>() ?? $"Dạng {pIdx}";
-                                            lesDto.Patterns.Add(new SkeletonPatternDto
-                                            {
-                                                PatternCode = $"C{chIdx}_B{lesIdx}_D{pIdx}",
-                                                Name = pName,
-                                                BloomLevel = (pIdx % 3) + 1,
-                                                Description = $"Mục tiêu nhận thức và kỹ năng áp dụng cho {pName}.",
-                                                Method = "Áp dụng phương pháp sư phạm chuẩn SGK GDPT 2018."
-                                            });
-                                            pIdx++;
-                                        }
+                                            PatternCode = $"C{chIdx}_B{lesIdx}_D{pIdx}",
+                                            Name = pName,
+                                            BloomLevel = (pIdx % 3) + 1,
+                                            Description = string.Empty,
+                                            Method = string.Empty
+                                        });
+                                        pIdx++;
                                     }
-                                    chapDto.Lessons.Add(lesDto);
-                                    lesIdx++;
                                 }
+                                chapDto.Lessons.Add(lesDto);
+                                lesIdx++;
                             }
-
-                            result.Add(chapDto);
-                            chIdx++;
                         }
-                        if (result.Count > 0) return result;
+
+                        result.Add(chapDto);
+                        chIdx++;
                     }
+                    if (result.Count > 0) return result;
                 }
             }
         }
@@ -294,9 +296,9 @@ public static class CurriculumTaxonomyRegistry
             return ("PHYS", "Vật lí", "77777777-7777-7777-7777-000000000001", grade, bookEdition, true);
         }
 
-        if (fnLower.Contains("hóa học") || fnLower.Contains("hoa hoc") || fnLower.Contains("chemistry") || fnLower.Contains("ester") ||
-            Regex.IsMatch(fnLower, @"\b(hh|hoa)[_\-\s\.]|\bsgk\s*hh\b") ||
-            Regex.IsMatch(combined, @"\b(hóa học|ester|lipid|carbohydrate|glucose|amine|amino acid|peptide|polymer|điện phân|pin galvani|enthalpy|cân bằng hóa học|hydrocarbon)\b"))
+        if (fnLower.Contains("hóa học") || fnLower.Contains("hoá học") || fnLower.Contains("hoa hoc") || fnLower.Contains("chemistry") || fnLower.Contains("ester") ||
+            Regex.IsMatch(fnLower, @"\b(hh|hoa|hóa|hoá)[_\-\s\.]|\bsgk\s*hh\b") ||
+            Regex.IsMatch(combined, @"\b(hóa học|hoá học|ester|lipid|carbohydrate|glucose|amine|amino acid|peptide|polymer|điện phân|pin galvani|enthalpy|cân bằng hóa học|cân bằng hoá học|hydrocarbon)\b"))
         {
             return ("CHEM", "Hóa học", "77777777-7777-7777-7777-000000000001", grade, bookEdition, true);
         }
@@ -347,19 +349,19 @@ public static class CurriculumTaxonomyRegistry
     public static int DetectGradeNumber(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return 12;
-        if (Regex.IsMatch(text, @"\b(lớp\s*10|toán\s*10|ngữ\s*văn\s*10|vật\s*lí\s*10|hóa\s*học\s*10|sinh\s*học\s*10|lịch\s*sử\s*10|địa\s*lí\s*10|khối\s*10|grade\s*10|[_\-\s]10[_\-\s\.])\b", RegexOptions.IgnoreCase))
+        if (Regex.IsMatch(text, @"\b(lớp\s*10|toán\s*10|ngữ\s*văn\s*10|vật\s*l[íý]\s*10|h[óo][aá]\s*học\s*10|h[óo][aá]\s*10|sinh\s*học\s*10|lịch\s*sử\s*10|địa\s*l[íý]\s*10|khối\s*10|grade\s*10|[_\-\s]10[_\-\s\.])\b", RegexOptions.IgnoreCase))
             return 10;
-        if (Regex.IsMatch(text, @"\b(lớp\s*11|toán\s*11|ngữ\s*văn\s*11|vật\s*lí\s*11|hóa\s*học\s*11|sinh\s*học\s*11|lịch\s*sử\s*11|địa\s*lí\s*11|khối\s*11|grade\s*11|[_\-\s]11[_\-\s\.])\b", RegexOptions.IgnoreCase))
+        if (Regex.IsMatch(text, @"\b(lớp\s*11|toán\s*11|ngữ\s*văn\s*11|vật\s*l[íý]\s*11|h[óo][aá]\s*học\s*11|h[óo][aá]\s*11|sinh\s*học\s*11|lịch\s*sử\s*11|địa\s*l[íý]\s*11|khối\s*11|grade\s*11|[_\-\s]11[_\-\s\.])\b", RegexOptions.IgnoreCase))
             return 11;
-        if (Regex.IsMatch(text, @"\b(lớp\s*12|toán\s*12|ngữ\s*văn\s*12|vật\s*lí\s*12|hóa\s*học\s*12|sinh\s*học\s*12|lịch\s*sử\s*12|địa\s*lí\s*12|khối\s*12|grade\s*12|[_\-\s]12[_\-\s\.])\b", RegexOptions.IgnoreCase))
+        if (Regex.IsMatch(text, @"\b(lớp\s*12|toán\s*12|ngữ\s*văn\s*12|vật\s*l[íý]\s*12|h[óo][aá]\s*học\s*12|h[óo][aá]\s*12|sinh\s*học\s*12|lịch\s*sử\s*12|địa\s*l[íý]\s*12|khối\s*12|grade\s*12|[_\-\s]12[_\-\s\.])\b", RegexOptions.IgnoreCase))
             return 12;
 
         // Suy luận khối lớp từ các chương đặc trưng của Toán/Văn/Lý/Hóa nếu tên file không ghi số lớp
         if (Regex.IsMatch(text, @"\b(nguyên hàm|tích phân|tiệm cận|mặt cầu|xác suất có điều kiện|công thức bayes|ester|carbohydrate|vật lí nhiệt|khí lí tưởng|vật lí hạt nhân)\b", RegexOptions.IgnoreCase))
             return 12;
-        if (Regex.IsMatch(text, @"\b(cấp số cộng|cấp số nhân|hàm số liên tục|lôgarit|quan hệ song song|quan hệ vuông góc|dao động điều hòa|sóng dừng|cân bằng hóa học|hydrocarbon)\b", RegexOptions.IgnoreCase))
+        if (Regex.IsMatch(text, @"\b(cấp số cộng|cấp số nhân|hàm số liên tục|lôgarit|quan hệ song song|quan hệ vuông góc|dao động điều hòa|sóng dừng|cân bằng hóa học|cân bằng hoá học|hydrocarbon)\b", RegexOptions.IgnoreCase))
             return 11;
-        if (Regex.IsMatch(text, @"\b(mệnh đề và tập hợp|tam thức bậc hai|nhị thức newton|ba đường conic|thần thoại|sử thi|cấu tạo nguyên tử|phản ứng oxi hóa)\b", RegexOptions.IgnoreCase))
+        if (Regex.IsMatch(text, @"\b(mệnh đề và tập hợp|tam thức bậc hai|nhị thức newton|ba đường conic|thần thoại|sử thi|cấu tạo nguyên tử|phản ứng oxi hóa|phản ứng oxi hoá|tốc độ phản ứng)\b", RegexOptions.IgnoreCase))
             return 10;
 
         return 12;

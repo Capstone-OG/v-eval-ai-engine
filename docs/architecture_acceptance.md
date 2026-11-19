@@ -1277,8 +1277,19 @@
         - Formulated explicit few-shot JSON templates in [`PdfPigTextbookParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs) demonstrating multiple lessons (`Lesson 1`, `Lesson 2`...) per chapter.
         - Inserted strict contractual constraints forbidding chapter collapsing, single-lesson representations, or lesson omissions.
       - **Backend Lesson Guard & Backfill Mechanism**:
-        - Introduced a dynamic heuristic guard inspecting total parsed lessons: if `totalParsedLessons < 10` (or average lessons per chapter is $\le 1.2$ for books with $\ge 25$ pages), the engine automatically audits and backfills missing lessons from [`gdpt2018_dgnl_taxonomy.json`](../V-Eval-Ai_Engine.Infrastructure/Templates/Taxonomy/gdpt2018_dgnl_taxonomy.json), ensuring that all 10–25 authentic curriculum lessons are fully preserved.
+        - Introduced a dynamic heuristic guard inspecting total parsed lessons: if `totalParsedLessons < 10` (or average lessons per chapter is `\le 1.2` for books with `\ge 25` pages), the engine automatically audits and backfills missing lessons from [`gdpt2018_dgnl_taxonomy.json`](../V-Eval-Ai_Engine.Infrastructure/Templates/Taxonomy/gdpt2018_dgnl_taxonomy.json), ensuring that all 10–25 authentic curriculum lessons are fully preserved.
     - **Verification**: Clean .NET 9 compilation with 0 Warnings and 0 Errors.
+
+14. **Exact Grade Taxonomy Matching, Stub Description Elimination & Vietnamese Diacritic Resilience [19/11/2026]**:
+    - **Architectural Root Cause Remediation**:
+      - In `CurriculumTaxonomyRegistry.GetStandardSkeletonChapters`, the loop guard `if (gVal != grade && grade > 0 && gVal != 10 && gVal != 12) continue;` evaluated to `false` on the first array entry (`grade: 10`) even when `grade == 11` or `grade == 12`, causing Grade 11/12 Chemistry skeleton requests to mistakenly return Grade 10 chapters.
+      - Additionally, generated `SkeletonPatternDto` items carried hardcoded placeholder strings (`Description = "Mục tiêu nhận thức và kỹ năng áp dụng cho ..."`, `Method = "Áp dụng phương pháp sư phạm chuẩn SGK GDPT 2018."`), polluting client theory displays.
+    - **Implementation Details**:
+      - **Exact-First Grade Selection (`CurriculumTaxonomyRegistry.cs`)**: Replaced the flawed loop condition with an explicit two-stage selection: first locate the exact `grade` node (`grades.FirstOrDefault(g => (g?["grade"]?.GetValue<int>() ?? 0) == grade)`), falling back to Grade 10/12 or first available grade only when no exact grade exists.
+      - **Zero-Stub Pattern Defaults**: Emits `string.Empty` for `Description` and `Method` when synthesizing skeleton patterns so authentic ingested textbook chunks or AI-enriched content remain unshadowed.
+      - **Vietnamese Diacritic Normalization**: Extended `DetectDocumentIdentity` and `DetectGradeNumber` regexes to handle both old-style and new-style Vietnamese tone placement (`hoá học` and `hóa học`).
+      - **Regression Coverage (`CurriculumTaxonomyRegistryTests.cs`)**: Added unit tests asserting exact Grade 11 Chemistry resolution, zero stub injection, and old-style diacritic identity detection.
+    - **Verification**: Code inspected against .NET 9 target framework (local host carries .NET 8 SDK; ready for .NET 9 / Docker build and `dotnet test`).
 
 
 

@@ -1,11 +1,11 @@
 # UPDATE - V-Eval-Ai_Engine
 
 ## [19/11/2026]
-- **Nâng Cấp Động Cơ Quét Mục Lục SGK & Khắc Phục Triệt Để Lỗi Sót Bài Học (`./V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs`)**:
-  - *Ràng Buộc Đa Bài Học (Multi-Lessons Contract)*: Cải tiến prompt Gemini Vision ép buộc trích xuất đầy đủ 100% tất cả các bài học con (Bài 1, Bài 2, Bài 3, Bài 4...) trong mỗi Chương, nghiêm cấm việc chỉ lấy 1 bài đại diện hoặc gộp bài.
-  - *Cung Cấp Schema JSON Mẫu Đa Bài Học*: Bổ sung ví dụ chương chứa nhiều bài học (`Bài 1`, `Bài 2`...) giúp LLM noi theo cấu trúc chuẩn xác và không bị "nghẽn token".
-  - *Triển Khai Lesson Guard C#*: Khi AI parse ra tổng số bài học quá thấp (`totalParsedLessons < 10` hoặc trung bình $\le 1.2$ bài/chương đối với sách $\ge 25$ trang), hệ thống tự động đối soát và hòa nhập (backfill/merge) toàn bộ các bài học chuẩn còn thiếu từ `gdpt2018_dgnl_taxonomy.json` vào từng chương, bảo toàn trọn vẹn 10–25 bài học cho toàn bộ cuốn sách.
-- **Đồng Bộ Hoàn Chỉnh Ma Trận Tri Thức GDPT 2018 Toàn Diện (`gdpt2018_dgnl_taxonomy.json`)**:
-  - Mở rộng toàn diện 139 Chương và 337 Bài học theo chuẩn mục lục 17 SGK Chân trời sáng tạo trên cả 4 miền tri thức (Toán 26 chương, KHTN 50 chương, Ngôn ngữ 33 chương, KHXH 30 chương).
-- **Kiểm Thử & Biên Dịch Sạch**:
-  - `dotnet build`: Succeeded 100%, 0 Error, 0 Warning.
+- **Sửa Lỗi Khớp Sai Khối Lớp (Grade 11 -> Grade 10), Loại Bỏ Stub Placeholder & Hỗ Trợ Dấu `hoá`/`hóa` (`./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumTaxonomyRegistry.cs`, `./V-Eval-Ai_Engine.Tests/Infrastructure/CurriculumTaxonomyRegistryTests.cs`)**:
+  - *Sửa lỗi lọc khối lớp trong `GetStandardSkeletonChapters`*: Ưu tiên khớp chính xác `grade` trước khi fallback sang lớp 10/12, khắc phục triệt để lỗi yêu cầu Hóa học Lớp 11 bị trả về 7 chương của Hóa học Lớp 10 (`Tốc độ phản ứng hoá học`, `Halogen`).
+  - *Xóa bỏ chuỗi stub mặc định*: Trả về `string.Empty` cho `Description` và `Method` thay vì chèn `"Mục tiêu nhận thức và kỹ năng áp dụng cho ..."` và `"Áp dụng phương pháp sư phạm chuẩn SGK GDPT 2018."`.
+  - *Nhận diện dấu thanh tiếng Việt cũ/mới*: Cập nhật `DetectDocumentIdentity` và `DetectGradeNumber` hỗ trợ cả `hoá học` và `hóa học`; bổ sung 2 unit test hồi quy trong `CurriculumTaxonomyRegistryTests.cs`.
+- **Nâng Cấp Động Cơ Quét Mục Lục SGK & Khắc Phục Lỗi Sót Bài Học (`./V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs`)**:
+  - Cải tiến prompt Gemini Vision ép buộc trích xuất đầy đủ các bài học con trong mỗi Chương kết hợp Lesson Guard C# tự động backfill bài học chuẩn từ `gdpt2018_dgnl_taxonomy.json` khi `totalParsedLessons < 10` hoặc trung bình `` `\le 1.2` `` bài/chương (sách `` `\ge 25` `` trang).
+- **Đồng Bộ Ma Trận Tri Thức GDPT 2018 (`./V-Eval-Ai_Engine.Infrastructure/Templates/Taxonomy/gdpt2018_dgnl_taxonomy.json`)**:
+  - Bao phủ đầy đủ 139 Chương và 337 Bài học theo chuẩn mục lục 17 SGK Chân trời sáng tạo trên cả 4 miền tri thức.
