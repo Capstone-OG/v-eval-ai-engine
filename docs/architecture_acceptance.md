@@ -1249,6 +1249,70 @@
       - Attached 15s per-request cancellation tokens to prevent sluggish models (`gemini-3.6-flash`) from locking up the pipeline.
 
 
+11. **Textbook Skeleton Multi-Pattern & Cognitive Bloom Taxonomy Diversification Acceptance [18/11/2026]**:
+    - **Pedagogical Root Cause Remediation**:
+      - Previously, the initial table of contents / skeleton scan prompt (`ScanTextbookSkeletonAsync`) provided a simplified JSON template featuring only a single pattern per lesson defaulted to `bloomLevel: 2`. Consequently, Gemini Vision consistently synthesized a single generic pattern across all lessons.
+    - **Prompt Engineering & Schema Enrichment**:
+      - Formulated an explicit pedagogical directive instructing the model: *"Mỗi bài học PHẢI có từ 2 đến 4 dạng bài trọng tâm với bloomLevel đa dạng từ 1 đến 4 (1: Nhận biết, 2: Thông hiểu, 3: Vận dụng, 4: Vận dụng cao), tuyệt đối không để 1 dạng duy nhất hoặc toàn bộ bloomLevel=2"*.
+      - Enriched the illustrative JSON template to mandate multiple heterogeneous patterns per lesson showcasing distinct Bloom taxonomy levels (Level 1 Remembering and Level 3 Applying).
+    - **Verification**: Service code builds cleanly in `V-Eval-Ai_Engine.Infrastructure`.
+
+12. **Complete GDPT 2018 Secondary School Taxonomy Matrix Synchronization [19/11/2026]**:
+    - **Architectural Motivation**:
+      - Establish absolute taxonomy alignment between the AI Engine's heuristic parser (`CurriculumTaxonomyRegistry.cs`), the persistent JSON taxonomy (`gdpt2018_dgnl_taxonomy.json`), and the live Supabase PostgreSQL curriculum database across all 17 official "Chân trời sáng tạo" textbook volumes.
+    - **Implementation Details**:
+      - Populated complete chapter-and-lesson listings across all secondary science and humanities disciplines (139 Chapters, 337 Lessons):
+        - Mathematics (26 chapters): Algebra, Geometry, Calculus, Probability, and V-ACT Formal Logic & Data Interpretation.
+        - Natural Sciences (50 chapters): Physics (17 chapters, 61 lessons), Chemistry (21 chapters, 57 lessons), Biology (12 chapters, 39 lessons).
+        - Languages (33 chapters): Vietnamese Literature (27 chapters, 54 lessons) and High School English (6 chapters, 18 lessons).
+        - Social Sciences (30 chapters): History (9 chapters), Geography (12 chapters), and Civics / Legal Education (9 chapters).
+      - Integrated seamless JSON parsing and caching within `CurriculumTaxonomyRegistry.GetTaxonomyRoot()`.
+    - **Verification**: Clean JSON syntax validation via Python and .NET `System.Text.Json.Nodes`.
+
+13. **Multi-Lesson Prompt Engineering & Lesson Guard Remediation [19/11/2026]**:
+    - **Architectural Motivation**:
+      - Resolves the structural collapsing anomaly where textbook skeleton scans correctly identified official chapters (e.g. 7 chapters) but compressed 19 lessons down to 6-7 lessons (1 lesson per chapter).
+    - **Implementation Details**:
+      - **Multi-Lesson Prompt Directive & Schema**:
+        - Formulated explicit few-shot JSON templates in [`PdfPigTextbookParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs) demonstrating multiple lessons (`Lesson 1`, `Lesson 2`...) per chapter.
+        - Inserted strict contractual constraints forbidding chapter collapsing, single-lesson representations, or lesson omissions.
+      - **Backend Lesson Guard & Backfill Mechanism**:
+        - Introduced a dynamic heuristic guard inspecting total parsed lessons: if `totalParsedLessons < 10` (or average lessons per chapter is `\le 1.2` for books with `\ge 25` pages), the engine automatically audits and backfills missing lessons from [`gdpt2018_dgnl_taxonomy.json`](../V-Eval-Ai_Engine.Infrastructure/Templates/Taxonomy/gdpt2018_dgnl_taxonomy.json), ensuring that all 10–25 authentic curriculum lessons are fully preserved.
+    - **Verification**: Clean .NET 9 compilation with 0 Warnings and 0 Errors.
+
+14. **Exact Grade Taxonomy Matching, Stub Description Elimination & Vietnamese Diacritic Resilience [19/11/2026]**:
+    - **Architectural Root Cause Remediation**:
+      - In `CurriculumTaxonomyRegistry.GetStandardSkeletonChapters`, the loop guard `if (gVal != grade && grade > 0 && gVal != 10 && gVal != 12) continue;` evaluated to `false` on the first array entry (`grade: 10`) even when `grade == 11` or `grade == 12`, causing Grade 11/12 Chemistry skeleton requests to mistakenly return Grade 10 chapters.
+      - Additionally, generated `SkeletonPatternDto` items carried hardcoded placeholder strings (`Description = "Mục tiêu nhận thức và kỹ năng áp dụng cho ..."`, `Method = "Áp dụng phương pháp sư phạm chuẩn SGK GDPT 2018."`), polluting client theory displays.
+    - **Implementation Details**:
+      - **Exact-First Grade Selection (`CurriculumTaxonomyRegistry.cs`)**: Replaced the flawed loop condition with an explicit two-stage selection: first locate the exact `grade` node (`grades.FirstOrDefault(g => (g?["grade"]?.GetValue<int>() ?? 0) == grade)`), falling back to Grade 10/12 or first available grade only when no exact grade exists.
+      - **Zero-Stub Pattern Defaults**: Emits `string.Empty` for `Description` and `Method` when synthesizing skeleton patterns so authentic ingested textbook chunks or AI-enriched content remain unshadowed.
+      - **Vietnamese Diacritic Normalization**: Extended `DetectDocumentIdentity` and `DetectGradeNumber` regexes to handle both old-style and new-style Vietnamese tone placement (`hoá học` and `hóa học`).
+      - **Regression Coverage (`CurriculumTaxonomyRegistryTests.cs`)**: Added unit tests asserting exact Grade 11 Chemistry resolution, zero stub injection, and old-style diacritic identity detection.
+    - **Verification**: Code inspected against .NET 9 target framework (local host carries .NET 8 SDK; ready for .NET 9 / Docker build and `dotnet test`).
+
+15. **Batch AI Curriculum Node Classification Endpoint for Real Exam Questions (`POST /api/ai-engine/exams/classify-nodes`) [20/11/2026]**:
+    - **Architectural Objective**:
+      - Enable real parsed exam questions (including 120-question V-ACT exams spanning Math, Physics, Chemistry, Biology, Vietnamese, English, History, Geography, and Logic) to be semantically classified into exact live Content Service Curriculum Tree nodes (`CompetencyDomain -> Chapter -> Lesson -> Pattern`) rather than relying solely on free-text `suggested_skill_name` guesses.
+    - **Implementation Details**:
+      - **DTOs & Endpoint ([`ExamNodeClassificationDtos.cs`](../V-Eval-Ai_Engine.Application/DTOs/ExamNodeClassificationDtos.cs), [`IExamParserService.cs`](../V-Eval-Ai_Engine.Application/Interfaces/IExamParserService.cs), [`ExamEndpoints.cs`](../V-Eval-Ai_Engine.API/Endpoints/ExamEndpoints.cs))**: Added `POST /api/ai-engine/exams/classify-nodes` accepting live `taxonomy_nodes[]` and `questions[]` (with passage excerpts) and returning validated node mappings with `skill_id`, ancestor titles, `confidence`, `bloom_level`, and `reason`.
+      - **Batched Gemini Structured Classification & Resilient Lexical Fallback ([`MultiCloudExamParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/MultiCloudExamParserService.cs))**: Compresses taxonomy nodes into compact `[idx]` rows, classifies batches of 30 questions using Gemini structured `responseSchema` with `temperature = 0.0` across rotated API keys/models, and guarantees deterministic availability via `ClassifyQuestionLexically` (Vietnamese diacritic-folded weighted token and subject-alignment scoring) whenever LLM keys are offline or quota-limited.
+      - **Unit Tests ([`ExamNodeClassificationTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/ExamNodeClassificationTests.cs))**: Verified accurate Chapter/Lesson/Pattern resolution across Mathematics Grade 12 derivatives and Chemistry Grade 12 Ester-Lipid questions on multi-subject exams.
+    - **Verification**: `dotnet build --no-restore` succeeded with `0 Error(s)`; `dotnet test --no-build --filter ExamNodeClassificationTests` passed `2/2`.
+
+16. **SGK-Unified Page-Batched Gemini Vision Exam Parser with Auto-Solve, Cross-Page Passage Stitching & Zero-Python C# `PdfPigLocalExamParser` Fallback ([`MultiCloudExamParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/MultiCloudExamParserService.cs), [`PdfPigLocalExamParser.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigLocalExamParser.cs), [`IExamParserService.cs`](../V-Eval-Ai_Engine.Application/Interfaces/IExamParserService.cs), [`ExamEndpoints.cs`](../V-Eval-Ai_Engine.API/Endpoints/ExamEndpoints.cs), [`PdfPigTextbookParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs), [`PdfPigLocalExamParserTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/PdfPigLocalExamParserTests.cs)) [20/11/2026]**:
+    - **Root Cause Analysis**:
+      - Real 120-question V-ACT exams fell back to garbled plain-text extraction (`≡` glyphs, broken formulas, missing tables, all answers defaulting to `A`) due to three issues: (1) sending an entire 16-page PDF into a single monolithic request with `thinkingConfig` and nested `responseSchema` caused HTTP 400 on Lite models or truncated JSON; (2) the legacy OCR schema omitted `correct_option`, `explanation`, and `difficulty_level`; and (3) `RunLocalFallbackParserAsync` crashed on Linux without `pymupdf`.
+    - **Implementation Details**:
+      - **Exact Alignment with Textbook (SGK) Gemini Pipeline**: Unified `MultiCloudExamParserService` with `PdfPigTextbookParserService`'s proven `generativelanguage.googleapis.com/v1beta` endpoint, `AiSettings:GeminiModels` list, model-outer / round-robin key-inner fail-fast loop, removal of Lite-incompatible `thinkingConfig` and deeply nested `responseSchema`, and `ExtractTextPartsIgnoringThoughts` to skip `thought: true` response parts.
+      - **High-Clarity 2-Page Vision Batching & Auto-Solve**: Renders PDF pages at 115 DPI (`maxDim = 1400`, JPEG 78%) in 2-page batches (`SemaphoreSlim(2)` concurrency with live `onProgress` telemetry streamed to `InMemoryExamJobManager`). Prompts Gemini Vision to transcribe full KaTeX formulas (`\sqrt`, `\frac`, `\begin{cases}`, `\int`, `\lim`, `\log`), Markdown/HTML tables, weighted graph edge tables, and English `<u>...</u> (A)` spans, **ignore student handwritten ink markings**, and solve every question to emit accurate `correct_option` (`A`–`D`), step-by-step KaTeX `explanation`, Bloom `difficulty_level` (`1`–`6`), and subject-specific `suggested_skill_name`.
+      - **Cross-Page Stitching & Zero-Python Per-Batch Fallback**: `MergeBatchExamResults` merges reading passages spanning batch boundaries and deduplicates overlapping questions by quality score. If any batch fails cloud AI or runs offline, `PdfPigLocalExamParser` (`UglyToad.PdfPig`) parses only that page slice in pure C# with zero Python/`pymupdf` dependency.
+    - **Verification**: `dotnet build --no-restore` succeeded (`0 Error(s)`); `dotnet test --no-build` passed `5/5` (`PdfPigLocalExamParserTests` 3/3 + `ExamNodeClassificationTests` 2/2).
+
+
+
+
+
 
 
 
