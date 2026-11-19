@@ -127,7 +127,9 @@ public class CurriculumTaxonomyRegistryTests
 
         chem11.Should().NotBeEmpty();
         chem11[0].Title.Should().Contain("Cân bằng");
-        chem11.Should().NotContain(c => c.Title.Contains("Halogen", StringComparison.OrdinalIgnoreCase));
+        chem11.Should().NotContain(c =>
+            c.Title.Contains("Lớp 10", StringComparison.OrdinalIgnoreCase) ||
+            c.Title.Contains("Nguyên tố nhóm VIIA", StringComparison.OrdinalIgnoreCase));
 
         var allPatterns = chem11
             .SelectMany(c => c.Lessons)
