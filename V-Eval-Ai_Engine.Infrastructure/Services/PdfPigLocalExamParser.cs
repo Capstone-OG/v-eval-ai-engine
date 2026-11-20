@@ -17,11 +17,11 @@ public static class PdfPigLocalExamParser
         RegexOptions.Compiled);
 
     private static readonly Regex PassagePattern = new(
-        @"(?:Dựa vào (?:các )?(?:thông tin|đoạn trích|văn bản|dữ liệu)[^0-9\r\n]{0,60}?(?:câu(?:\s+hỏi)?\s+từ|từ\s+câu)\s+(\d+)\s+(?:đến|\-|–)\s+(\d+)[^\r\n]*|Đọc (?:đoạn trích|văn bản|thông tin)[^0-9\r\n]{0,80}?(?:câu(?:\s+hỏi)?\s+từ|từ\s+câu)\s+(\d+)\s+(?:đến|\-|–)\s+(\d+)[^\r\n]*|Questions?\s+(\d+)\s*[\-–to]+\s*(\d+)[^\r\n]*)\r?\n(.*?)(?=(?:\r?\n\s*(?:Câu|Question)\s+\d+\s*[:.]|$))",
+        @"(?:Dựa (?:vào|theo) (?:các )?(?:thông tin|đoạn trích|văn bản|dữ liệu|dãy điện hóa)[^0-9\r\n]{0,80}?(?:câu(?:\s+hỏi)?\s+từ|từ\s+câu)\s+(\d+)\s+(?:đến|\-|–)\s+(\d+)[^\r\n]*|Đọc (?:đoạn trích|văn bản|thông tin)[^0-9\r\n]{0,80}?(?:câu(?:\s+hỏi)?\s+từ|từ\s+câu)\s+(\d+)\s+(?:đến|\-|–)\s+(\d+)[^\r\n]*|Questions?\s+(\d+)\s*[\-–to]+\s*(\d+)[^\r\n]*)\r?\n(.*?)(?=(?:\r?\n\s*(?:(?:Câu|Question)\s+\d+|\d{1,3}\s*[.:]\s+[^\r\n]+)|$))",
         RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
     private static readonly Regex QuestionPattern = new(
-        @"(?:^|\r?\n)\s*(?:Câu|Question)\s+(\d+)\s*[:.]\s*(.*?)(?=(?:\r?\n\s*(?:Câu|Question)\s+\d+\s*[:.]|\r?\n\s*(?:Dựa vào (?:các )?(?:thông tin|đoạn trích|văn bản|dữ liệu)|Đọc (?:đoạn trích|văn bản|thông tin)|Questions?\s+\d+\s*[\-–to]+\s*\d+)|[-–—]{3,}\s*HẾT\s*[-–—]{3,}|$))",
+        @"(?:^|\r?\n)\s*(?:(?:Câu|Question)\s+(\d+)|(\d{1,3})\s*[.:])\s*[:.]?\s*(.*?)(?=(?:\r?\n\s*(?:(?:Câu|Question)\s+\d+|\d{1,3}\s*[.:]\s+[^\r\n]+)|(?:\r?\n\s*(?:Dựa (?:vào|theo) (?:các )?(?:thông tin|đoạn trích|văn bản|dữ liệu)|Đọc (?:đoạn trích|văn bản|thông tin)|Questions?\s+\d+\s*[\-–to]+\s*\d+))|[-–—]{3,}\s*HẾT\s*[-–—]{3,}|$))",
         RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
     private static readonly Regex OptionPattern = new(
@@ -61,6 +61,10 @@ public static class PdfPigLocalExamParser
     /// <summary>
     /// Sắp xếp từ theo từng dòng (tọa độ Y giảm dần, X tăng dần) để giữ đúng cấu trúc câu hỏi và đáp án A/B/C/D.
     /// </summary>
+    /// <summary>
+    /// Thuật toán Line-Following: ghép từ thành dòng theo hướng đọc tự nhiên (từ trái sang phải, từ trên xuống dưới).
+    /// Khắc phục triệt để trang scan bị nghiêng, không trộn lẫn dòng liền kề và không xé lẻ chữ cái đơn (o, g, n, u, V, i).
+    /// </summary>
     private static string ExtractOrderedPageText(Page page)
     {
         var words = page.GetWords().ToList();
@@ -69,38 +73,59 @@ public static class PdfPigLocalExamParser
             return page.Text ?? string.Empty;
         }
 
-        // Nhóm các từ có cùng cao độ Y (dung sai 3.5 pt) thành từng dòng đọc từ trên xuống dưới
-        var sortedByY = words
-            .OrderByDescending(w => w.BoundingBox.Bottom)
-            .ThenBy(w => w.BoundingBox.Left)
-            .ToList();
-
+        var unvisited = new List<Word>(words);
         var lines = new List<List<Word>>();
-        foreach (var word in sortedByY)
-        {
-            double midY = (word.BoundingBox.Bottom + word.BoundingBox.Top) / 2.0;
-            var matchedLine = lines.FirstOrDefault(line =>
-            {
-                var first = line[0];
-                double lineMidY = (first.BoundingBox.Bottom + first.BoundingBox.Top) / 2.0;
-                double tolerance = Math.Max(3.5, first.BoundingBox.Height * 0.45);
-                return Math.Abs(midY - lineMidY) <= tolerance;
-            });
 
-            if (matchedLine != null)
+        while (unvisited.Count > 0)
+        {
+            // Tìm từ cao nhất trang trong dải 6pt đầu tiên, chọn từ nằm bên trái nhất để bắt đầu dòng mới
+            double topY = unvisited.Max(w => (w.BoundingBox.Bottom + w.BoundingBox.Top) / 2.0);
+            var topBand = unvisited
+                .Where(w => topY - ((w.BoundingBox.Bottom + w.BoundingBox.Top) / 2.0) <= 6.0)
+                .ToList();
+            var start = topBand.OrderBy(w => w.BoundingBox.Left).First();
+
+            var currentLine = new List<Word> { start };
+            unvisited.Remove(start);
+
+            var curr = start;
+            while (true)
             {
-                matchedLine.Add(word);
+                double currMidY = (curr.BoundingBox.Bottom + curr.BoundingBox.Top) / 2.0;
+                double currHeight = Math.Max(curr.BoundingBox.Height, 6.0);
+                double yTol = Math.Max(4.5, currHeight * 0.5);
+
+                // Tìm từ tiếp theo ngay bên phải (trong dải khoảng cách từ <= 65pt và cao độ Y lệch <= yTol)
+                var candidates = unvisited
+                    .Where(w =>
+                    {
+                        double wMidY = (w.BoundingBox.Bottom + w.BoundingBox.Top) / 2.0;
+                        double dx = w.BoundingBox.Left - curr.BoundingBox.Right;
+                        return w.BoundingBox.Left >= curr.BoundingBox.Right - 5.0 &&
+                               dx <= 65.0 &&
+                               Math.Abs(wMidY - currMidY) <= yTol;
+                    })
+                    .ToList();
+
+                if (candidates.Count == 0) break;
+
+                // Chọn từ gần nhất bên phải
+                var nextW = candidates
+                    .OrderBy(w => w.BoundingBox.Left)
+                    .ThenBy(w => Math.Abs(((w.BoundingBox.Bottom + w.BoundingBox.Top) / 2.0) - currMidY))
+                    .First();
+                currentLine.Add(nextW);
+                unvisited.Remove(nextW);
+                curr = nextW;
             }
-            else
-            {
-                lines.Add(new List<Word> { word });
-            }
+
+            lines.Add(currentLine);
         }
 
-        // Sắp xếp lại các dòng từ trên xuống dưới theo tọa độ trung bình, và các từ trong dòng từ trái sang phải
+        // Sắp xếp các dòng đã ghép từ trên xuống dưới theo tọa độ Y trung bình
         var orderedLines = lines
-            .OrderByDescending(line => line.Average(w => w.BoundingBox.Bottom))
-            .Select(line => string.Join(" ", line.OrderBy(w => w.BoundingBox.Left).Select(w => w.Text)));
+            .OrderByDescending(l => l.Average(w => (w.BoundingBox.Bottom + w.BoundingBox.Top) / 2.0))
+            .Select(l => string.Join(" ", l.Select(w => w.Text)));
 
         return string.Join("\n", orderedLines);
     }
@@ -109,17 +134,49 @@ public static class PdfPigLocalExamParser
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
 
-        return text
+        var s = text
             .Replace("\uf0a3", " \\le ")
             .Replace("\uf0b3", " \\ge ")
             .Replace("\uf03c", " < ")
             .Replace("\uf03e", " > ")
+            .Replace("\uf03d", " = ")
+            .Replace("\uf02b", " + ")
+            .Replace("\uf02d", " - ")
+            .Replace("\uf0b1", " \\pm ")
+            .Replace("\uf0b4", " \\times ")
+            .Replace("\uf0d7", " \\times ")
+            .Replace("\uf0b8", " \\div ")
+            .Replace("\uf0b9", " \\neq ")
+            .Replace("\uf0a5", " \\infty ")
+            .Replace("\uf0d6", " \\sqrt ")
+            .Replace("", " \\sqrt ")
+            .Replace("\uf0ce", " \\in ")
+            .Replace("\uf0cf", " \\notin ")
+            .Replace("\uf0c7", " \\cap ")
+            .Replace("\uf0c8", " \\cup ")
+            .Replace("\uf0c6", " \\varnothing ")
+            .Replace("\uf0de", " \\Rightarrow ")
+            .Replace("\uf0ae", " \\rightarrow ")
+            .Replace("\uf0db", " \\Leftrightarrow ")
+            .Replace("\uf0ab", " \\leftrightarrow ")
+            .Replace("\uf044", " \\Delta ")
+            .Replace("\uf061", " \\alpha ")
+            .Replace("\uf062", " \\beta ")
+            .Replace("\uf067", " \\gamma ")
+            .Replace("\uf064", " \\delta ")
+            .Replace("\uf06d", " \\mu ")
             .Replace("\uf070", " \\pi ")
+            .Replace("\uf077", " \\omega ")
             .Replace("\uf0a2", "'")
             .Replace("\uf0e6", "(")
             .Replace("\uf0e8", ")")
             .Replace("\uf0e7", "(")
             .Replace("\uf0eb", ")");
+
+        s = Regex.Replace(s, @"\b([a-zA-Z])\s*≡\s*(log|ln|sin|cos|tan|\d+)", "$1 = $2");
+        s = Regex.Replace(s, @"(\d+(?:[.,]\d+)?)\s*\\circ\s*([CFKcfk])(?![A-Za-z])", "$1^\\circ\\text{$2}");
+        s = Regex.Replace(s, @"\\circ\s*([CFKcfk])(?![A-Za-z])", "^\\circ\\text{$1}");
+        return s;
     }
 
     /// <summary>
@@ -189,7 +246,11 @@ public static class PdfPigLocalExamParser
 
         foreach (Match match in QuestionPattern.Matches(normalizedText))
         {
-            if (!int.TryParse(match.Groups[1].Value, out int qNum) || qNum <= 0 || qNum > 500)
+            string qNumStr = match.Groups[1].Success && !string.IsNullOrWhiteSpace(match.Groups[1].Value)
+                ? match.Groups[1].Value
+                : match.Groups[2].Value;
+
+            if (!int.TryParse(qNumStr, out int qNum) || qNum <= 0 || qNum > 500)
             {
                 continue;
             }
@@ -199,13 +260,23 @@ public static class PdfPigLocalExamParser
                 continue;
             }
 
-            string qBodyRaw = StripPageMarkers(match.Groups[2].Value).Trim();
+            string qBodyRaw = StripPageMarkers(match.Groups[3].Value).Trim();
             if (string.IsNullOrWhiteSpace(qBodyRaw))
             {
                 continue;
             }
 
             var (stem, options) = ExtractStemAndOptions(qBodyRaw);
+
+            // Nếu câu hỏi được match theo dạng số trần (vd: "118." hoặc "91." không có tiền tố "Câu"),
+            // bắt buộc phải có ít nhất phương án A và B để tránh nhận nhầm danh sách đánh số/thí nghiệm
+            bool isExplicit = match.Groups[1].Success && !string.IsNullOrWhiteSpace(match.Groups[1].Value);
+            bool hasValidOptions = !string.IsNullOrEmpty(options.GetValueOrDefault("A")) && !string.IsNullOrEmpty(options.GetValueOrDefault("B"));
+            if (!isExplicit && !hasValidOptions)
+            {
+                seenQuestionNumbers.Remove(qNum);
+                continue;
+            }
             int pageNum = ResolvePageNumber(match.Index);
 
             var questionDto = new ParsedQuestionDto

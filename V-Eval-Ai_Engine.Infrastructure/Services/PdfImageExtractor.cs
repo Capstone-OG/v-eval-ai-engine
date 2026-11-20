@@ -229,13 +229,8 @@ public class PdfImageExtractor
                     continue;
                 }
 
-                // Chỉ gán ảnh cắt cho sơ đồ thí nghiệm (như Chùm 106-108), hình vẽ sinh học/hóa học, hoặc đồ thị hàm số
-                bool hasFigureKeyword = contentLower.Contains("hình") || 
-                                       contentLower.Contains("sơ đồ") || 
-                                       contentLower.Contains("thí nghiệm") ||
-                                       contentLower.Contains("đồ thị");
-
-                if (hasFigureKeyword)
+                // Chỉ gán ảnh cắt cho sơ đồ thí nghiệm (như Chùm 106-108), hình vẽ sinh học/hóa học, hoặc đồ thị hàm số có chỉ dẫn hình rõ ràng
+                if (HasExplicitFigureReference(contentLower, isPassage: true))
                 {
                     passage.ImageUrl = pageImgs[0].RelativeUrl;
                     pageImgs.RemoveAt(0);
@@ -243,7 +238,7 @@ public class PdfImageExtractor
             }
         }
 
-        // 2. Ánh xạ vào Single Questions (Chỉ gán ảnh cho đồ thị tọa độ như Câu 75, hình chụp thực tế như Câu 78)
+        // 2. Ánh xạ vào Single Questions (Chỉ gán ảnh cho câu có chỉ dẫn hình vẽ rõ ràng, KHÔNG gán nhầm cho câu chỉ nhắc "đồ thị (C)" hay "hình phẳng" như Câu 72)
         foreach (var q in exam.SingleQuestions)
         {
             int pageNum = q.PageNumber;
@@ -257,19 +252,45 @@ public class PdfImageExtractor
                                       q.Content.Contains("| --- |");
                 if (isChartOrTable) continue;
 
-                // Chỉ gán ảnh cho đồ thị tọa độ dao động điều hòa, dụng cụ gương, hình chụp thực tế, hình học
-                bool hasFigureKeyword = contentLower.Contains("hình") || 
-                                       contentLower.Contains("đồ thị") || 
-                                       contentLower.Contains("dụng cụ") ||
-                                       contentLower.Contains("sơ đồ") ||
-                                       contentLower.Contains("[hình vẽ]");
-
-                if (hasFigureKeyword)
+                if (HasExplicitFigureReference(contentLower, isPassage: false))
                 {
                     q.ImageUrl = pageImgs[0].RelativeUrl;
                     pageImgs.RemoveAt(0);
                 }
             }
         }
+    }
+
+    private static bool HasExplicitFigureReference(string contentLower, bool isPassage)
+    {
+        if (string.IsNullOrWhiteSpace(contentLower)) return false;
+
+        if (contentLower.Contains("hình vẽ") ||
+            contentLower.Contains("hình bên") ||
+            contentLower.Contains("hình dưới") ||
+            contentLower.Contains("như hình") ||
+            contentLower.Contains("ở hình") ||
+            contentLower.Contains("hình 1") ||
+            contentLower.Contains("hình 2") ||
+            contentLower.Contains("hình 3") ||
+            contentLower.Contains("hình a") ||
+            contentLower.Contains("hình b") ||
+            contentLower.Contains("[hình") ||
+            contentLower.Contains("sơ đồ") ||
+            contentLower.Contains("dụng cụ") ||
+            contentLower.Contains("đồ thị như hình") ||
+            contentLower.Contains("đồ thị ở hình") ||
+            contentLower.Contains("đồ thị bên") ||
+            contentLower.Contains("đồ thị dưới"))
+        {
+            return true;
+        }
+
+        if (isPassage && contentLower.Contains("thí nghiệm") && contentLower.Contains("hình"))
+        {
+            return true;
+        }
+
+        return false;
     }
 }

@@ -72,5 +72,29 @@ public class ExamNodeClassificationTests
         mapping!.SkillId.Should().Be("22222222-2222-2222-2222-222222222222");
         mapping.ChapterName.Should().Contain("Ester - Lipid");
     }
+
+    [Fact]
+    public void ClassifyQuestionLexically_ShouldNeverMapEnglishQuestionToScienceOrMathNode()
+    {
+        var nodes = BuildSampleTaxonomy();
+        nodes.Add(new ExamTaxonomyNodeRefDto
+        {
+            SkillId = "44444444-4444-4444-4444-444444444444",
+            DomainName = "Tiếng Anh",
+            ChapterName = "Chương 3: Modal Verbs, Conditionals & Subjunctive (Tiếng Anh - Lớp 12)",
+            LessonName = "Bài 1: Error identification",
+            PatternName = "Dạng 1: Tìm lỗi sai"
+        });
+        var q = new ExamQuestionClassifyInputDto
+        {
+            QuestionNumber = 38,
+            Content = "Ms. Brown is worried about her students' ability to pass the coming graduation exams, which is the reason for her decision."
+        };
+
+        var mapping = MultiCloudExamParserService.ClassifyQuestionLexically(q, nodes, "GENERAL");
+
+        mapping.Should().NotBeNull();
+        mapping!.SkillId.Should().Be("44444444-4444-4444-4444-444444444444");
+    }
 }
 
