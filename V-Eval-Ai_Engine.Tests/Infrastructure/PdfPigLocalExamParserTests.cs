@@ -161,4 +161,65 @@ public class PdfPigLocalExamParserTests
         Assert.Equal(54, merged.Passages[0].Questions[1].QuestionNumber);
         Assert.Equal("B", merged.Passages[0].Questions[1].CorrectOption);
     }
+
+    [Fact]
+    public void ParseExamText_ShouldHandleBareNumberedQuestionsAndPassagesWithoutSwallowing()
+    {
+        string text =
+            "--- PAGE_10 ---\n" +
+            "Thí nghiệm 1. Một sinh viên thực hiện quá trình điện phân dung dịch chứa Pb(NO3)2 và Mg(NO3)2.\n" +
+            "Dựa theo dãy điện hóa đã cho ở trên và từ Thí nghiệm 1, hãy cho biết:\n" +
+            "91. Bán phản ứng nào xảy ra ở anot?\n" +
+            "A. Pb -> Pb2+ + 2e.    B. Mg -> Mg2+ + 2e.\n" +
+            "C. 2H2O -> O2 + 4H+ + 4e.    D. 4NO3- -> 2N2O5 + O2 + 4e.\n" +
+            "92. Giá trị pH của dung dịch thay đổi như thế nào?\n" +
+            "A. pH tăng do OH- sinh ra ở catot.\n" +
+            "B. pH giảm do H+ sinh ra ở anot.\n" +
+            "C. pH không đổi do không có H+ và OH- sinh ra.\n" +
+            "D. pH không đổi do lượng H+ sinh ra ở anot bằng với lượng OH- sinh ra ở catot.\n" +
+            "--- PAGE_15 ---\n" +
+            "Dựa vào thông tin dưới đây để trả lời các câu từ 118 đến 120\n" +
+            "Từ năm 1897, sau khi đàn áp cuộc khởi nghĩa cuối cùng trong phong trào Cần Vương là khởi nghĩa Hương Khê...\n" +
+            "118. Lực lượng xã hội nào đã có đóng góp quan trọng đối với phong trào yêu nước ở Việt Nam trong thập niên đầu thế kỉ XX\n" +
+            "A. Công nhân, nông dân B. Trí thức, tiểu tư sản thành thị C. Trí thức Nho học D. Tư sản dân tộc\n" +
+            "119. Kinh tế Việt Nam phát triển như thế nào trong cuộc khai thác thuộc địa của thực dân Pháp?\n" +
+            "A. Bị kìm hãm, không phát triển được B. Phát triển chậm và không toàn diện C. Phụ thuộc D. Tư bản\n" +
+            "120. Giai cấp, tầng lớp nào đã tiếp thu ý thức hệ dân chủ tư sản\n" +
+            "A. Tư sản B. Tiểu tư sản C. Trí thức D. Tư sản và tiểu tư sản\n" +
+            "--------------- HẾT ---------------\n";
+
+        var parsed = PdfPigLocalExamParser.ParseExamText(
+            PdfPigLocalExamParser.CleanPuaSymbols(text),
+            "de-mau-15-trang.pdf",
+            totalPages: 15);
+
+        // Questions 91 and 92 (bare numbered without "Câu") must be extracted as single questions
+        var q91 = parsed.SingleQuestions.FirstOrDefault(q => q.QuestionNumber == 91);
+        Assert.NotNull(q91);
+        Assert.Equal(10, q91.PageNumber);
+        Assert.Contains("Bán phản ứng nào xảy ra ở anot", q91.Content);
+        Assert.Equal("Pb -> Pb2+ + 2e.", q91.Options["A"]);
+
+        var q92 = parsed.SingleQuestions.FirstOrDefault(q => q.QuestionNumber == 92);
+        Assert.NotNull(q92);
+        Assert.Contains("Giá trị pH của dung dịch", q92.Content);
+        Assert.Equal("pH tăng do OH- sinh ra ở catot.", q92.Options["A"]);
+
+        // Passage 118-120 must NOT swallow questions 118, 119, 120 into its content
+        var passage = parsed.Passages.FirstOrDefault(p => p.StartQuestion == 118 && p.EndQuestion == 120);
+        Assert.NotNull(passage);
+        Assert.DoesNotContain("118.", passage.Content);
+        Assert.DoesNotContain("Lực lượng xã hội nào", passage.Content);
+        Assert.Equal(3, passage.Questions.Count);
+
+        Assert.Equal(118, passage.Questions[0].QuestionNumber);
+        Assert.Contains("Lực lượng xã hội nào", passage.Questions[0].Content);
+        Assert.Equal("Trí thức Nho học", passage.Questions[0].Options["C"]);
+
+        Assert.Equal(119, passage.Questions[1].QuestionNumber);
+        Assert.Contains("Kinh tế Việt Nam", passage.Questions[1].Content);
+
+        Assert.Equal(120, passage.Questions[2].QuestionNumber);
+        Assert.Contains("Giai cấp, tầng lớp nào", passage.Questions[2].Content);
+    }
 }

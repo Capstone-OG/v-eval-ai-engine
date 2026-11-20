@@ -457,6 +457,40 @@ public class MultiCloudExamParserService : IExamParserService
                         geminiModels,
                         cancellationToken);
 
+                    // Nếu cụm 2 trang bị quá tải token hoặc lỗi JSON, tự động tách nhỏ thử lại từng trang đơn (1 trang/lần) bằng Gemini Vision trước khi dùng PdfPig
+                    if (dto == null && pageNumbers.Count > 1)
+                    {
+                        var singlePageDtos = new List<ParsedExamDto>();
+                        string lastModel = string.Empty;
+                        foreach (int singlePage in pageNumbers)
+                        {
+                            var (pageDto, pageModel) = await ProcessSingleVisionBatchAsync(
+                                pdfBytes,
+                                fileName,
+                                new List<int> { singlePage },
+                                totalPages,
+                                renderDpi,
+                                batchTimeoutSeconds,
+                                apiKeys,
+                                geminiModels,
+                                cancellationToken);
+                            if (pageDto != null)
+                            {
+                                singlePageDtos.Add(pageDto);
+                                if (!string.IsNullOrEmpty(pageModel)) lastModel = pageModel;
+                            }
+                            else
+                            {
+                                singlePageDtos.Add(PdfPigLocalExamParser.ParsePageRange(pdfBytes, fileName, new[] { singlePage }));
+                            }
+                        }
+                        if (singlePageDtos.Count > 0)
+                        {
+                            dto = MergeBatchExamResults(singlePageDtos, fileName, totalPages);
+                            usedModel = !string.IsNullOrEmpty(lastModel) ? lastModel : geminiModels[0];
+                        }
+                    }
+
                     if (dto != null)
                     {
                         batchResults[batchIndex] = dto;
@@ -1172,13 +1206,19 @@ NHIỆM VỤ BẮT BUỘC:
                          .Replace("\x08egin", "\\\\begin")
                          .Replace("\x08eta", "\\\\beta");
 
-        // 2. Chuyển các lệnh LaTeX unescaped thành \\... để hợp lệ trong JSON
+        // 2. Bảo vệ các lệnh LaTeX bắt đầu bằng \n, \t, \f, \b, \r trước khi bị JSON hiểu nhầm là ký tự điều khiển
         result = Regex.Replace(
             result,
-            @"(?<!\\)\\(frac|times|text|Delta|bar|begin|end|beta|theta|tau|rho|right|left|le|ge|leq|geq|neq|approx|cdot|mu|omega|alpha|sigma|pi|sqrt|sin|cos|tan|cot|log|ln|int|lim|sum|prod|infty|mathbb|mathcal|mathrm|in|notin|forall|exists|pm|mp|vec|overrightarrow|widehat|overline|underline|cup|cap|subset|emptyset|quad|qquad|to|Rightarrow|Leftrightarrow|implies|cases)(?=[^a-zA-Z]|$)",
+            @"(?<!\\)\\(neq|ne(?![a-zA-Z])|notin|nabla|nu\b|natural|nearrow|nwarrow|nsubseteq|frac|forall|times|text|tan|theta|tau|to\b|top\b|triangle|bar|begin|beta|binom|bowtie|backslash|right|rho|rightarrow|Rightarrow|rightleftharpoons)",
             "\\\\$1");
 
-        // 3. Sửa lỗi tam giác Delta bị nhầm thành ar{ ext{A}}
+        // 3. Chuyển MỌI chuỗi escape LaTeX không phải JSON escape hợp lệ (như \circ, \equiv, \perp, \parallel, \setminus, \dots, \gamma, \lambda, \phi...) thành \\...
+        result = Regex.Replace(
+            result,
+            @"(?<!\\)\\(?![/""\\bfnrt]|u[0-9a-fA-F]{4})([a-zA-Z]+)",
+            "\\\\$1");
+
+        // 4. Sửa lỗi tam giác Delta bị nhầm thành ar{ ext{A}}
         result = Regex.Replace(result, @"ar\{\s*ext\{A\}\}", "\\\\Delta");
         result = Regex.Replace(result, @"\\bar\{\\text\{A\}\}", "\\\\Delta");
         result = Regex.Replace(result, @"\\bar\{A\}", "\\\\Delta");
@@ -1206,6 +1246,31 @@ NHIỆM VỤ BẮT BUỘC:
         s = Regex.Replace(s, @"\\bar\{\\text\{A\}\}", "\\Delta");
         s = Regex.Replace(s, @"\\bar\{A\}", "\\Delta");
         s = s.Replace("∆", "\\Delta");
+
+        // Chuẩn hóa \circC, \circF, \circK -> ^\circ\text{C} (Câu 111)
+        s = Regex.Replace(s, @"(\d+(?:[.,]\d+)?)\s*\^?\\circ\s*([CFK])\b", "$$$1^\\circ\\text{$2}$$");
+        s = Regex.Replace(s, @"\^?\\circ([CFK])\b", "^\\circ\\text{$1}");
+
+        // Khôi phục thẻ <u>...</u> bị dính khoảng trắng hoặc bọc nhầm math (Câu 36-39)
+        s = Regex.Replace(s, @"<\s*u\s*>", "<u>", RegexOptions.IgnoreCase);
+        s = Regex.Replace(s, @"<\s*\/\s*\$?u\s*>\s*\(([A-F])\)\$?", "</u> ($1)", RegexOptions.IgnoreCase);
+        s = Regex.Replace(s, @"<\s*\/\s*\$?u\s*\$?\s*>", "</u>", RegexOptions.IgnoreCase);
+
+        // Khôi phục \ne bị đứt dòng thành "\n e 2" bên trong \begin{cases}...\end{cases} (Câu 69)
+        s = Regex.Replace(s, @"(&\s*[a-zA-Z0-9_]+\s*)\r?\n\s*e\s+(\d+|[a-zA-Z])", "$1\\ne $2");
+        s = Regex.Replace(
+            s,
+            @"((?:[a-zA-Z]\([a-zA-Z]\)\s*=\s*)?\\begin\{(cases|aligned|array|matrix|pmatrix|bmatrix|vmatrix)\}[\s\S]*?\\end\{\2\})",
+            m =>
+            {
+                string inner = Regex.Replace(m.Value, @"(?<!\\)\$", "");
+                inner = Regex.Replace(inner, @"(&\s*[a-zA-Z0-9_]+\s*)\r?\n\s*e\s+(\d+|[a-zA-Z])", "$1\\ne $2");
+                inner = Regex.Replace(inner, @"\r?\n", " ");
+                inner = Regex.Replace(inner, @"\s+", " ").Trim();
+                return $"${inner}$";
+            });
+        s = Regex.Replace(s, @"\${2,}(\\begin\{)", "$$$1");
+        s = Regex.Replace(s, @"(\\end\{[a-zA-Z]+\})\${2,}", "$1$");
 
         return s;
     }
@@ -1507,6 +1572,15 @@ QUY TẮC BẮT BUỘC:
         var contentTokens = ExtractMeaningfulTokens(contentNorm);
         var passageTokens = ExtractMeaningfulTokens(passageNorm);
 
+        string rawText = $"{question.Content} {question.PassageExcerpt}";
+        bool hasVietnameseDiacritics = System.Text.RegularExpressions.Regex.IsMatch(
+            rawText, "[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        int englishStopHits = System.Text.RegularExpressions.Regex.Matches(
+            rawText, @"\b(the|of|and|to|is|are|was|were|has|have|had|would|could|should|which|that|with|for|in|on|by|he|she|they|his|her|their)\b",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase).Count;
+        bool isEnglishQuestion = !hasVietnameseDiacritics && englishStopHits >= 3;
+
         ExamTaxonomyNodeRefDto? bestNode = null;
         double bestScore = -1.0;
 
@@ -1558,6 +1632,13 @@ QUY TẮC BẮT BUỘC:
                 };
                 if (domainMatch) score += 1.5;
             }
+
+            // Khóa chéo môn: câu tiếng Anh thuần (không dấu tiếng Việt) chỉ nên rơi vào node Tiếng Anh,
+            // và câu tiếng Việt không được rơi vào node Tiếng Anh (tránh Câu 36–39 rơi sang Vật lí/Hóa học/Toán).
+            bool nodeIsEnglish = domainNorm.Contains("tieng anh") || chapterNorm.Contains("tieng anh");
+            if (isEnglishQuestion && nodeIsEnglish) score += 3.0;
+            else if (isEnglishQuestion && !nodeIsEnglish) score *= 0.2;
+            else if (!isEnglishQuestion && nodeIsEnglish && hasVietnameseDiacritics) score *= 0.3;
 
             // Chuẩn hóa theo độ dài tránh ưu ái nhãn quá dài
             double normalizedScore = score / Math.Sqrt(Math.Max(nodeTokens.Count, 3));

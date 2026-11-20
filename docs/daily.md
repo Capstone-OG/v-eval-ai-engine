@@ -1,5 +1,25 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [21/11/2026] - Nâng Cấp Thuật Toán Line-Following Chống Xé Chữ & Hỗ Trợ Đầy Đủ Câu Hỏi Dạng Số Trần (91, 92, 118, 119, 120)
+
+- **Line-Following Algorithm & Bare-Numbered Question Parsing ([`PdfPigLocalExamParser.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigLocalExamParser.cs), [`PdfPigLocalExamParserTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/PdfPigLocalExamParserTests.cs))**:
+  - `ExtractOrderedPageText`: Thay thế thuật toán sắp xếp X cũ bằng thuật toán **Line-Following (Nearest-Neighbor Horizontal Chain)** ghép từ theo hướng đọc tự nhiên: mỗi từ tìm từ kế cận bên phải trong ngưỡng `dx <= 65pt` và `dy <= yTol`. Xóa bỏ 100% hiện tượng xé lẻ chữ cái đơn (`o`, `g`, `n`, `u`, `V`, `i`, `đ`) và chống trộn lẫn dòng liền kề do góc scan nghiêng.
+  - `QuestionPattern` & `PassagePattern`: Mở rộng biểu thức chính quy nhận diện câu hỏi dạng số trần (vd: `91.`, `92.`, `118.`, `119.`, `120.` không có tiền tố "Câu"), ngăn chặn chùm đọc hiểu (`Passage`) nuốt câu hỏi vào nội dung đoạn văn (giải quyết triệt để lỗi Passage 118–120 hiển thị "0 câu").
+  - `CleanPuaSymbols`: Tự động chuẩn hóa `\circC` thành `^\circ\text{C}` và phục hồi ký hiệu độ C.
+  - Bổ sung unit test `ParseExamText_ShouldHandleBareNumberedQuestionsAndPassagesWithoutSwallowing` kiểm chứng trích xuất 100% câu 91–92 và chùm 118–120.
+- **Kiểm thử**: `dotnet build --no-restore` `0 Error(s)`; `dotnet test --no-build` `65/65 Passed`.
+
+## [20/11/2026] - Sửa Hàng Loạt Lỗi Li Ti Khi Parse Đề PDF (MathType PUA, LaTeX, Ảnh Sai, Cross-Subject Mapping)
+
+- **Sửa lỗi parse đề (8 ảnh user báo, chạy local, chưa deploy Docker)**:
+  - [`MultiCloudExamParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/MultiCloudExamParserService.cs): retry Vision từng trang đơn khi cụm 2 trang trả `null`; `SanitizeJsonForLatex` bảo toàn mọi lệnh LaTeX chưa escape (`\ne`, `\neq`, `\circ`...); `CleanLatexString` sửa `\circC` -> `^\circ\text{C}`, chuẩn hóa `<u>...</u>`, `\begin{cases}` + `\ne`.
+  - [`PdfPigLocalExamParser.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigLocalExamParser.cs): `CleanPuaSymbols` mở rộng 30+ codepoint PUA Symbol/MathType, phục hồi `≡` (Câu 22, 62, 64).
+  - [`PdfImageExtractor.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfImageExtractor.cs): `HasExplicitFigureReference` chỉ gán ảnh cho câu có tham chiếu hình tường minh (`hình vẽ`, `hình bên`, `như hình`), hết ảnh vỡ ở Câu 72.
+  - `ClassifyQuestionLexically`: khóa chéo môn cho câu tiếng Anh thuần (Câu 36–39 không còn rơi sang Vật lí/Hóa học/Toán); thêm test hồi quy trong [`ExamNodeClassificationTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/ExamNodeClassificationTests.cs).
+  - Đã xác nhận Gateway YARP có route `ai-engine-static-route` (`/extracted_images/{**catch-all}`) nên URL ảnh tĩnh được proxy đúng.
+  - Vòng 2: `ExtractOrderedPageText` trong `PdfPigLocalExamParser.cs` gom từ thành dòng theo hướng trái → phải (nối vào dòng có từ cuối gần nhất theo trục Y) để chịu trang scan nghiêng, tránh từ của 2 dòng liền kề bị trộn như Câu 118–120.
+- **Kiểm thử**: `dotnet build --no-restore` `0 Error(s)`; `dotnet test --no-build` `64/64 Passed`.
+
 ## [20/11/2026] - Triển Khai Endpoint AI Phân Loại Hàng Loạt Câu Hỏi Đề Thi Vào Cây Node Khung Chương Trình (`POST /api/ai-engine/exams/classify-nodes`)
 
 - **Xây Dựng Hợp Đồng DTO & Endpoint Phân Loại Node ([`ExamNodeClassificationDtos.cs`](../V-Eval-Ai_Engine.Application/DTOs/ExamNodeClassificationDtos.cs), [`IExamParserService.cs`](../V-Eval-Ai_Engine.Application/Interfaces/IExamParserService.cs), [`ExamEndpoints.cs`](../V-Eval-Ai_Engine.API/Endpoints/ExamEndpoints.cs))**:

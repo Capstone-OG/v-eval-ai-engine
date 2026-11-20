@@ -1309,6 +1309,21 @@
       - **Cross-Page Stitching & Zero-Python Per-Batch Fallback**: `MergeBatchExamResults` merges reading passages spanning batch boundaries and deduplicates overlapping questions by quality score. If any batch fails cloud AI or runs offline, `PdfPigLocalExamParser` (`UglyToad.PdfPig`) parses only that page slice in pure C# with zero Python/`pymupdf` dependency.
     - **Verification**: `dotnet build --no-restore` succeeded (`0 Error(s)`); `dotnet test --no-build` passed `5/5` (`PdfPigLocalExamParserTests` 3/3 + `ExamNodeClassificationTests` 2/2).
 
+17. **Exam Parser Hardening: MathType PUA Recovery, LaTeX Preservation, Strict Figure Assignment & Cross-Subject Lexical Guard ([`MultiCloudExamParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/MultiCloudExamParserService.cs), [`PdfPigLocalExamParser.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigLocalExamParser.cs), [`PdfImageExtractor.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfImageExtractor.cs), [`ExamNodeClassificationTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/ExamNodeClassificationTests.cs)) [20/11/2026]**:
+    - **Root Cause Analysis**: Real exam output exposed tiny defects: MathType Symbol PUA glyphs rendered as `≡`; unescaped LaTeX commands (`\ne`) were mangled during JSON deserialization; `\circC` was invalid KaTeX; `<u>` tags were split; analytic text questions received arbitrary cropped images; and English questions were mapped to Physics/Chemistry/Math nodes.
+    - **Implementation Details**: Single-page Vision retry when a 2-page batch returns `null`; `SanitizeJsonForLatex` escapes every unescaped LaTeX command; `CleanLatexString` repairs `\circC`, `<u>`, `\begin{cases}`; `CleanPuaSymbols` maps 30+ PUA codepoints; `HasExplicitFigureReference` restricts crop assignment to explicit figure references; `ClassifyQuestionLexically` boosts English nodes for diacritic-free English questions and penalizes non-English nodes. Gateway route `ai-engine-static-route` (`/extracted_images/{**catch-all}`) was confirmed to proxy static crops.
+    - **Verification**: `dotnet build --no-restore` succeeded (`0 Error(s)`); `dotnet test --no-build` passed `64/64`.
+
+18. **Line-Following Text Assembly, Bare-Numbered Question Parsing & Passage Protection ([`PdfPigLocalExamParser.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigLocalExamParser.cs), [`PdfPigLocalExamParserTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/PdfPigLocalExamParserTests.cs)) [21/11/2026]**:
+    - **Root Cause Analysis**:
+      - In scanned/tilted PDF pages, sorting words strictly by `X` caused horizontal separation tolerance failures, emitting isolated single letters (`o`, `g`, `n`, `u`, `V`, `i`, `đ`) onto arbitrary lines.
+      - Questions formatted as bare numbers (e.g. `91.`, `92.`, `118.`, `119.`, `120.` without the prefix `Câu`) were not matched by `QuestionPattern`, causing `PassagePattern` to consume all subsequent text and display "0 câu" with questions trapped in the passage body.
+    - **Implementation Details**:
+      - **Line-Following Algorithm**: In `ExtractOrderedPageText`, words are linked into lines via nearest-neighbor horizontal chaining (`dx <= 65pt`, `|dy| <= yTol`), traversing left-to-right from the topmost unvisited word, completely eliminating character fracturing and skewed line interleaving.
+      - **Bare-Numbered Question Pattern**: Extended `QuestionPattern` and `PassagePattern` to match bare numbers `(\d{1,3})\s*[.:]` when accompanied by at least options `A.` and `B.`, preventing reading passages from swallowing child questions.
+      - **KaTeX Degree Unit Sanitizer**: Integrated `\circC` sanitization into `CleanPuaSymbols`.
+    - **Verification**: `dotnet build --no-restore` succeeded (`0 Error(s)`); `dotnet test --no-build` passed `65/65` (including `ParseExamText_ShouldHandleBareNumberedQuestionsAndPassagesWithoutSwallowing`).
+
 
 
 
