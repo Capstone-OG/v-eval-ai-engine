@@ -1,5 +1,15 @@
 # NHẬT KÝ KIỂM TRA TIẾN ĐỘ VẬN HÀNH (DAILY CHECK LOG) - AI ENGINE SERVICE
 
+## [22/11/2026] - Chuẩn Hóa Khung Chương Trình Lớp 10 & Lớp 11 (9 Môn CTST) — 529 Dạng Bài Động Không Đánh Số & Gỡ Hardcode Parser
+
+- **Nâng Cấp Khung Chương Trình Lớp 10 & 11 ([`gdpt2018_dgnl_taxonomy.json`](../V-Eval-Ai_Engine.Infrastructure/Templates/Taxonomy/gdpt2018_dgnl_taxonomy.json))**:
+  - Chuyển đổi toàn bộ **236 bài học Lớp 10 & Lớp 11** across 9 môn GDPT 2018 (Chân trời sáng tạo) từ 236 mẫu cứng `Dạng 1: Trọng tâm lý thuyết...` thành **529 dạng bài thực tế, không đánh số cứng**, số lượng dạng bài linh hoạt theo đúng cấu trúc từng bài trong sách.
+- **Gỡ Hardcode Số Dạng & Tiền Tố `Dạng X:` ([`PdfPigTextbookParserService.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigTextbookParserService.cs))**:
+  - Sửa prompt phân tích SGK: bỏ luật cứng 2–3 dạng bài và cấm sinh tiền tố `Dạng 1:`, `Dạng 2:` trong dữ liệu gốc (FE tự hiển thị số thứ tự tượng trưng).
+- **Đồng Bộ Trực Tiếp Vào CSDL `v_eval_content."Skills"` (FK-Safe)**:
+  - Đổi tên tại chỗ 98 stub patterns (bảo toàn 100% khóa ngoại `Questions` / `Materials` / `RoadmapNodes`), gỡ 130 tiền tố `Dạng X:`, thêm mới 430 dạng bài chuẩn.
+- **Kiểm Thử**: `dotnet test --no-restore` đạt **65/65 Passed (100%)**.
+
 ## [21/11/2026] - Nâng Cấp Thuật Toán Line-Following Chống Xé Chữ & Hỗ Trợ Đầy Đủ Câu Hỏi Dạng Số Trần (91, 92, 118, 119, 120)
 
 - **Line-Following Algorithm & Bare-Numbered Question Parsing ([`PdfPigLocalExamParser.cs`](../V-Eval-Ai_Engine.Infrastructure/Services/PdfPigLocalExamParser.cs), [`PdfPigLocalExamParserTests.cs`](../V-Eval-Ai_Engine.Tests/Infrastructure/PdfPigLocalExamParserTests.cs))**:
