@@ -33,19 +33,26 @@
                     {
                       "name": "Bài 1: Mệnh đề",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Mệnh đề"
+                        "Mệnh đề, mệnh đề chứa biến và tính đúng sai",
+                        "Mệnh đề phủ định và mệnh đề kéo theo",
+                        "Mệnh đề đảo và hai mệnh đề tương đương",
+                        "Kí hiệu với mọi (∀) và tồn tại (∃)"
                       ]
                     },
                     {
                       "name": "Bài 2: Tập hợp",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Tập hợp"
+                        "Cách xác định tập hợp và tập con",
+                        "Hai tập hợp bằng nhau và các tập con của ℝ (khoảng, đoạn, nửa khoảng)"
                       ]
                     },
                     {
                       "name": "Bài 3: Các phép toán trên tập hợp",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Các phép toán trên tập hợp"
+                        "Giao và hợp của hai tập hợp",
+                        "Hiệu và phần bù của hai tập hợp",
+                        "Biểu diễn và thực hiện phép toán trên các khoảng, đoạn của ℝ",
+                        "Bài toán thực tế dùng biểu đồ Ven"
                       ]
                     }
                   ]
@@ -57,13 +64,15 @@
                     {
                       "name": "Bài 1: Bất phương trình bậc nhất hai ẩn",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Bất phương trình bậc nhất hai ẩn"
+                        "Khái niệm và nghiệm của bất phương trình bậc nhất hai ẩn",
+                        "Biểu diễn miền nghiệm của bất phương trình bậc nhất hai ẩn trên mặt phẳng toạ độ"
                       ]
                     },
                     {
                       "name": "Bài 2: Hệ bất phương trình bậc nhất hai ẩn",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Hệ bất phương trình bậc nhất hai ẩn"
+                        "Biểu diễn miền nghiệm của hệ bất phương trình bậc nhất hai ẩn",
+                        "Bài toán tối ưu tuyến tính (tìm giá trị lớn nhất, nhỏ nhất trên miền đa giác)"
                       ]
                     }
                   ]
@@ -75,13 +84,15 @@
                     {
                       "name": "Bài 1: Hàm số và đồ thị",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Hàm số và đồ thị"
+                        "Tập xác định, tập giá trị và đồ thị của hàm số",
+                        "Sự đồng biến, nghịch biến của hàm số trên khoảng"
                       ]
                     },
                     {
                       "name": "Bài 2: Hàm số bậc hai",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Hàm số bậc hai"
+                        "Đỉnh, trục đối xứng, bảng biến thiên và đồ thị parabol của hàm số bậc hai",
+                        "Xác định hàm số bậc hai và ứng dụng thực tiễn"
                       ]
                     }
                   ]
@@ -93,19 +104,23 @@
                     {
                       "name": "Bài 1: Giá trị lượng giác của một góc từ 0° đến 180°",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Giá trị lượng giác của một góc từ 0° đến 180°"
+                        "Giá trị lượng giác của góc từ 0° đến 180° và góc bù nhau",
+                        "Hệ thức lượng giác cơ bản và tính giá trị biểu thức"
                       ]
                     },
                     {
                       "name": "Bài 2: Định lí côsin và định lí sin",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Định lí côsin và định lí sin"
+                        "Định lí côsin và tính cạnh, góc trong tam giác",
+                        "Định lí sin và bán kính đường tròn ngoại tiếp tam giác",
+                        "Các công thức tính diện tích tam giác"
                       ]
                     },
                     {
                       "name": "Bài 3: Giải tam giác và ứng dụng thực tế",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Giải tam giác và ứng dụng thực tế"
+                        "Giải tam giác trong các trường hợp cơ bản",
+                        "Ứng dụng hệ thức lượng trong tam giác vào bài toán đo đạc thực tế"
                       ]
                     }
                   ]
@@ -117,25 +132,31 @@
                     {
                       "name": "Bài 1: Khái niệm vectơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Khái niệm vectơ"
+                        "Khái niệm vectơ, độ dài và phương hướng",
+                        "Hai vectơ cùng phương, cùng hướng, bằng nhau và vectơ-không"
                       ]
                     },
                     {
                       "name": "Bài 2: Tổng và hiệu của hai vectơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Tổng và hiệu của hai vectơ"
+                        "Quy tắc ba điểm và quy tắc hình bình hành",
+                        "Hiệu của hai vectơ và quy tắc trừ",
+                        "Tính chất trung điểm đoạn thẳng và trọng tâm tam giác"
                       ]
                     },
                     {
                       "name": "Bài 3: Tích của một số với một vectơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Tích của một số với một vectơ"
+                        "Định nghĩa và tính chất tích của một số với một vectơ",
+                        "Điều kiện hai vectơ cùng phương và ba điểm thẳng hàng",
+                        "Biểu thị một vectơ theo hai vectơ không cùng phương"
                       ]
                     },
                     {
                       "name": "Bài 4: Tích vô hướng của hai vectơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 4: Tích vô hướng của hai vectơ"
+                        "Góc giữa hai vectơ và định nghĩa tích vô hướng",
+                        "Ứng dụng tích vô hướng tính độ dài, góc và chứng minh vuông góc"
                       ]
                     }
                   ]
@@ -147,25 +168,29 @@
                     {
                       "name": "Bài 1: Số gần đúng và sai số",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Số gần đúng và sai số"
+                        "Số gần đúng, sai số tuyệt đối và sai số tương đối",
+                        "Quy tròn số gần đúng theo độ chính xác cho trước"
                       ]
                     },
                     {
                       "name": "Bài 2: Mô tả và biểu diễn dữ liệu trên các bảng và biểu đồ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Mô tả và biểu diễn dữ liệu trên các bảng và biểu đồ"
+                        "Đọc và phân tích bảng số liệu, biểu đồ cột, biểu đồ tròn, biểu đồ đường",
+                        "Phát hiện số liệu bất thường hoặc không chính xác trên biểu đồ"
                       ]
                     },
                     {
                       "name": "Bài 3: Các số đặc trưng đo xu thế trung tâm của mẫu số liệu",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Các số đặc trưng đo xu thế trung tâm của mẫu số liệu"
+                        "Số trung bình cộng và trung vị",
+                        "Tứ phân vị và mốt của mẫu số liệu không ghép nhóm"
                       ]
                     },
                     {
                       "name": "Bài 4: Các số đặc trưng đo mức độ phân tán của mẫu số liệu",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 4: Các số đặc trưng đo mức độ phân tán của mẫu số liệu"
+                        "Khoảng biến thiên và khoảng tứ phân vị (phát hiện giá trị bất thường)",
+                        "Phương sai và độ lệch chuẩn của mẫu số liệu"
                       ]
                     }
                   ]
@@ -177,19 +202,22 @@
                     {
                       "name": "Bài 1: Dấu của tam thức bậc hai",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Dấu của tam thức bậc hai"
+                        "Định lí về dấu của tam thức bậc hai",
+                        "Tìm tham số m để tam thức bậc hai không đổi dấu trên ℝ"
                       ]
                     },
                     {
                       "name": "Bài 2: Giải bất phương trình bậc hai một ẩn",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Giải bất phương trình bậc hai một ẩn"
+                        "Giải bất phương trình bậc hai một ẩn bằng xét dấu tam thức",
+                        "Ứng dụng bất phương trình bậc hai vào bài toán thực tế và tìm tập xác định"
                       ]
                     },
                     {
                       "name": "Bài 3: Phương trình quy về phương trình bậc hai",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Phương trình quy về phương trình bậc hai"
+                        "Giải phương trình dạng √(ax² + bx + c) = √(dx² + ex + f)",
+                        "Giải phương trình dạng √(ax² + bx + c) = dx + e"
                       ]
                     }
                   ]
@@ -201,19 +229,24 @@
                     {
                       "name": "Bài 1: Quy tắc cộng và quy tắc nhân",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Quy tắc cộng và quy tắc nhân"
+                        "Quy tắc cộng và sơ đồ cây",
+                        "Quy tắc nhân và bài toán đếm kết hợp hai quy tắc"
                       ]
                     },
                     {
                       "name": "Bài 2: Hoán vị, chỉnh hợp và tổ hợp",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Hoán vị, chỉnh hợp và tổ hợp"
+                        "Hoán vị và bài toán sắp xếp thứ tự",
+                        "Chỉnh hợp và bài toán chọn có thứ tự",
+                        "Tổ hợp và bài toán chọn không thứ tự",
+                        "Bài toán đếm tổng hợp kết hợp hoán vị, chỉnh hợp, tổ hợp"
                       ]
                     },
                     {
                       "name": "Bài 3: Nhị thức Newton",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Nhị thức Newton"
+                        "Khai triển nhị thức Newton (a + b)^n với n = 4, 5",
+                        "Tìm hệ số và số hạng chứa x^k trong khai triển nhị thức Newton"
                       ]
                     }
                   ]
@@ -225,25 +258,33 @@
                     {
                       "name": "Bài 1: Toạ độ của vectơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Toạ độ của vectơ"
+                        "Toạ độ của điểm và vectơ trong mặt phẳng Oxy",
+                        "Biểu thức toạ độ của các phép toán vectơ và tích vô hướng",
+                        "Tính độ dài đoạn thẳng, trung điểm, trọng tâm và góc giữa hai vectơ"
                       ]
                     },
                     {
                       "name": "Bài 2: Đường thẳng trong mặt phẳng toạ độ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Đường thẳng trong mặt phẳng toạ độ"
+                        "Vectơ pháp tuyến, vectơ chỉ phương và phương trình đường thẳng",
+                        "Vị trí tương đối giữa hai đường thẳng",
+                        "Góc giữa hai đường thẳng",
+                        "Khoảng cách từ một điểm đến một đường thẳng"
                       ]
                     },
                     {
                       "name": "Bài 3: Đường tròn trong mặt phẳng toạ độ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Đường tròn trong mặt phẳng toạ độ"
+                        "Phương trình đường tròn (tâm, bán kính và dạng khai triển)",
+                        "Phương trình tiếp tuyến của đường tròn"
                       ]
                     },
                     {
                       "name": "Bài 4: Ba đường conic trong mặt phẳng toạ độ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 4: Ba đường conic trong mặt phẳng toạ độ"
+                        "Phương trình chính tắc và các yếu tố của đường Elip",
+                        "Phương trình chính tắc và các yếu tố của đường Hypebol",
+                        "Phương trình chính tắc và các yếu tố của đường Parabol"
                       ]
                     }
                   ]
@@ -255,13 +296,15 @@
                     {
                       "name": "Bài 1: Không gian mẫu và biến cố",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Không gian mẫu và biến cố"
+                        "Phép thử ngẫu nhiên và không gian mẫu",
+                        "Biến cố và biến cố đối"
                       ]
                     },
                     {
                       "name": "Bài 2: Xác suất của biến cố",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Xác suất của biến cố"
+                        "Định nghĩa cổ điển của xác suất và tính xác suất bằng tổ hợp",
+                        "Tính xác suất thông qua biến cố đối"
                       ]
                     }
                   ]
@@ -279,31 +322,38 @@
                     {
                       "name": "Bài 1: Góc lượng giác",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Góc lượng giác"
+                        "Góc lượng giác, đơn vị độ và radian",
+                        "Đường tròn lượng giác và độ dài cung tròn"
                       ]
                     },
                     {
                       "name": "Bài 2: Giá trị lượng giác của một góc lượng giác",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Giá trị lượng giác của một góc lượng giác"
+                        "Giá trị lượng giác sin, cos, tan, cot và dấu trên 4 góc phần tư",
+                        "Giá trị lượng giác của các góc có liên quan đặc biệt"
                       ]
                     },
                     {
                       "name": "Bài 3: Các công thức lượng giác",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Các công thức lượng giác"
+                        "Công thức cộng lượng giác",
+                        "Công thức góc nhân đôi và công thức hạ bậc",
+                        "Công thức biến đổi tích thành tổng và tổng thành tích"
                       ]
                     },
                     {
                       "name": "Bài 4: Hàm số lượng giác và đồ thị",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 4: Hàm số lượng giác và đồ thị"
+                        "Tập xác định, tập giá trị, tính chẵn lẻ và tính tuần hoàn của hàm số lượng giác",
+                        "Đồ thị và sự biến thiên của các hàm số y = sin x, cos x, tan x, cot x"
                       ]
                     },
                     {
                       "name": "Bài 5: Phương trình lượng giác cơ bản",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 5: Phương trình lượng giác cơ bản"
+                        "Giải phương trình sin x = m và cos x = m",
+                        "Giải phương trình tan x = m và cot x = m",
+                        "Phương trình lượng giác đưa về dạng cơ bản và tìm nghiệm trên đoạn"
                       ]
                     }
                   ]
@@ -315,19 +365,22 @@
                     {
                       "name": "Bài 1: Dãy số",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Dãy số"
+                        "Cách cho một dãy số và tìm số hạng tổng quát",
+                        "Dãy số tăng, dãy số giảm và dãy số bị chặn"
                       ]
                     },
                     {
                       "name": "Bài 2: Cấp số cộng",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Cấp số cộng"
+                        "Định nghĩa, số hạng tổng quát và công sai của cấp số cộng",
+                        "Tổng n số hạng đầu của cấp số cộng và bài toán thực tế"
                       ]
                     },
                     {
                       "name": "Bài 3: Cấp số nhân",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Cấp số nhân"
+                        "Định nghĩa, số hạng tổng quát và công bội của cấp số nhân",
+                        "Tổng n số hạng đầu của cấp số nhân và ứng dụng thực tế"
                       ]
                     }
                   ]
@@ -339,19 +392,24 @@
                     {
                       "name": "Bài 1: Giới hạn của dãy số",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Giới hạn của dãy số"
+                        "Giới hạn hữu hạn của dãy số và các phép toán trên giới hạn",
+                        "Tổng của cấp số nhân lùi vô hạn",
+                        "Giới hạn vô cực của dãy số"
                       ]
                     },
                     {
                       "name": "Bài 2: Giới hạn của hàm số",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Giới hạn của hàm số"
+                        "Giới hạn hữu hạn của hàm số tại một điểm và khử dạng vô định 0/0",
+                        "Giới hạn một bên của hàm số",
+                        "Giới hạn của hàm số tại vô cực và giới hạn vô cực"
                       ]
                     },
                     {
                       "name": "Bài 3: Hàm số liên tục",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Hàm số liên tục"
+                        "Xét tính liên tục của hàm số tại một điểm và trên một khoảng",
+                        "Chứng minh phương trình có nghiệm bằng định lí giá trị trung gian"
                       ]
                     }
                   ]
@@ -363,31 +421,36 @@
                     {
                       "name": "Bài 1: Điểm, đường thẳng và mặt phẳng trong không gian",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Điểm, đường thẳng và mặt phẳng trong không gian"
+                        "Các tính chất thừa nhận và cách xác định mặt phẳng",
+                        "Tìm giao tuyến của hai mặt phẳng và giao điểm đường thẳng với mặt phẳng",
+                        "Hình chóp và hình tứ diện"
                       ]
                     },
                     {
                       "name": "Bài 2: Hai đường thẳng song song",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Hai đường thẳng song song"
+                        "Vị trí tương đối của hai đường thẳng trong không gian",
+                        "Chứng minh hai đường thẳng song song và tìm giao tuyến bằng định lí song song"
                       ]
                     },
                     {
                       "name": "Bài 3: Đường thẳng và mặt phẳng song song",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Đường thẳng và mặt phẳng song song"
+                        "Điều kiện và chứng minh đường thẳng song song với mặt phẳng",
+                        "Tìm giao tuyến song song với một đường thẳng cho trước"
                       ]
                     },
                     {
                       "name": "Bài 4: Hai mặt phẳng song song",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 4: Hai mặt phẳng song song"
+                        "Điều kiện và chứng minh hai mặt phẳng song song",
+                        "Định lí Thalès trong không gian và hình lăng trụ, hình hộp"
                       ]
                     },
                     {
                       "name": "Bài 5: Phép chiếu song song",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 5: Phép chiếu song song"
+                        "Tính chất của phép chiếu song song và hình biểu diễn của hình không gian"
                       ]
                     }
                   ]
@@ -399,13 +462,15 @@
                     {
                       "name": "Bài 1: Số trung bình và mốt của mẫu số liệu ghép nhóm",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Số trung bình và mốt của mẫu số liệu ghép nhóm"
+                        "Tính số trung bình cộng của mẫu số liệu ghép nhóm",
+                        "Tính mốt của mẫu số liệu ghép nhóm"
                       ]
                     },
                     {
                       "name": "Bài 2: Trung vị và tứ phân vị của mẫu số liệu ghép nhóm",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Trung vị và tứ phân vị của mẫu số liệu ghép nhóm"
+                        "Tính trung vị của mẫu số liệu ghép nhóm",
+                        "Tính các tứ phân vị Q1, Q2, Q3 của mẫu số liệu ghép nhóm"
                       ]
                     }
                   ]
@@ -417,25 +482,31 @@
                     {
                       "name": "Bài 1: Phép tính lũy thừa",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Phép tính lũy thừa"
+                        "Lũy thừa với số mũ nguyên, hữu tỉ và thực",
+                        "Rút gọn và tính giá trị biểu thức chứa lũy thừa"
                       ]
                     },
                     {
                       "name": "Bài 2: Phép tính lôgarit",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Phép tính lôgarit"
+                        "Định nghĩa, tính chất và quy tắc tính lôgarit",
+                        "Công thức đổi cơ số và biến đổi biểu thức lôgarit"
                       ]
                     },
                     {
                       "name": "Bài 3: Hàm số mũ. Hàm số lôgarit",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Hàm số mũ. Hàm số lôgarit"
+                        "Tập xác định, sự biến thiên và đồ thị hàm số mũ",
+                        "Tập xác định, sự biến thiên và đồ thị hàm số lôgarit",
+                        "Bài toán thực tế về lãi kép và tăng trưởng mũ"
                       ]
                     },
                     {
                       "name": "Bài 4: Phương trình, bất phương trình mũ và lôgarit",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 4: Phương trình, bất phương trình mũ và lôgarit"
+                        "Giải phương trình mũ cơ bản và đưa về cùng cơ số",
+                        "Giải phương trình lôgarit cơ bản và đặt ẩn phụ",
+                        "Giải bất phương trình mũ và bất phương trình lôgarit"
                       ]
                     }
                   ]
@@ -447,13 +518,16 @@
                     {
                       "name": "Bài 1: Đạo hàm",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đạo hàm"
+                        "Định nghĩa đạo hàm tại một điểm và ý nghĩa vật lí",
+                        "Ý nghĩa hình học của đạo hàm và viết phương trình tiếp tuyến"
                       ]
                     },
                     {
                       "name": "Bài 2: Các quy tắc tính đạo hàm",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Các quy tắc tính đạo hàm"
+                        "Đạo hàm của các hàm số sơ cấp cơ bản và tổng, hiệu, tích, thương",
+                        "Đạo hàm của hàm hợp",
+                        "Đạo hàm cấp hai và ứng dụng tính gia tốc"
                       ]
                     }
                   ]
@@ -465,31 +539,37 @@
                     {
                       "name": "Bài 1: Hai đường thẳng vuông góc",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Hai đường thẳng vuông góc"
+                        "Góc giữa hai đường thẳng trong không gian",
+                        "Chứng minh hai đường thẳng vuông góc"
                       ]
                     },
                     {
                       "name": "Bài 2: Đường thẳng vuông góc với mặt phẳng",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Đường thẳng vuông góc với mặt phẳng"
+                        "Chứng minh đường thẳng vuông góc với mặt phẳng",
+                        "Định lí ba đường vuông góc và phép chiếu vuông góc"
                       ]
                     },
                     {
                       "name": "Bài 3: Hai mặt phẳng vuông góc",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Hai mặt phẳng vuông góc"
+                        "Góc giữa hai mặt phẳng và chứng minh hai mặt phẳng vuông góc",
+                        "Hình lăng trụ đứng, hình hộp chữ nhật, hình lập phương và hình chóp đều"
                       ]
                     },
                     {
                       "name": "Bài 4: Khoảng cách trong không gian",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 4: Khoảng cách trong không gian"
+                        "Khoảng cách từ một điểm đến một đường thẳng và đến một mặt phẳng",
+                        "Khoảng cách giữa hai đường thẳng chéo nhau",
+                        "Thể tích khối chóp, khối lăng trụ và khối chóp cụt đều"
                       ]
                     },
                     {
                       "name": "Bài 5: Góc giữa đường thẳng và mặt phẳng. Góc nhị diện",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 5: Góc giữa đường thẳng và mặt phẳng. Góc nhị diện"
+                        "Xác định và tính góc giữa đường thẳng và mặt phẳng",
+                        "Xác định và tính góc phẳng nhị diện"
                       ]
                     }
                   ]
@@ -501,13 +581,15 @@
                     {
                       "name": "Bài 1: Biến cố giao và quy tắc nhân xác suất",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Biến cố giao và quy tắc nhân xác suất"
+                        "Biến cố giao và hai biến cố độc lập",
+                        "Quy tắc nhân xác suất cho hai biến cố độc lập"
                       ]
                     },
                     {
                       "name": "Bài 2: Biến cố hợp và quy tắc cộng xác suất",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Biến cố hợp và quy tắc cộng xác suất"
+                        "Biến cố hợp và hai biến cố xung khắc",
+                        "Quy tắc cộng xác suất tổng quát P(A ∪ B) = P(A) + P(B) - P(A ∩ B)"
                       ]
                     }
                   ]
@@ -525,25 +607,31 @@
                     {
                       "name": "Bài 1: Tính đơn điệu và cực trị của hàm số",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Tính đơn điệu và cực trị của hàm số"
+                        "Xét tính đơn điệu của hàm số bằng đạo hàm",
+                        "Tìm điểm cực đại, điểm cực tiểu và giá trị cực trị của hàm số",
+                        "Tìm tham số m để hàm số đơn điệu hoặc đạt cực trị thoả điều kiện"
                       ]
                     },
                     {
                       "name": "Bài 2: Giá trị lớn nhất, giá trị nhỏ nhất của hàm số",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Giá trị lớn nhất, giá trị nhỏ nhất của hàm số"
+                        "Tìm giá trị lớn nhất, giá trị nhỏ nhất của hàm số trên đoạn và khoảng",
+                        "Bài toán tối ưu thực tiễn ứng dụng GTLN - GTNN"
                       ]
                     },
                     {
                       "name": "Bài 3: Đường tiệm cận của đồ thị hàm số",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Đường tiệm cận của đồ thị hàm số"
+                        "Đường tiệm cận đứng và đường tiệm cận ngang",
+                        "Đường tiệm cận xiên của đồ thị hàm số phân thức"
                       ]
                     },
                     {
                       "name": "Bài 4: Khảo sát và vẽ đồ thị một số hàm số cơ bản",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 4: Khảo sát và vẽ đồ thị một số hàm số cơ bản"
+                        "Khảo sát và nhận dạng đồ thị hàm số bậc ba y = ax³ + bx² + cx + d",
+                        "Khảo sát và nhận dạng đồ thị hàm phân thức bậc nhất/bậc nhất và bậc hai/bậc nhất",
+                        "Tương giao đồ thị và ứng dụng hàm số trong bài toán thực tế"
                       ]
                     }
                   ]
@@ -555,19 +643,22 @@
                     {
                       "name": "Bài 1: Vectơ và các phép toán trong không gian",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Vectơ và các phép toán trong không gian"
+                        "Vectơ trong không gian, tổng, hiệu và quy tắc hình hộp",
+                        "Tích của một số với một vectơ và tích vô hướng trong không gian"
                       ]
                     },
                     {
                       "name": "Bài 2: Tọa độ của vectơ trong không gian",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Tọa độ của vectơ trong không gian"
+                        "Hệ trục toạ độ Oxyz và toạ độ của điểm, vectơ trong không gian"
                       ]
                     },
                     {
                       "name": "Bài 3: Biểu thức tọa độ của các phép toán vectơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Biểu thức tọa độ của các phép toán vectơ"
+                        "Biểu thức toạ độ tổng, hiệu, tích với một số và trung điểm, trọng tâm",
+                        "Biểu thức toạ độ tích vô hướng, độ dài và góc giữa hai vectơ",
+                        "Ứng dụng toạ độ Oxyz giải bài toán thực tế trong không gian"
                       ]
                     }
                   ]
@@ -579,13 +670,14 @@
                     {
                       "name": "Bài 1: Khoảng biến thiên và khoảng tứ phân vị của mẫu số liệu ghép nhóm",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Khoảng biến thiên và khoảng tứ phân vị của mẫu số liệu ghép nhóm"
+                        "Tính khoảng biến thiên của mẫu số liệu ghép nhóm",
+                        "Tính khoảng tứ phân vị và phát hiện giá trị ngoại lệ"
                       ]
                     },
                     {
                       "name": "Bài 2: Phương sai và độ lệch chuẩn của mẫu số liệu ghép nhóm",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Phương sai và độ lệch chuẩn của mẫu số liệu ghép nhóm"
+                        "Tính phương sai, độ lệch chuẩn và so sánh mức độ phân tán hai mẫu số liệu"
                       ]
                     }
                   ]
@@ -597,19 +689,23 @@
                     {
                       "name": "Bài 1: Nguyên hàm",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Nguyên hàm"
+                        "Khái niệm nguyên hàm và bảng nguyên hàm các hàm số sơ cấp",
+                        "Tính nguyên hàm bằng tính chất tuyến tính và tìm nguyên hàm thoả điều kiện ban đầu"
                       ]
                     },
                     {
                       "name": "Bài 2: Tích phân",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Tích phân"
+                        "Định nghĩa, tính chất và công thức Newton - Leibniz tính tích phân",
+                        "Tính tích phân các hàm số sơ cấp, hàm chứa dấu giá trị tuyệt đối và hàm từng khúc",
+                        "Ứng dụng tích phân tính quãng đường, vận tốc và bài toán thực tiễn"
                       ]
                     },
                     {
                       "name": "Bài 3: Ứng dụng hình học của tích phân",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Ứng dụng hình học của tích phân"
+                        "Tính diện tích hình phẳng giới hạn bởi các đường cong",
+                        "Tính thể tích vật thể và thể tích khối tròn xoay"
                       ]
                     }
                   ]
@@ -621,19 +717,24 @@
                     {
                       "name": "Bài 1: Phương trình mặt phẳng",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Phương trình mặt phẳng"
+                        "Vectơ pháp tuyến, tích có hướng và viết phương trình tổng quát mặt phẳng",
+                        "Điều kiện hai mặt phẳng song song, vuông góc",
+                        "Khoảng cách từ một điểm đến một mặt phẳng"
                       ]
                     },
                     {
                       "name": "Bài 2: Phương trình đường thẳng trong không gian",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Phương trình đường thẳng trong không gian"
+                        "Vectơ chỉ phương, phương trình tham số và phương trình chính tắc đường thẳng",
+                        "Vị trí tương đối giữa hai đường thẳng trong không gian",
+                        "Góc giữa hai đường thẳng, đường thẳng với mặt phẳng và giữa hai mặt phẳng"
                       ]
                     },
                     {
                       "name": "Bài 3: Phương trình mặt cầu",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Phương trình mặt cầu"
+                        "Xác định tâm, bán kính và viết phương trình mặt cầu trong Oxyz",
+                        "Vị trí tương đối giữa mặt cầu với mặt phẳng, đường thẳng và bài toán thực tiễn"
                       ]
                     }
                   ]
@@ -645,13 +746,15 @@
                     {
                       "name": "Bài 1: Xác suất có điều kiện",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Xác suất có điều kiện"
+                        "Định nghĩa xác suất có điều kiện P(A|B) và công thức nhân xác suất",
+                        "Sử dụng sơ đồ hình cây tính xác suất có điều kiện"
                       ]
                     },
                     {
                       "name": "Bài 2: Công thức xác suất toàn phần và công thức Bayes",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Công thức xác suất toàn phần và công thức Bayes"
+                        "Công thức xác suất toàn phần",
+                        "Công thức Bayes và bài toán xét nghiệm y khoa, kiểm định chất lượng"
                       ]
                     }
                   ]
@@ -663,13 +766,15 @@
                     {
                       "name": "Bài 1: Suy luận logic hình thức và Quy tắc sắp xếp vị trí",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Suy luận logic hình thức và Quy tắc sắp xếp vị trí"
+                        "Suy luận mệnh đề, tam đoạn luận và phủ định điều kiện logic",
+                        "Bài toán sắp xếp vị trí, phân nhóm và lịch trình theo ràng buộc (V-ACT)"
                       ]
                     },
                     {
                       "name": "Bài 2: Phân tích biểu đồ và Bảng số liệu thống kê ĐGNL",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Phân tích biểu đồ và Bảng số liệu thống kê ĐGNL"
+                        "Tính tốc độ tăng trưởng, tỉ trọng và so sánh chênh lệch từ bảng số liệu",
+                        "Đọc và suy luận nhanh từ biểu đồ cột chồng, biểu đồ tròn và biểu đồ kết hợp"
                       ]
                     }
                   ]
@@ -694,9 +799,8 @@
                     {
                       "name": "Bài 1: Suy luận logic mệnh đề và Xếp vị trí",
                       "patterns": [
-                        "Dạng 1: Suy luận mệnh đề đúng - sai (bài toán ai nói thật, ai nói dối)",
-                        "Dạng 2: Suy luận sắp xếp thứ tự hàng ngang, bàn tròn, lịch trình trong tuần",
-                        "Dạng 3: Suy luận phân nhóm đối tượng có ràng buộc điều kiện kéo theo (Nếu... thì...)"
+                        "Suy luận mệnh đề điều kiện và tương đương logic",
+                        "Bài toán sắp xếp thứ tự, bàn tròn và phân công theo điều kiện"
                       ]
                     }
                   ]
@@ -708,9 +812,8 @@
                     {
                       "name": "Bài 1: Đọc hiểu và xử lý bảng biểu, biểu đồ thống kê",
                       "patterns": [
-                        "Dạng 1: Phân tích biểu đồ tròn (tính tỷ trọng %, quy đổi giá trị thực tế và tốc độ tăng trưởng)",
-                        "Dạng 2: Phân tích biểu đồ cột, cột ghép, cột chồng và biểu đồ đường",
-                        "Dạng 3: Phân tích bảng số liệu đa chiều (tài chính, xuất nhập khẩu, dân số, năng suất)"
+                        "Phân tích tỉ lệ phần trăm, tốc độ tăng trưởng kép và chênh lệch tuyệt đối",
+                        "Tổng hợp dữ liệu đa bảng và đánh giá nhận định đúng/sai"
                       ]
                     }
                   ]
@@ -742,13 +845,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu thần thoại Việt Nam và thế giới",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu thần thoại Việt Nam và thế giới"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu thần thoại Việt Nam và thế giới",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu thần thoại Việt Nam và thế giới)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và viết bài nghị luận",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và viết bài nghị luận"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và viết bài nghị luận)"
                       ]
                     }
                   ]
@@ -760,13 +866,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu sử thi anh hùng",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu sử thi anh hùng"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu sử thi anh hùng",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu sử thi anh hùng)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và nghị luận tác phẩm truyện",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và nghị luận tác phẩm truyện"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và nghị luận tác phẩm truyện)"
                       ]
                     }
                   ]
@@ -778,13 +887,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu thơ trữ tình lãng mạn",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu thơ trữ tình lãng mạn"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu thơ trữ tình lãng mạn",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu thơ trữ tình lãng mạn)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và nghị luận tác phẩm thơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và nghị luận tác phẩm thơ"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và nghị luận tác phẩm thơ)"
                       ]
                     }
                   ]
@@ -796,13 +908,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu văn bản thông tin và phóng sự lịch sử",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu văn bản thông tin và phóng sự lịch sử"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu văn bản thông tin và phóng sự lịch sử",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu văn bản thông tin và phóng sự lịch sử)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và lập báo cáo nghiên cứu",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và lập báo cáo nghiên cứu"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và lập báo cáo nghiên cứu)"
                       ]
                     }
                   ]
@@ -814,13 +929,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu trích đoạn kịch bản sân khấu cổ truyền",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu trích đoạn kịch bản sân khấu cổ truyền"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu trích đoạn kịch bản sân khấu cổ truyền",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu trích đoạn kịch bản sân khấu cổ truyền)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và thuyết minh quy trình",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và thuyết minh quy trình"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và thuyết minh quy trình)"
                       ]
                     }
                   ]
@@ -832,13 +950,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu thơ trữ tình hiện đại",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu thơ trữ tình hiện đại"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu thơ trữ tình hiện đại",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu thơ trữ tình hiện đại)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và viết bài văn nghị luận",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và viết bài văn nghị luận"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và viết bài văn nghị luận)"
                       ]
                     }
                   ]
@@ -850,13 +971,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu kịch bản và văn bản thông tin",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu kịch bản và văn bản thông tin"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu kịch bản và văn bản thông tin",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu kịch bản và văn bản thông tin)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và nghị luận xã hội",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và nghị luận xã hội"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và nghị luận xã hội)"
                       ]
                     }
                   ]
@@ -868,13 +992,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu tản văn, tùy bút đặc sắc",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu tản văn, tùy bút đặc sắc"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu tản văn, tùy bút đặc sắc",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu tản văn, tùy bút đặc sắc)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và viết bài cảm nhận",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và viết bài cảm nhận"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và viết bài cảm nhận)"
                       ]
                     }
                   ]
@@ -886,13 +1013,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu văn chính luận trung đại và hiện đại",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu văn chính luận trung đại và hiện đại"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu văn chính luận trung đại và hiện đại",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu văn chính luận trung đại và hiện đại)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và thao tác lập luận",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và thao tác lập luận"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và thao tác lập luận)"
                       ]
                     }
                   ]
@@ -910,13 +1040,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu tùy bút và tản văn hiện đại",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu tùy bút và tản văn hiện đại"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu tùy bút và tản văn hiện đại",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu tùy bút và tản văn hiện đại)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và viết văn nghị luận xã hội",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và viết văn nghị luận xã hội"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và viết văn nghị luận xã hội)"
                       ]
                     }
                   ]
@@ -928,13 +1061,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu văn nghị luận định hướng lý tưởng",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu văn nghị luận định hướng lý tưởng"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu văn nghị luận định hướng lý tưởng",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu văn nghị luận định hướng lý tưởng)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và chữa lỗi lập luận",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và chữa lỗi lập luận"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và chữa lỗi lập luận)"
                       ]
                     }
                   ]
@@ -946,13 +1082,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu truyện thơ dân gian và trung đại",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu truyện thơ dân gian và trung đại"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu truyện thơ dân gian và trung đại",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu truyện thơ dân gian và trung đại)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và nghị luận đoạn trích truyện thơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và nghị luận đoạn trích truyện thơ"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và nghị luận đoạn trích truyện thơ)"
                       ]
                     }
                   ]
@@ -964,13 +1103,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu văn bản thông tin di sản và du lịch",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu văn bản thông tin di sản và du lịch"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu văn bản thông tin di sản và du lịch",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu văn bản thông tin di sản và du lịch)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và thuyết minh lồng ghép miêu tả",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và thuyết minh lồng ghép miêu tả"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và thuyết minh lồng ghép miêu tả)"
                       ]
                     }
                   ]
@@ -982,13 +1124,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu bi kịch cổ điển và hiện đại",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu bi kịch cổ điển và hiện đại"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu bi kịch cổ điển và hiện đại",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu bi kịch cổ điển và hiện đại)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và tranh luận vấn đề xã hội",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và tranh luận vấn đề xã hội"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và tranh luận vấn đề xã hội)"
                       ]
                     }
                   ]
@@ -1000,13 +1145,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu thi phẩm Thơ mới và thơ tượng trưng",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu thi phẩm Thơ mới và thơ tượng trưng"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu thi phẩm Thơ mới và thơ tượng trưng",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu thi phẩm Thơ mới và thơ tượng trưng)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và viết bài văn nghị luận phân tích thơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và viết bài văn nghị luận phân tích thơ"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và viết bài văn nghị luận phân tích thơ)"
                       ]
                     }
                   ]
@@ -1018,13 +1166,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu truyện thơ Nôm và truyện ngắn hiện thực",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu truyện thơ Nôm và truyện ngắn hiện thực"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu truyện thơ Nôm và truyện ngắn hiện thực",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu truyện thơ Nôm và truyện ngắn hiện thực)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và viết bài so sánh đánh giá hai tác phẩm truyện",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và viết bài so sánh đánh giá hai tác phẩm truyện"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và viết bài so sánh đánh giá hai tác phẩm truyện)"
                       ]
                     }
                   ]
@@ -1036,13 +1187,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu tiểu thuyết hiện thực phê phán 1930 - 1945",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu tiểu thuyết hiện thực phê phán 1930 - 1945"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu tiểu thuyết hiện thực phê phán 1930 - 1945",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu tiểu thuyết hiện thực phê phán 1930 - 1945)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và thao tác lập luận bác bỏ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và thao tác lập luận bác bỏ"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và thao tác lập luận bác bỏ)"
                       ]
                     }
                   ]
@@ -1054,13 +1208,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu văn bản giải thích một hiện tượng tự nhiên và xã hội",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu văn bản giải thích một hiện tượng tự nhiên và xã hội"
+                        "Đặc trưng thể loại và bố cục trong Đọc hiểu văn bản giải thích một hiện tượng tự nhiên và xã hội",
+                        "Phân tích hình tượng, ngôn ngữ và thông điệp văn bản (Đọc hiểu văn bản giải thích một hiện tượng tự nhiên và xã hội)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và viết báo cáo nghiên cứu",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và viết báo cáo nghiên cứu"
+                        "Thực hành tiếng Việt (biện pháp tu từ, lỗi dùng từ và diễn đạt)",
+                        "Kĩ năng lập dàn ý và viết bài (Thực hành tiếng Việt và viết báo cáo nghiên cứu)"
                       ]
                     }
                   ]
@@ -1078,13 +1235,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu thơ Đường luật và Thơ mới",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu thơ Đường luật và Thơ mới"
+                        "Đặc trưng thể loại và kết cấu trong Đọc hiểu thơ Đường luật và Thơ mới",
+                        "Phân tích giá trị nội dung, nghệ thuật và thông điệp (Đọc hiểu thơ Đường luật và Thơ mới)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và so sánh hai tác phẩm thơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và so sánh hai tác phẩm thơ"
+                        "Thực hành tiếng Việt nâng cao và thao tác lập luận",
+                        "Kĩ năng viết bài nghị luận và so sánh văn học (Thực hành tiếng Việt và so sánh hai tác phẩm thơ)"
                       ]
                     }
                   ]
@@ -1096,13 +1256,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu truyện ngắn Việt Nam 1930 - 1945",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu truyện ngắn Việt Nam 1930 - 1945"
+                        "Đặc trưng thể loại và kết cấu trong Đọc hiểu truyện ngắn Việt Nam 1930 - 1945",
+                        "Phân tích giá trị nội dung, nghệ thuật và thông điệp (Đọc hiểu truyện ngắn Việt Nam 1930 - 1945)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và so sánh nhân vật truyện",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và so sánh nhân vật truyện"
+                        "Thực hành tiếng Việt nâng cao và thao tác lập luận",
+                        "Kĩ năng viết bài nghị luận và so sánh văn học (Thực hành tiếng Việt và so sánh nhân vật truyện)"
                       ]
                     }
                   ]
@@ -1114,13 +1277,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu truyện truyền kì và văn tế nghĩa sĩ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu truyện truyền kì và văn tế nghĩa sĩ"
+                        "Đặc trưng thể loại và kết cấu trong Đọc hiểu truyện truyền kì và văn tế nghĩa sĩ",
+                        "Phân tích giá trị nội dung, nghệ thuật và thông điệp (Đọc hiểu truyện truyền kì và văn tế nghĩa sĩ)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và lập luận văn bản",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và lập luận văn bản"
+                        "Thực hành tiếng Việt nâng cao và thao tác lập luận",
+                        "Kĩ năng viết bài nghị luận và so sánh văn học (Thực hành tiếng Việt và lập luận văn bản)"
                       ]
                     }
                   ]
@@ -1132,13 +1298,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu phóng sự và nhật kí thời chiến",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu phóng sự và nhật kí thời chiến"
+                        "Đặc trưng thể loại và kết cấu trong Đọc hiểu phóng sự và nhật kí thời chiến",
+                        "Phân tích giá trị nội dung, nghệ thuật và thông điệp (Đọc hiểu phóng sự và nhật kí thời chiến)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và viết bài nghị luận xã hội",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và viết bài nghị luận xã hội"
+                        "Thực hành tiếng Việt nâng cao và thao tác lập luận",
+                        "Kĩ năng viết bài nghị luận và so sánh văn học (Thực hành tiếng Việt và viết bài nghị luận xã hội)"
                       ]
                     }
                   ]
@@ -1150,13 +1319,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu kịch bản hài kịch phê phán",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu kịch bản hài kịch phê phán"
+                        "Đặc trưng thể loại và kết cấu trong Đọc hiểu kịch bản hài kịch phê phán",
+                        "Phân tích giá trị nội dung, nghệ thuật và thông điệp (Đọc hiểu kịch bản hài kịch phê phán)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và viết kịch bản ngắn",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và viết kịch bản ngắn"
+                        "Thực hành tiếng Việt nâng cao và thao tác lập luận",
+                        "Kĩ năng viết bài nghị luận và so sánh văn học (Thực hành tiếng Việt và viết kịch bản ngắn)"
                       ]
                     }
                   ]
@@ -1168,13 +1340,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu thơ hiện đại giai đoạn 1945 - 1975",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu thơ hiện đại giai đoạn 1945 - 1975"
+                        "Đặc trưng thể loại và kết cấu trong Đọc hiểu thơ hiện đại giai đoạn 1945 - 1975",
+                        "Phân tích giá trị nội dung, nghệ thuật và thông điệp (Đọc hiểu thơ hiện đại giai đoạn 1945 - 1975)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và so sánh hai đoạn thơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và so sánh hai đoạn thơ"
+                        "Thực hành tiếng Việt nâng cao và thao tác lập luận",
+                        "Kĩ năng viết bài nghị luận và so sánh văn học (Thực hành tiếng Việt và so sánh hai đoạn thơ)"
                       ]
                     }
                   ]
@@ -1186,13 +1361,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu truyện ngắn và tiểu thuyết hiện đại Việt Nam",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu truyện ngắn và tiểu thuyết hiện đại Việt Nam"
+                        "Đặc trưng thể loại và kết cấu trong Đọc hiểu truyện ngắn và tiểu thuyết hiện đại Việt Nam",
+                        "Phân tích giá trị nội dung, nghệ thuật và thông điệp (Đọc hiểu truyện ngắn và tiểu thuyết hiện đại Việt Nam)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và phân tích tình huống truyện",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và phân tích tình huống truyện"
+                        "Thực hành tiếng Việt nâng cao và thao tác lập luận",
+                        "Kĩ năng viết bài nghị luận và so sánh văn học (Thực hành tiếng Việt và phân tích tình huống truyện)"
                       ]
                     }
                   ]
@@ -1204,13 +1382,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu văn tế và thể loại kí",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu văn tế và thể loại kí"
+                        "Đặc trưng thể loại và kết cấu trong Đọc hiểu văn tế và thể loại kí",
+                        "Phân tích giá trị nội dung, nghệ thuật và thông điệp (Đọc hiểu văn tế và thể loại kí)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và viết bài cảm nhận văn học",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và viết bài cảm nhận văn học"
+                        "Thực hành tiếng Việt nâng cao và thao tác lập luận",
+                        "Kĩ năng viết bài nghị luận và so sánh văn học (Thực hành tiếng Việt và viết bài cảm nhận văn học)"
                       ]
                     }
                   ]
@@ -1222,13 +1403,16 @@
                     {
                       "name": "Bài 1: Đọc hiểu văn bản thông tin chuyên đề công nghệ số và trí tuệ nhân tạo",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đọc hiểu văn bản thông tin chuyên đề công nghệ số và trí tuệ nhân tạo"
+                        "Đặc trưng thể loại và kết cấu trong Đọc hiểu văn bản thông tin chuyên đề công nghệ số và trí tuệ nhân tạo",
+                        "Phân tích giá trị nội dung, nghệ thuật và thông điệp (Đọc hiểu văn bản thông tin chuyên đề công nghệ số và trí tuệ nhân tạo)",
+                        "Vận dụng đọc hiểu ngữ liệu mới cùng thể loại"
                       ]
                     },
                     {
                       "name": "Bài 2: Thực hành tiếng Việt và viết báo cáo nghiên cứu tổng hợp",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thực hành tiếng Việt và viết báo cáo nghiên cứu tổng hợp"
+                        "Thực hành tiếng Việt nâng cao và thao tác lập luận",
+                        "Kĩ năng viết bài nghị luận và so sánh văn học (Thực hành tiếng Việt và viết báo cáo nghiên cứu tổng hợp)"
                       ]
                     }
                   ]
@@ -1253,13 +1437,17 @@
                     {
                       "name": "Bài 1: Present and Past Tenses System",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Present and Past Tenses System"
+                        "Core Grammar Rules & Usage: Present and Past Tenses System",
+                        "Sentence Transformation & Error Identification (Present and Past Tenses System)",
+                        "Contextual Cloze & Reading Application (Present and Past Tenses System)"
                       ]
                     },
                     {
                       "name": "Bài 2: Future Forms and Time Clauses",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Future Forms and Time Clauses"
+                        "Core Grammar Rules & Usage: Future Forms and Time Clauses",
+                        "Sentence Transformation & Error Identification (Future Forms and Time Clauses)",
+                        "Contextual Cloze & Reading Application (Future Forms and Time Clauses)"
                       ]
                     }
                   ]
@@ -1271,13 +1459,17 @@
                     {
                       "name": "Bài 1: Compound and Complex Sentences",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Compound and Complex Sentences"
+                        "Core Grammar Rules & Usage: Compound and Complex Sentences",
+                        "Sentence Transformation & Error Identification (Compound and Complex Sentences)",
+                        "Contextual Cloze & Reading Application (Compound and Complex Sentences)"
                       ]
                     },
                     {
                       "name": "Bài 2: Skimming, Scanning and Topic Sentence Identification",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Skimming, Scanning and Topic Sentence Identification"
+                        "Core Grammar Rules & Usage: Skimming, Scanning and Topic Sentence Identification",
+                        "Sentence Transformation & Error Identification (Skimming, Scanning and Topic Sentence Identification)",
+                        "Contextual Cloze & Reading Application (Skimming, Scanning and Topic Sentence Identification)"
                       ]
                     }
                   ]
@@ -1295,13 +1487,17 @@
                     {
                       "name": "Bài 1: Modals of Deduction and Obligation",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Modals of Deduction and Obligation"
+                        "Core Grammar Rules & Usage: Modals of Deduction and Obligation",
+                        "Sentence Transformation & Error Identification (Modals of Deduction and Obligation)",
+                        "Contextual Cloze & Reading Application (Modals of Deduction and Obligation)"
                       ]
                     },
                     {
                       "name": "Bài 2: Conditional Sentences Types 2, 3 and Mixed Conditionals",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Conditional Sentences Types 2, 3 and Mixed Conditionals"
+                        "Core Grammar Rules & Usage: Conditional Sentences Types 2, 3 and Mixed Conditionals",
+                        "Sentence Transformation & Error Identification (Conditional Sentences Types 2, 3 and Mixed Conditionals)",
+                        "Contextual Cloze & Reading Application (Conditional Sentences Types 2, 3 and Mixed Conditionals)"
                       ]
                     }
                   ]
@@ -1313,13 +1509,17 @@
                     {
                       "name": "Bài 1: Prefixes, Suffixes and Word Formation",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Prefixes, Suffixes and Word Formation"
+                        "Core Grammar Rules & Usage: Prefixes, Suffixes and Word Formation",
+                        "Sentence Transformation & Error Identification (Prefixes, Suffixes and Word Formation)",
+                        "Contextual Cloze & Reading Application (Prefixes, Suffixes and Word Formation)"
                       ]
                     },
                     {
                       "name": "Bài 2: Discourse Markers and Cohesion Devices",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Discourse Markers and Cohesion Devices"
+                        "Core Grammar Rules & Usage: Discourse Markers and Cohesion Devices",
+                        "Sentence Transformation & Error Identification (Discourse Markers and Cohesion Devices)",
+                        "Contextual Cloze & Reading Application (Discourse Markers and Cohesion Devices)"
                       ]
                     }
                   ]
@@ -1337,13 +1537,17 @@
                     {
                       "name": "Bài 1: Advanced Passive Structures & Causatives",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Advanced Passive Structures & Causatives"
+                        "Advanced Grammar & Structural Patterns: Advanced Passive Structures & Causatives",
+                        "Sentence Transformation, Paraphrasing & Error Recognition (Advanced Passive Structures & Causatives)",
+                        "V-ACT Reading Comprehension & Contextual Application (Advanced Passive Structures & Causatives)"
                       ]
                     },
                     {
                       "name": "Bài 2: Inversion and Reduced Relative Clauses",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Inversion and Reduced Relative Clauses"
+                        "Advanced Grammar & Structural Patterns: Inversion and Reduced Relative Clauses",
+                        "Sentence Transformation, Paraphrasing & Error Recognition (Inversion and Reduced Relative Clauses)",
+                        "V-ACT Reading Comprehension & Contextual Application (Inversion and Reduced Relative Clauses)"
                       ]
                     }
                   ]
@@ -1355,13 +1559,17 @@
                     {
                       "name": "Bài 1: Inference, Tone and Author Attitude Questions",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Inference, Tone and Author Attitude Questions"
+                        "Advanced Grammar & Structural Patterns: Inference, Tone and Author Attitude Questions",
+                        "Sentence Transformation, Paraphrasing & Error Recognition (Inference, Tone and Author Attitude Questions)",
+                        "V-ACT Reading Comprehension & Contextual Application (Inference, Tone and Author Attitude Questions)"
                       ]
                     },
                     {
                       "name": "Bài 2: Sentence Insertion and Summary Completion",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Sentence Insertion and Summary Completion"
+                        "Advanced Grammar & Structural Patterns: Sentence Insertion and Summary Completion",
+                        "Sentence Transformation, Paraphrasing & Error Recognition (Sentence Insertion and Summary Completion)",
+                        "V-ACT Reading Comprehension & Contextual Application (Sentence Insertion and Summary Completion)"
                       ]
                     }
                   ]
@@ -1393,19 +1601,20 @@
                     {
                       "name": "Bài 1: Khái quát về môn Vật lí",
                       "patterns": [
-                        "Dạng 1: Đối tượng, mục tiêu và phương pháp nghiên cứu môn Vật lí"
+                        "Đối tượng, mục tiêu và phương pháp thực nghiệm, mô hình trong Vật lí"
                       ]
                     },
                     {
                       "name": "Bài 2: Vấn đề an toàn trong Vật lí",
                       "patterns": [
-                        "Dạng 1: Quy tắc an toàn trong phòng thí nghiệm và an toàn điện"
+                        "Quy tắc an toàn trong phòng thực hành và ý nghĩa các biển cảnh báo"
                       ]
                     },
                     {
                       "name": "Bài 3: Đơn vị và sai số trong Vật lí",
                       "patterns": [
-                        "Dạng 1: Hệ đơn vị SI, sai số tuyệt đối và sai số tỉ đối trong phép đo"
+                        "Hệ đơn vị SI, đơn vị cơ bản và đơn vị dẫn xuất",
+                        "Phép đo trực tiếp, phép đo gián tiếp và cách tính sai số phép đo"
                       ]
                     }
                   ]
@@ -1417,19 +1626,20 @@
                     {
                       "name": "Bài 4: Chuyển động thẳng",
                       "patterns": [
-                        "Dạng 1: Độ dịch chuyển, quãng đường và tốc độ trung bình, vận tốc trung bình"
+                        "Độ dịch chuyển, quãng đường và sự khác nhau giữa tốc độ, vận tốc",
+                        "Đồ thị độ dịch chuyển - thời gian (d - t) của chuyển động thẳng"
                       ]
                     },
                     {
                       "name": "Bài 5: Chuyển động tổng hợp",
                       "patterns": [
-                        "Dạng 1: Công thức cộng vận tốc trong chuyển động tương đối"
+                        "Tính tương đối của chuyển động và công thức cộng vận tốc"
                       ]
                     },
                     {
                       "name": "Bài 6: Thực hành đo tốc độ của vật chuyển động thẳng",
                       "patterns": [
-                        "Dạng 1: Xử lí số liệu thực nghiệm đo tốc độ bằng cổng quang điện và đồng hồ hiện số"
+                        "Đo tốc độ trung bình và tốc độ tức thời bằng cổng quang điện"
                       ]
                     }
                   ]
@@ -1441,19 +1651,22 @@
                     {
                       "name": "Bài 7: Gia tốc – Chuyển động thẳng biến đổi đều",
                       "patterns": [
-                        "Dạng 1: Các phương trình của chuyển động thẳng biến đổi đều"
+                        "Khái niệm gia tốc và đồ thị vận tốc - thời gian (v - t)",
+                        "Các phương trình chuyển động thẳng biến đổi đều",
+                        "Sự rơi tự do và bài toán rơi tự do"
                       ]
                     },
                     {
                       "name": "Bài 8: Thực hành đo gia tốc rơi tự do",
                       "patterns": [
-                        "Dạng 1: Xác định gia tốc trọng trường g qua đồ thị quãng đường - thời gian bình phương"
+                        "Thiết kế thí nghiệm và xử lí số liệu đo gia tốc rơi tự do g"
                       ]
                     },
                     {
                       "name": "Bài 9: Chuyển động ném",
                       "patterns": [
-                        "Dạng 1: Chuyển động ném ngang và ném xiên"
+                        "Phân tích và phương trình chuyển động ném ngang (tầm bay xa, thời gian rơi)",
+                        "Chuyển động ném xiên và ứng dụng thực tiễn"
                       ]
                     }
                   ]
@@ -1465,19 +1678,22 @@
                     {
                       "name": "Bài 10: Ba định luật Newton về chuyển động",
                       "patterns": [
-                        "Dạng 1: Ứng dụng định luật II Newton $\\vec{F} = m\\vec{a}$ và định luật III Newton"
+                        "Định luật I Newton và quán tính",
+                        "Định luật II Newton (F = ma) và khối lượng",
+                        "Định luật III Newton về lực và phản lực"
                       ]
                     },
                     {
                       "name": "Bài 11: Một số lực trong thực tiễn",
                       "patterns": [
-                        "Dạng 1: Trọng lực, phản lực, lực căng dây và lực ma sát trượt"
+                        "Trọng lực, lực căng dây và phản lực pháp tuyến",
+                        "Lực ma sát nghỉ, ma sát trượt và bài toán động lực học có ma sát"
                       ]
                     },
                     {
                       "name": "Bài 12: Chuyển động của vật trong chất lưu",
                       "patterns": [
-                        "Dạng 1: Lực cản của chất lưu và lực đẩy Archimedes"
+                        "Lực cản của chất lưu và lực đẩy Archimedes"
                       ]
                     }
                   ]
@@ -1489,13 +1705,15 @@
                     {
                       "name": "Bài 13: Tổng hợp lực – Phân tích lực",
                       "patterns": [
-                        "Dạng 1: Tổng hợp các lực đồng quy và lực song song cùng chiều"
+                        "Tổng hợp hai lực đồng quy và hai lực song song cùng chiều",
+                        "Phân tích lực theo hai phương vuông góc"
                       ]
                     },
                     {
                       "name": "Bài 14: Moment lực. Điều kiện cân bằng của vật",
                       "patterns": [
-                        "Dạng 1: Quy tắc moment lực và điều kiện cân bằng của vật có trục quay cố định"
+                        "Moment lực, ngẫu lực và quy tắc moment",
+                        "Điều kiện cân bằng tổng quát của vật rắn"
                       ]
                     }
                   ]
@@ -1507,19 +1725,22 @@
                     {
                       "name": "Bài 15: Năng lượng và công",
                       "patterns": [
-                        "Dạng 1: Tính công cơ học của lực không đổi $A = F s \\cos\\alpha$"
+                        "Sự chuyển hoá năng lượng và định luật bảo toàn năng lượng",
+                        "Công cơ học (A = F.d.cosα) và phân loại công phát động, công cản"
                       ]
                     },
                     {
                       "name": "Bài 16: Công suất – Hiệu suất",
                       "patterns": [
-                        "Dạng 1: Công suất cơ học $\\mathcal{P} = \\frac{A}{t} = F v$ và hiệu suất năng lượng"
+                        "Công suất cơ học và mối liên hệ P = F.v",
+                        "Hiệu suất của động cơ và máy cơ"
                       ]
                     },
                     {
                       "name": "Bài 17: Động năng và thế năng. Định luật bảo toàn cơ năng",
                       "patterns": [
-                        "Dạng 1: Bảo toàn cơ năng trong trọng trường và biến thiên cơ năng khi có ma sát"
+                        "Động năng, định lí động năng và thế năng trọng trường",
+                        "Cơ năng và định luật bảo toàn cơ năng trong trường trọng lực"
                       ]
                     }
                   ]
@@ -1531,13 +1752,15 @@
                     {
                       "name": "Bài 18: Động lượng và định luật bảo toàn động lượng",
                       "patterns": [
-                        "Dạng 1: Vectơ động lượng và định luật bảo toàn động lượng của hệ kín"
+                        "Động lượng, xung lượng của lực và mối liên hệ F.Δt = Δp",
+                        "Hệ kín và định luật bảo toàn động lượng"
                       ]
                     },
                     {
                       "name": "Bài 19: Các loại va chạm",
                       "patterns": [
-                        "Dạng 1: Va chạm mềm và va chạm đàn hồi một chiều"
+                        "Va chạm đàn hồi và va chạm mềm (không đàn hồi)",
+                        "Chuyển động bằng phản lực và bài toán súng giật, tên lửa"
                       ]
                     }
                   ]
@@ -1549,13 +1772,14 @@
                     {
                       "name": "Bài 20: Động học chuyển động tròn",
                       "patterns": [
-                        "Dạng 1: Tốc độ góc, chu kì, tần số và mối liên hệ $v = \\omega r$"
+                        "Tốc độ góc, chu kì, tần số và mối liên hệ v = ω.r",
+                        "Gia tốc hướng tâm trong chuyển động tròn đều"
                       ]
                     },
                     {
                       "name": "Bài 21: Động lực học chuyển động tròn. Lực hướng tâm",
                       "patterns": [
-                        "Dạng 1: Lực hướng tâm $F_{ht} = m\\frac{v^2}{r}$ và góc nghiêng an toàn khi rẽ"
+                        "Lực hướng tâm và bài toán xe qua cầu vồng, đường nghiêng, vệ tinh"
                       ]
                     }
                   ]
@@ -1567,13 +1791,13 @@
                     {
                       "name": "Bài 22: Biến dạng của vật rắn. Đặc tính của lò xo",
                       "patterns": [
-                        "Dạng 1: Biến dạng kéo, nén và giới hạn đàn hồi"
+                        "Biến dạng kéo, biến dạng nén và giới hạn đàn hồi của vật rắn"
                       ]
                     },
                     {
                       "name": "Bài 23: Định luật Hooke",
                       "patterns": [
-                        "Dạng 1: Định luật Hooke $F_{dh} = k |\\Delta l|$ và ghép lò xo"
+                        "Lực đàn hồi của lò xo và định luật Hooke (F = k|Δl|)"
                       ]
                     }
                   ]
@@ -1591,25 +1815,30 @@
                     {
                       "name": "Bài 1: Mô tả dao động",
                       "patterns": [
-                        "Dạng 1: Các đặc trưng của dao động điều hòa (Biên độ, chu kì, tần số, pha dao động)"
+                        "Dao động cơ, biên độ, chu kì, tần số và tần số góc",
+                        "Pha dao động, độ lệch pha và đọc đồ thị li độ - thời gian"
                       ]
                     },
                     {
                       "name": "Bài 2: Phương trình dao động điều hoà",
                       "patterns": [
-                        "Dạng 1: Khảo sát phương trình li độ $x$, vận tốc $v$ và gia tốc $a$"
+                        "Phương trình li độ, vận tốc và gia tốc trong dao động điều hoà",
+                        "Hệ thức độc lập với thời gian giữa x, v, a",
+                        "Con lắc lò xo và con lắc đơn dao động điều hoà"
                       ]
                     },
                     {
                       "name": "Bài 3: Năng lượng trong dao động điều hoà",
                       "patterns": [
-                        "Dạng 1: Động năng, thế năng và bảo toàn cơ năng trong dao động điều hòa"
+                        "Động năng, thế năng và cơ năng của vật dao động điều hoà",
+                        "Đồ thị năng lượng và sự chuyển hoá động năng - thế năng"
                       ]
                     },
                     {
                       "name": "Bài 4: Dao động tắt dần và hiện tượng cộng hưởng",
                       "patterns": [
-                        "Dạng 1: Điều kiện xảy ra hiện tượng cộng hưởng cơ học và ứng dụng giảm xóc"
+                        "Dao động tắt dần, dao động duy trì và dao động cưỡng bức",
+                        "Điều kiện xảy ra và ứng dụng, tác hại của hiện tượng cộng hưởng"
                       ]
                     }
                   ]
@@ -1621,31 +1850,34 @@
                     {
                       "name": "Bài 5: Sóng và sự truyền sóng",
                       "patterns": [
-                        "Dạng 1: Bước sóng, chu kì, tốc độ truyền sóng và phương trình truyền sóng"
+                        "Sóng ngang, sóng dọc và quá trình truyền năng lượng của sóng",
+                        "Bước sóng, tốc độ truyền sóng và phương trình truyền sóng"
                       ]
                     },
                     {
                       "name": "Bài 6: Các đặc trưng vật lí của sóng âm",
                       "patterns": [
-                        "Dạng 1: Tần số âm, cường độ âm $I$ và mức cường độ âm $L = 10\\log\\frac{I}{I_0}$"
+                        "Tần số, biên độ, cường độ âm, mức cường độ âm và hiệu ứng Doppler"
                       ]
                     },
                     {
                       "name": "Bài 7: Sóng điện từ",
                       "patterns": [
-                        "Dạng 1: Thang sóng điện từ và sự truyền sóng vô tuyến"
+                        "Bản chất sóng điện từ và thang sóng điện từ (từ sóng vô tuyến đến tia gamma)"
                       ]
                     },
                     {
                       "name": "Bài 8: Giao thoa sóng",
                       "patterns": [
-                        "Dạng 1: Điều kiện giao thoa và vị trí cực đại, cực tiểu giao thoa"
+                        "Giao thoa hai sóng cơ kết hợp (cực đại, cực tiểu giao thoa)",
+                        "Thí nghiệm Young về giao thoa ánh sáng và tính khoảng vân, bước sóng"
                       ]
                     },
                     {
                       "name": "Bài 9: Sóng dừng",
                       "patterns": [
-                        "Dạng 1: Điều kiện hình thành sóng dừng trên sợi dây đàn hồi"
+                        "Sự phản xạ sóng và hình thành sóng dừng trên dây",
+                        "Điều kiện có sóng dừng (hai đầu cố định và một đầu cố định - một đầu tự do)"
                       ]
                     }
                   ]
@@ -1657,19 +1889,23 @@
                     {
                       "name": "Bài 10: Điện trường và cường độ điện trường",
                       "patterns": [
-                        "Dạng 1: Định luật Coulomb và cường độ điện trường của điện tích điểm"
+                        "Định luật Coulomb về tương tác tĩnh điện",
+                        "Cường độ điện trường, đường sức điện và nguyên lí chồng chất điện trường",
+                        "Điện trường đều và chuyển động của điện tích trong điện trường đều"
                       ]
                     },
                     {
                       "name": "Bài 11: Điện thế và hiệu điện thế",
                       "patterns": [
-                        "Dạng 1: Công của lực điện trường $A = qEd = qU$ và điện thế"
+                        "Công của lực điện và thế năng của điện tích trong điện trường",
+                        "Điện thế, hiệu điện thế và mối liên hệ U = E.d"
                       ]
                     },
                     {
                       "name": "Bài 12: Tụ điện và năng lượng điện trường",
                       "patterns": [
-                        "Dạng 1: Điện dung của tụ điện $C = \\frac{Q}{U}$ và năng lượng điện trường $W = \\frac{1}{2}CU^2$"
+                        "Điện dung của tụ điện và ghép tụ điện nối tiếp, song song",
+                        "Năng lượng điện trường trong tụ điện tích điện"
                       ]
                     }
                   ]
@@ -1681,7 +1917,8 @@
                     {
                       "name": "Bài 13: Định luật Ohm cho toàn mạch",
                       "patterns": [
-                        "Dạng 1: Cường độ dòng điện toàn mạch $I = \\frac{\\mathcal{E}}{R_N + r}$ và công suất mạch ngoài"
+                        "Cường độ dòng điện, điện trở và suất điện động của nguồn điện",
+                        "Định luật Ohm cho toàn mạch, hiện tượng đoản mạch và công suất, hiệu suất nguồn điện"
                       ]
                     }
                   ]
@@ -1699,19 +1936,22 @@
                     {
                       "name": "Bài 1: Sự chuyển thể và Thang nhiệt độ",
                       "patterns": [
-                        "Dạng 1: Chuyển đổi giữa thang nhiệt độ Celsius và Kelvin $T(\\text{K}) = t(^\\circ\\text{C}) + 273{,}15$"
+                        "Mô hình động học phân tử và các quá trình chuyển thể (nóng chảy, hoá hơi)",
+                        "Thang nhiệt độ Celsius, thang Kelvin và chuyển đổi nhiệt độ"
                       ]
                     },
                     {
                       "name": "Bài 2: Nội năng và Định luật I nhiệt động lực học",
                       "patterns": [
-                        "Dạng 1: Áp dụng định luật I nhiệt động lực học $\\Delta U = A + Q$"
+                        "Nội năng và hai cách làm thay đổi nội năng (thực hiện công, truyền nhiệt)",
+                        "Định luật I nhiệt động lực học (ΔU = A + Q) và quy ước dấu"
                       ]
                     },
                     {
                       "name": "Bài 3: Nhiệt dung riêng, nhiệt nóng chảy riêng và nhiệt hóa hơi riêng",
                       "patterns": [
-                        "Dạng 1: Cân bằng nhiệt và tính lượng nhiệt chuyển thể $Q = mc\\Delta t,\\; Q = m\\lambda,\\; Q = mL$"
+                        "Nhiệt dung riêng và phương trình cân bằng nhiệt Q = m.c.ΔT",
+                        "Nhiệt nóng chảy riêng (Q = λ.m) và nhiệt hoá hơi riêng (Q = L.m)"
                       ]
                     }
                   ]
@@ -1723,13 +1963,15 @@
                     {
                       "name": "Bài 4: Định luật Boyle và Định luật Charles",
                       "patterns": [
-                        "Dạng 1: Quá trình đẳng nhiệt $p V = \\text{const}$ và đẳng áp $\\frac{V}{T} = \\text{const}$"
+                        "Quá trình đẳng nhiệt và định luật Boyle (p1.V1 = p2.V2)",
+                        "Quá trình đẳng áp và định luật Charles (V1/T1 = V2/T2)"
                       ]
                     },
                     {
                       "name": "Bài 5: Phương trình trạng thái khí lí tưởng",
                       "patterns": [
-                        "Dạng 1: Phương trình Clapeyron - Mendeleev $pV = nRT = \\frac{m}{M}RT$"
+                        "Phương trình trạng thái khí lí tưởng (pV/T = const) và phương trình Clapeyron (pV = nRT)",
+                        "Áp suất khí theo mô hình động học phân tử và động năng tịnh tiến trung bình"
                       ]
                     }
                   ]
@@ -1741,13 +1983,16 @@
                     {
                       "name": "Bài 6: Cảm ứng từ và Lực từ",
                       "patterns": [
-                        "Dạng 1: Lực từ tác dụng lên đoạn dây dẫn mang dòng điện (Định luật Ampere)"
+                        "Từ trường, đường sức từ và cảm ứng từ B",
+                        "Lực từ tác dụng lên đoạn dây dẫn mang dòng điện (F = B.I.L.sinα) và quy tắc bàn tay trái"
                       ]
                     },
                     {
                       "name": "Bài 7: Hiện tượng cảm ứng điện từ và Dòng điện xoay chiều",
                       "patterns": [
-                        "Dạng 1: Từ thông qua khung dây và suất điện động cảm ứng (Định luật Faraday)"
+                        "Từ thông, hiện tượng cảm ứng điện từ và định luật Lenz, định luật Faraday",
+                        "Dòng điện xoay chiều, giá trị hiệu dụng và máy biến áp, truyền tải điện năng",
+                        "Điện từ trường và mô hình sóng điện từ"
                       ]
                     }
                   ]
@@ -1759,13 +2004,16 @@
                     {
                       "name": "Bài 8: Cấu tạo hạt nhân và Năng lượng liên kết",
                       "patterns": [
-                        "Dạng 1: Độ hụt khối $\\Delta m$ và năng lượng liên kết riêng $\\varepsilon = \\frac{W_{lk}}{A}$"
+                        "Cấu tạo hạt nhân, đồng vị và kích thước hạt nhân",
+                        "Độ hụt khối, năng lượng liên kết và năng lượng liên kết riêng (độ bền vững hạt nhân)"
                       ]
                     },
                     {
                       "name": "Bài 9: Hiện tượng phóng xạ và Phản ứng phân hạch, nhiệt hạch",
                       "patterns": [
-                        "Dạng 1: Định luật phóng xạ $N(t) = N_0 2^{-t/T}$ và các định luật bảo toàn trong phản ứng hạt nhân"
+                        "Phản ứng hạt nhân, định luật bảo toàn số khối, điện tích và năng lượng phản ứng",
+                        "Phản ứng phân hạch, phản ứng nhiệt hạch và ứng dụng năng lượng hạt nhân",
+                        "Hiện tượng phóng xạ (α, β, γ), chu kì bán rã và định luật phóng xạ"
                       ]
                     }
                   ]
@@ -1790,25 +2038,31 @@
                     {
                       "name": "Bài 1: Nhập môn hoá học",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Nhập môn hoá học"
+                        "Đối tượng nghiên cứu và vai trò của hoá học trong đời sống",
+                        "Phương pháp nghiên cứu hoá học"
                       ]
                     },
                     {
                       "name": "Bài 2: Thành phần của nguyên tử",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thành phần của nguyên tử"
+                        "Thành phần cấu tạo nguyên tử (proton, neutron, electron)",
+                        "Sự tìm ra electron, hạt nhân nguyên tử và kích thước, khối lượng nguyên tử",
+                        "Bài toán tổng số hạt cơ bản trong nguyên tử"
                       ]
                     },
                     {
                       "name": "Bài 3: Nguyên tố hoá học",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Nguyên tố hoá học"
+                        "Số hiệu nguyên tử, số khối và kí hiệu nguyên tử",
+                        "Đồng vị và tính nguyên tử khối trung bình"
                       ]
                     },
                     {
                       "name": "Bài 4: Cấu trúc lớp vỏ electron của nguyên tử",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 4: Cấu trúc lớp vỏ electron của nguyên tử"
+                        "Chuyển động của electron và orbital nguyên tử (AO)",
+                        "Lớp, phân lớp electron và nguyên lí vững bền, Pauli, quy tắc Hund",
+                        "Viết cấu hình electron nguyên tử và xác định tính kim loại, phi kim, khí hiếm"
                       ]
                     }
                   ]
@@ -1820,19 +2074,22 @@
                     {
                       "name": "Bài 5: Cấu tạo bảng tuần hoàn các nguyên tố hoá học",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 5: Cấu tạo bảng tuần hoàn các nguyên tố hoá học"
+                        "Nguyên tắc sắp xếp bảng tuần hoàn (ô nguyên tố, chu kì, nhóm)",
+                        "Xác định vị trí nguyên tố trong bảng tuần hoàn từ cấu hình electron"
                       ]
                     },
                     {
                       "name": "Bài 6: Xu hướng biến đổi một số tính chất của nguyên tử các nguyên tố",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 6: Xu hướng biến đổi một số tính chất của nguyên tử các nguyên tố"
+                        "Xu hướng biến đổi bán kính nguyên tử và độ âm điện",
+                        "Xu hướng biến đổi tính kim loại, tính phi kim, hoá trị và tính acid - base của oxide, hydroxide"
                       ]
                     },
                     {
                       "name": "Bài 7: Định luật tuần hoàn – Ý nghĩa của bảng tuần hoàn",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 7: Định luật tuần hoàn – Ý nghĩa của bảng tuần hoàn"
+                        "Định luật tuần hoàn và dự đoán tính chất nguyên tố từ vị trí",
+                        "Bài toán xác định tên nguyên tố từ oxide cao nhất và hợp chất khí với hydrogen"
                       ]
                     }
                   ]
@@ -1844,25 +2101,29 @@
                     {
                       "name": "Bài 8: Quy tắc octet",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 8: Quy tắc octet"
+                        "Nội dung quy tắc octet và sự hình thành liên kết đạt cấu hình khí hiếm"
                       ]
                     },
                     {
                       "name": "Bài 9: Liên kết ion",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 9: Liên kết ion"
+                        "Sự hình thành ion đơn nguyên tử, đa nguyên tử và liên kết ion",
+                        "Tinh thể ion và tính chất của hợp chất ion"
                       ]
                     },
                     {
                       "name": "Bài 10: Liên kết cộng hoá trị",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 10: Liên kết cộng hoá trị"
+                        "Sự hình thành liên kết cộng hoá trị, công thức electron và công thức Lewis",
+                        "Phân loại liên kết theo hiệu độ âm điện và liên kết cho - nhận",
+                        "Sự xen phủ orbital (liên kết σ, liên kết π) và năng lượng liên kết"
                       ]
                     },
                     {
                       "name": "Bài 11: Liên kết hydrogen và tương tác van der Waals",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 11: Liên kết hydrogen và tương tác van der Waals"
+                        "Bản chất liên kết hydrogen và ảnh hưởng đến nhiệt độ sôi, độ tan",
+                        "Tương tác van der Waals và ảnh hưởng đến tính chất vật lí"
                       ]
                     }
                   ]
@@ -1874,7 +2135,10 @@
                     {
                       "name": "Bài 12: Phản ứng oxi hoá – khử và ứng dụng trong cuộc sống",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 12: Phản ứng oxi hoá – khử và ứng dụng trong cuộc sống"
+                        "Quy tắc xác định số oxi hoá của nguyên tử trong đơn chất và hợp chất",
+                        "Chất oxi hoá, chất khử và quá trình oxi hoá, quá trình khử",
+                        "Lập phương trình hoá học phản ứng oxi hoá - khử bằng phương pháp thăng bằng electron",
+                        "Bài toán bảo toàn electron trong phản ứng oxi hoá - khử"
                       ]
                     }
                   ]
@@ -1886,13 +2150,15 @@
                     {
                       "name": "Bài 13: Enthalpy tạo thành và biến thiên enthalpy của phản ứng hoá học",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 13: Enthalpy tạo thành và biến thiên enthalpy của phản ứng hoá học"
+                        "Phản ứng toả nhiệt và phản ứng thu nhiệt",
+                        "Enthalpy tạo thành chuẩn và biến thiên enthalpy chuẩn của phản ứng"
                       ]
                     },
                     {
                       "name": "Bài 14: Tính biến thiên enthalpy của phản ứng hoá học",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 14: Tính biến thiên enthalpy của phản ứng hoá học"
+                        "Tính biến thiên enthalpy phản ứng theo nhiệt tạo thành chuẩn",
+                        "Tính biến thiên enthalpy phản ứng theo năng lượng liên kết"
                       ]
                     }
                   ]
@@ -1904,13 +2170,15 @@
                     {
                       "name": "Bài 15: Phương trình tốc độ phản ứng và hằng số tốc độ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 15: Phương trình tốc độ phản ứng và hằng số tốc độ"
+                        "Tốc độ trung bình của phản ứng hoá học",
+                        "Định luật tác dụng khối lượng và phương trình tốc độ tức thời"
                       ]
                     },
                     {
                       "name": "Bài 16: Các yếu tố ảnh hưởng đến tốc độ phản ứng hoá học",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 16: Các yếu tố ảnh hưởng đến tốc độ phản ứng hoá học"
+                        "Ảnh hưởng của nồng độ, áp suất, diện tích bề mặt và chất xúc tác",
+                        "Ảnh hưởng của nhiệt độ và quy tắc hệ số nhiệt độ Van't Hoff"
                       ]
                     }
                   ]
@@ -1922,13 +2190,15 @@
                     {
                       "name": "Bài 17: Tính chất vật lí và hoá học các đơn chất nhóm VIIA",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 17: Tính chất vật lí và hoá học các đơn chất nhóm VIIA"
+                        "Trạng thái tự nhiên, cấu hình electron và xu hướng biến đổi tính chất vật lí của halogen",
+                        "Tính oxi hoá mạnh của halogen (tác dụng với kim loại, hydrogen, nước, dung dịch kiềm, muối halide)"
                       ]
                     },
                     {
                       "name": "Bài 18: Hydrogen halide và một số phản ứng của ion halide",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 18: Hydrogen halide và một số phản ứng của ion halide"
+                        "Tính chất vật lí và tính acid của dãy hydrohalic acid (HF, HCl, HBr, HI)",
+                        "Tính khử của ion halide và nhận biết ion halide bằng dung dịch AgNO3"
                       ]
                     }
                   ]
@@ -1946,13 +2216,19 @@
                     {
                       "name": "Bài 1: Khái niệm về cân bằng hoá học",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Khái niệm về cân bằng hoá học"
+                        "Phản ứng một chiều và phản ứng thuận nghịch",
+                        "Trạng thái cân bằng hoá học và biểu thức hằng số cân bằng Kc",
+                        "Ảnh hưởng của nhiệt độ đến chuyển dịch cân bằng",
+                        "Ảnh hưởng của nồng độ và áp suất (Nguyên lí Le Chatelier)"
                       ]
                     },
                     {
                       "name": "Bài 2: Cân bằng trong dung dịch nước",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Cân bằng trong dung dịch nước"
+                        "Sự điện li, chất điện li mạnh và chất điện li yếu",
+                        "Thuyết Brønsted - Lowry về acid và base",
+                        "Khái niệm pH, chất chỉ thị và tính pH dung dịch acid - base mạnh",
+                        "Ý nghĩa của pH và phương pháp chuẩn độ acid - base"
                       ]
                     }
                   ]
@@ -1964,31 +2240,39 @@
                     {
                       "name": "Bài 3: Đơn chất nitrogen",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Đơn chất nitrogen"
+                        "Cấu tạo phân tử, tính trơ hoá học và tính chất hoá học của đơn chất nitrogen",
+                        "Chu trình nitrogen trong tự nhiên và ứng dụng"
                       ]
                     },
                     {
                       "name": "Bài 4: Ammonia và một số hợp chất ammonium",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 4: Ammonia và một số hợp chất ammonium"
+                        "Cấu tạo phân tử, tính base yếu và tính khử của ammonia",
+                        "Tổng hợp ammonia theo quá trình Haber",
+                        "Tính chất của muối ammonium và nhận biết ion NH4+"
                       ]
                     },
                     {
                       "name": "Bài 5: Một số hợp chất với oxygen của nitrogen",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 5: Một số hợp chất với oxygen của nitrogen"
+                        "Các oxide của nitrogen (NOx) và hiện tượng mưa acid",
+                        "Cấu tạo, tính acid mạnh và tính oxi hoá mạnh của nitric acid (HNO3)",
+                        "Hiện tượng phú dưỡng nguồn nước"
                       ]
                     },
                     {
                       "name": "Bài 6: Sulfur và sulfur dioxide",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 6: Sulfur và sulfur dioxide"
+                        "Cấu tạo, tính oxi hoá và tính khử của đơn chất sulfur",
+                        "Tính chất hoá học (oxide acid, tính khử, tính oxi hoá) và tác hại của sulfur dioxide (SO2)"
                       ]
                     },
                     {
                       "name": "Bài 7: Sulfuric acid và muối sulfate",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 7: Sulfuric acid và muối sulfate"
+                        "Tính chất của dung dịch H2SO4 loãng và H2SO4 đặc (tính oxi hoá mạnh, tính háo nước)",
+                        "Sản xuất sulfuric acid bằng phương pháp tiếp xúc",
+                        "Muối sulfate và nhận biết ion SO4 2-"
                       ]
                     }
                   ]
@@ -2000,25 +2284,29 @@
                     {
                       "name": "Bài 8: Hợp chất hữu cơ và hoá học hữu cơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 8: Hợp chất hữu cơ và hoá học hữu cơ"
+                        "Đặc điểm chung, phân loại hợp chất hữu cơ và nhóm chức",
+                        "Xác định nhóm chức bằng phổ hồng ngoại (IR)"
                       ]
                     },
                     {
                       "name": "Bài 9: Phương pháp tách và tinh chế hợp chất hữu cơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 9: Phương pháp tách và tinh chế hợp chất hữu cơ"
+                        "Phương pháp chưng cất và chiết",
+                        "Phương pháp kết tinh và sắc kí cột"
                       ]
                     },
                     {
                       "name": "Bài 10: Công thức phân tử hợp chất hữu cơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 10: Công thức phân tử hợp chất hữu cơ"
+                        "Thiết lập công thức đơn giản nhất từ phần trăm khối lượng nguyên tố",
+                        "Xác định công thức phân tử bằng phổ khối lượng (MS)"
                       ]
                     },
                     {
                       "name": "Bài 11: Cấu tạo hoá học hợp chất hữu cơ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 11: Cấu tạo hoá học hợp chất hữu cơ"
+                        "Thuyết cấu tạo hoá học và công thức cấu tạo",
+                        "Đồng đẳng và các loại đồng phân cấu tạo"
                       ]
                     }
                   ]
@@ -2030,19 +2318,25 @@
                     {
                       "name": "Bài 12: Alkane",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 12: Alkane"
+                        "Đồng phân, danh pháp thay thế và tính chất vật lí của alkane",
+                        "Phản ứng thế halogen, cracking, reforming và phản ứng cháy của alkane",
+                        "Nguồn alkane trong tự nhiên và ứng dụng làm nhiên liệu"
                       ]
                     },
                     {
                       "name": "Bài 13: Hydrocarbon không no",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 13: Hydrocarbon không no"
+                        "Đồng phân cấu tạo, đồng phân hình học (cis-trans) và danh pháp alkene, alkyne",
+                        "Phản ứng cộng (H2, X2, HX theo quy tắc Markovnikov, H2O) và trùng hợp",
+                        "Phản ứng của alk-1-yne với AgNO3/NH3 và phản ứng oxi hoá"
                       ]
                     },
                     {
                       "name": "Bài 14: Arene (Hydrocarbon thơm)",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 14: Arene (Hydrocarbon thơm)"
+                        "Cấu tạo vòng benzene, đồng phân và danh pháp arene",
+                        "Phản ứng thế vào vòng thơm (halogen hoá, nitro hoá) và quy tắc định hướng",
+                        "Phản ứng cộng và phản ứng oxi hoá nhánh alkyl của arene"
                       ]
                     }
                   ]
@@ -2054,19 +2348,23 @@
                     {
                       "name": "Bài 15: Dẫn xuất halogen",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 15: Dẫn xuất halogen"
+                        "Danh pháp, đồng phân và tính chất vật lí của dẫn xuất halogen",
+                        "Phản ứng thế nguyên tử halogen (thuỷ phân) và phản ứng tách HX theo quy tắc Zaitsev"
                       ]
                     },
                     {
                       "name": "Bài 16: Alcohol",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 16: Alcohol"
+                        "Cấu tạo, bậc alcohol, danh pháp và liên kết hydrogen của alcohol",
+                        "Phản ứng thế H của nhóm -OH, tạo ether và tách nước tạo alkene",
+                        "Phản ứng oxi hoá alcohol bậc I, II và phản ứng riêng của polyalcohol với Cu(OH)2"
                       ]
                     },
                     {
                       "name": "Bài 17: Phenol",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 17: Phenol"
+                        "Cấu tạo, tính acid yếu của phenol và phản ứng với Na, NaOH",
+                        "Phản ứng thế vào vòng thơm của phenol (với nước Br2 và HNO3 đặc)"
                       ]
                     }
                   ]
@@ -2078,13 +2376,17 @@
                     {
                       "name": "Bài 18: Hợp chất carbonyl (Aldehyde – Ketone)",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 18: Hợp chất carbonyl (Aldehyde – Ketone)"
+                        "Cấu tạo, đồng phân và danh pháp aldehyde, ketone",
+                        "Phản ứng khử, phản ứng cộng HCN và phản ứng tạo iodoform",
+                        "Phản ứng oxi hoá aldehyde (thuốc thử Tollens, Cu(OH)2/OH-)"
                       ]
                     },
                     {
                       "name": "Bài 19: Carboxylic acid",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 19: Carboxylic acid"
+                        "Cấu tạo, danh pháp, liên kết hydrogen và tính chất vật lí của carboxylic acid",
+                        "Tính acid yếu của carboxylic acid (tác dụng với kim loại, base, oxide base, muối carbonate)",
+                        "Phản ứng ester hoá giữa carboxylic acid và alcohol"
                       ]
                     }
                   ]
@@ -2102,13 +2404,15 @@
                     {
                       "name": "Bài 1: Ester – Lipid",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Ester – Lipid"
+                        "Cấu tạo, đồng phân, danh pháp và tính chất vật lí của ester",
+                        "Phản ứng thuỷ phân ester trong môi trường acid và môi trường kiềm (xà phòng hoá)",
+                        "Cấu tạo, tính chất hoá học của chất béo (triglyceride) và bài toán xà phòng hoá"
                       ]
                     },
                     {
                       "name": "Bài 2: Xà phòng và chất giặt rửa",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Xà phòng và chất giặt rửa"
+                        "Cấu tạo, cơ chế giặt rửa và phương pháp sản xuất xà phòng, chất giặt rửa tổng hợp"
                       ]
                     }
                   ]
@@ -2120,19 +2424,21 @@
                     {
                       "name": "Bài 3: Glucose và fructose",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Glucose và fructose"
+                        "Cấu tạo mạch hở, mạch vòng của glucose và fructose",
+                        "Tính chất hoá học của glucose và fructose (polyalcohol, nhóm aldehyde, phản ứng lên men)"
                       ]
                     },
                     {
                       "name": "Bài 4: Saccharose và maltose",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 4: Saccharose và maltose"
+                        "Cấu tạo phân tử, tính chất hoá học (thuỷ phân, tác dụng với Cu(OH)2) của saccharose và maltose"
                       ]
                     },
                     {
                       "name": "Bài 5: Tinh bột và cellulose",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 5: Tinh bột và cellulose"
+                        "Cấu tạo amylose, amylopectin và tính chất hoá học của tinh bột (thuỷ phân, phản ứng màu iodine)",
+                        "Cấu tạo mạch polymer và tính chất hoá học của cellulose (thuỷ phân, phản ứng với HNO3 đặc)"
                       ]
                     }
                   ]
@@ -2144,19 +2450,22 @@
                     {
                       "name": "Bài 6: Amine",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 6: Amine"
+                        "Cấu tạo, bậc amine, đồng phân, danh pháp và tính chất vật lí của amine",
+                        "Tính base của amine và phản ứng với acid, muối, HNO2",
+                        "Phản ứng riêng của aniline với nước bromine"
                       ]
                     },
                     {
                       "name": "Bài 7: Amino acid và peptide",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 7: Amino acid và peptide"
+                        "Cấu tạo, danh pháp, tính chất lưỡng tính và tính điện di của amino acid",
+                        "Liên kết peptide, phản ứng thuỷ phân peptide và phản ứng màu biuret"
                       ]
                     },
                     {
                       "name": "Bài 8: Protein và enzyme",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 8: Protein và enzyme"
+                        "Cấu trúc, tính chất hoá học (thuỷ phân, đông tụ, phản ứng màu) của protein và vai trò của enzyme"
                       ]
                     }
                   ]
@@ -2168,19 +2477,21 @@
                     {
                       "name": "Bài 9: Đại cương về polymer",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 9: Đại cương về polymer"
+                        "Khái niệm, phân loại, danh pháp và tính chất vật lí của polymer",
+                        "Phương pháp tổng hợp polymer (phản ứng trùng hợp và phản ứng trùng ngưng)"
                       ]
                     },
                     {
                       "name": "Bài 10: Chất dẻo và vật liệu composite",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 10: Chất dẻo và vật liệu composite"
+                        "Thành phần, tính chất, ứng dụng của các chất dẻo thông dụng (PE, PP, PVC, PS, PMMA) và vật liệu composite"
                       ]
                     },
                     {
                       "name": "Bài 11: Tơ – Cao su – Keo dán tổng hợp",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 11: Tơ – Cao su – Keo dán tổng hợp"
+                        "Phân loại tơ tự nhiên, tơ bán tổng hợp, tơ tổng hợp (nylon-6,6, capron, nitron)",
+                        "Cao su thiên nhiên, cao su tổng hợp (buna, buna-S, buna-N) và keo dán tổng hợp"
                       ]
                     }
                   ]
@@ -2192,13 +2503,15 @@
                     {
                       "name": "Bài 12: Thế điện cực và nguồn điện hoá học",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 12: Thế điện cực và nguồn điện hoá học"
+                        "Cặp oxi hoá - khử, thế điện cực chuẩn và dãy điện hoá kim loại",
+                        "Cấu tạo, nguyên tắc hoạt động và tính sức điện động chuẩn của pin Galvani"
                       ]
                     },
                     {
                       "name": "Bài 13: Điện phân",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 13: Điện phân"
+                        "Thứ tự điện phân tại anode, cathode (điện phân nóng chảy và điện phân dung dịch)",
+                        "Ứng dụng điện phân sản xuất kim loại, mạ điện và tính lượng chất theo định luật Faraday"
                       ]
                     }
                   ]
@@ -2210,19 +2523,21 @@
                     {
                       "name": "Bài 14: Đặc điểm cấu tạo và liên kết kim loại. Tính chất kim loại",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 14: Đặc điểm cấu tạo và liên kết kim loại. Tính chất kim loại"
+                        "Cấu tạo tinh thể, liên kết kim loại và tính chất vật lí chung của kim loại",
+                        "Tính chất hoá học chung của kim loại (tác dụng phi kim, nước, dung dịch acid, dung dịch muối)"
                       ]
                     },
                     {
                       "name": "Bài 15: Các phương pháp tách kim loại",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 15: Các phương pháp tách kim loại"
+                        "Phương pháp nhiệt luyện, thuỷ luyện và điện phân tách kim loại khỏi quặng"
                       ]
                     },
                     {
                       "name": "Bài 16: Hợp kim – Sự ăn mòn kim loại",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 16: Hợp kim – Sự ăn mòn kim loại"
+                        "Tính chất, ứng dụng của hợp kim (gang, thép, duralumin)",
+                        "Ăn mòn hoá học, ăn mòn điện hoá và các phương pháp bảo vệ kim loại"
                       ]
                     }
                   ]
@@ -2234,13 +2549,15 @@
                     {
                       "name": "Bài 17: Nguyên tố nhóm IA",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 17: Nguyên tố nhóm IA"
+                        "Tính chất vật lí, tính khử mạnh của kim loại kiềm (nhóm IA)",
+                        "Tính chất và ứng dụng của các hợp chất quan trọng (NaOH, NaHCO3, Na2CO3, quá trình Solvay)"
                       ]
                     },
                     {
                       "name": "Bài 18: Nguyên tố nhóm IIA",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 18: Nguyên tố nhóm IIA"
+                        "Tính chất vật lí, tính khử của kim loại kiềm thổ (nhóm IIA)",
+                        "Tính chất hợp chất nhóm IIA (oxide, hydroxide, muối carbonate, sulfate) và nước cứng, làm mềm nước cứng"
                       ]
                     }
                   ]
@@ -2252,13 +2569,14 @@
                     {
                       "name": "Bài 19: Đại cương về kim loại chuyển tiếp dãy thứ nhất",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 19: Đại cương về kim loại chuyển tiếp dãy thứ nhất"
+                        "Cấu hình electron, các trạng thái oxi hoá phổ biến và tính chất đặc trưng của kim loại chuyển tiếp dãy thứ nhất",
+                        "Chuẩn độ dung dịch Fe2+ bằng dung dịch KMnO4 trong môi trường acid"
                       ]
                     },
                     {
                       "name": "Bài 20: Sơ lược về phức chất",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 20: Sơ lược về phức chất"
+                        "Cấu tạo phức chất (nguyên tử trung tâm, phối tử, số phối trí), hình học và sự tạo phức của ion Cu2+, Fe3+"
                       ]
                     }
                   ]
@@ -2283,7 +2601,8 @@
                     {
                       "name": "Bài 1: Đối tượng, phương pháp nghiên cứu và các cấp độ tổ chức của thế giới sống",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đối tượng, phương pháp nghiên cứu và các cấp độ tổ chức của thế giới sống"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Đối tượng, phương pháp nghiên cứu và các cấp độ tổ chức của thế giới sống",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Đối tượng, phương pháp nghiên cứu và các cấp độ tổ chức của thế giới sống)"
                       ]
                     }
                   ]
@@ -2295,19 +2614,22 @@
                     {
                       "name": "Bài 1: Thành phần hoá học của tế bào",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Thành phần hoá học của tế bào"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Thành phần hoá học của tế bào",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Thành phần hoá học của tế bào)"
                       ]
                     },
                     {
                       "name": "Bài 2: Cấu trúc tế bào nhân sơ và tế bào nhân thực",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Cấu trúc tế bào nhân sơ và tế bào nhân thực"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Cấu trúc tế bào nhân sơ và tế bào nhân thực",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Cấu trúc tế bào nhân sơ và tế bào nhân thực)"
                       ]
                     },
                     {
                       "name": "Bài 3: Trao đổi chất và chuyển hóa năng lượng ở tế bào",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Trao đổi chất và chuyển hóa năng lượng ở tế bào"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Trao đổi chất và chuyển hóa năng lượng ở tế bào",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Trao đổi chất và chuyển hóa năng lượng ở tế bào)"
                       ]
                     }
                   ]
@@ -2319,13 +2641,15 @@
                     {
                       "name": "Bài 1: Chu kì tế bào và Quá trình nguyên phân",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Chu kì tế bào và Quá trình nguyên phân"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Chu kì tế bào và Quá trình nguyên phân",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Chu kì tế bào và Quá trình nguyên phân)"
                       ]
                     },
                     {
                       "name": "Bài 2: Giảm phân và Thụ tinh",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Giảm phân và Thụ tinh"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Giảm phân và Thụ tinh",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Giảm phân và Thụ tinh)"
                       ]
                     }
                   ]
@@ -2337,13 +2661,15 @@
                     {
                       "name": "Bài 1: Đặc điểm sinh trưởng và sinh sản của vi sinh vật",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đặc điểm sinh trưởng và sinh sản của vi sinh vật"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Đặc điểm sinh trưởng và sinh sản của vi sinh vật",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Đặc điểm sinh trưởng và sinh sản của vi sinh vật)"
                       ]
                     },
                     {
                       "name": "Bài 2: Cấu trúc và chu trình nhân lên của virus",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Cấu trúc và chu trình nhân lên của virus"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Cấu trúc và chu trình nhân lên của virus",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Cấu trúc và chu trình nhân lên của virus)"
                       ]
                     }
                   ]
@@ -2361,13 +2687,15 @@
                     {
                       "name": "Bài 1: Quang hợp và Hô hấp ở thực vật",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Quang hợp và Hô hấp ở thực vật"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Quang hợp và Hô hấp ở thực vật",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Quang hợp và Hô hấp ở thực vật)"
                       ]
                     },
                     {
                       "name": "Bài 2: Dinh dưỡng, tuần hoàn và bài tiết ở động vật",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Dinh dưỡng, tuần hoàn và bài tiết ở động vật"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Dinh dưỡng, tuần hoàn và bài tiết ở động vật",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Dinh dưỡng, tuần hoàn và bài tiết ở động vật)"
                       ]
                     }
                   ]
@@ -2379,13 +2707,15 @@
                     {
                       "name": "Bài 1: Cảm ứng ở thực vật",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Cảm ứng ở thực vật"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Cảm ứng ở thực vật",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Cảm ứng ở thực vật)"
                       ]
                     },
                     {
                       "name": "Bài 2: Cảm ứng ở động vật và Tập tính",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Cảm ứng ở động vật và Tập tính"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Cảm ứng ở động vật và Tập tính",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Cảm ứng ở động vật và Tập tính)"
                       ]
                     }
                   ]
@@ -2397,13 +2727,15 @@
                     {
                       "name": "Bài 1: Sinh trưởng và phát triển ở thực vật",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Sinh trưởng và phát triển ở thực vật"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Sinh trưởng và phát triển ở thực vật",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Sinh trưởng và phát triển ở thực vật)"
                       ]
                     },
                     {
                       "name": "Bài 2: Sinh trưởng và phát triển ở động vật",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Sinh trưởng và phát triển ở động vật"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Sinh trưởng và phát triển ở động vật",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Sinh trưởng và phát triển ở động vật)"
                       ]
                     }
                   ]
@@ -2415,13 +2747,15 @@
                     {
                       "name": "Bài 1: Sinh sản vô tính và Sinh sản hữu tính ở thực vật",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Sinh sản vô tính và Sinh sản hữu tính ở thực vật"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Sinh sản vô tính và Sinh sản hữu tính ở thực vật",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Sinh sản vô tính và Sinh sản hữu tính ở thực vật)"
                       ]
                     },
                     {
                       "name": "Bài 2: Sinh sản ở động vật",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Sinh sản ở động vật"
+                        "Cấu trúc và cơ chế sinh học cốt lõi: Sinh sản ở động vật",
+                        "Phân tích sơ đồ, thí nghiệm và ứng dụng thực tiễn (Sinh sản ở động vật)"
                       ]
                     }
                   ]
@@ -2439,19 +2773,22 @@
                     {
                       "name": "Bài 1: Gen, mã di truyền, nhân đôi DNA và Phiên mã, Dịch mã",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Gen, mã di truyền, nhân đôi DNA và Phiên mã, Dịch mã"
+                        "Cơ chế sinh học và quy luật trọng tâm: Gen, mã di truyền, nhân đôi DNA và Phiên mã, Dịch mã",
+                        "Bài tập tính toán, phả hệ và phân tích dữ liệu thực nghiệm (Gen, mã di truyền, nhân đôi DNA và Phiên mã, Dịch mã)"
                       ]
                     },
                     {
                       "name": "Bài 2: Đột biến gen và Đột biến nhiễm sắc thể",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Đột biến gen và Đột biến nhiễm sắc thể"
+                        "Cơ chế sinh học và quy luật trọng tâm: Đột biến gen và Đột biến nhiễm sắc thể",
+                        "Bài tập tính toán, phả hệ và phân tích dữ liệu thực nghiệm (Đột biến gen và Đột biến nhiễm sắc thể)"
                       ]
                     },
                     {
                       "name": "Bài 3: Các quy luật di truyền Men-đen và Di truyền liên kết",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Các quy luật di truyền Men-đen và Di truyền liên kết"
+                        "Cơ chế sinh học và quy luật trọng tâm: Các quy luật di truyền Men-đen và Di truyền liên kết",
+                        "Bài tập tính toán, phả hệ và phân tích dữ liệu thực nghiệm (Các quy luật di truyền Men-đen và Di truyền liên kết)"
                       ]
                     }
                   ]
@@ -2463,13 +2800,15 @@
                     {
                       "name": "Bài 1: Cấu trúc di truyền của quần thể và Định luật Hardy - Weinberg",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Cấu trúc di truyền của quần thể và Định luật Hardy - Weinberg"
+                        "Cơ chế sinh học và quy luật trọng tâm: Cấu trúc di truyền của quần thể và Định luật Hardy - Weinberg",
+                        "Bài tập tính toán, phả hệ và phân tích dữ liệu thực nghiệm (Cấu trúc di truyền của quần thể và Định luật Hardy - Weinberg)"
                       ]
                     },
                     {
                       "name": "Bài 2: Di truyền học người và Ứng dụng công nghệ gen",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Di truyền học người và Ứng dụng công nghệ gen"
+                        "Cơ chế sinh học và quy luật trọng tâm: Di truyền học người và Ứng dụng công nghệ gen",
+                        "Bài tập tính toán, phả hệ và phân tích dữ liệu thực nghiệm (Di truyền học người và Ứng dụng công nghệ gen)"
                       ]
                     }
                   ]
@@ -2481,13 +2820,15 @@
                     {
                       "name": "Bài 1: Các bằng chứng tiến hóa",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Các bằng chứng tiến hóa"
+                        "Cơ chế sinh học và quy luật trọng tâm: Các bằng chứng tiến hóa",
+                        "Bài tập tính toán, phả hệ và phân tích dữ liệu thực nghiệm (Các bằng chứng tiến hóa)"
                       ]
                     },
                     {
                       "name": "Bài 2: Thuyết tiến hóa hiện đại và Các nhân tố tiến hóa",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thuyết tiến hóa hiện đại và Các nhân tố tiến hóa"
+                        "Cơ chế sinh học và quy luật trọng tâm: Thuyết tiến hóa hiện đại và Các nhân tố tiến hóa",
+                        "Bài tập tính toán, phả hệ và phân tích dữ liệu thực nghiệm (Thuyết tiến hóa hiện đại và Các nhân tố tiến hóa)"
                       ]
                     }
                   ]
@@ -2499,13 +2840,15 @@
                     {
                       "name": "Bài 1: Môi trường sống, các nhân tố sinh thái và Quần thể sinh vật",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Môi trường sống, các nhân tố sinh thái và Quần thể sinh vật"
+                        "Cơ chế sinh học và quy luật trọng tâm: Môi trường sống, các nhân tố sinh thái và Quần thể sinh vật",
+                        "Bài tập tính toán, phả hệ và phân tích dữ liệu thực nghiệm (Môi trường sống, các nhân tố sinh thái và Quần thể sinh vật)"
                       ]
                     },
                     {
                       "name": "Bài 2: Quần xã sinh vật và Hệ sinh thái",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Quần xã sinh vật và Hệ sinh thái"
+                        "Cơ chế sinh học và quy luật trọng tâm: Quần xã sinh vật và Hệ sinh thái",
+                        "Bài tập tính toán, phả hệ và phân tích dữ liệu thực nghiệm (Quần xã sinh vật và Hệ sinh thái)"
                       ]
                     }
                   ]
@@ -2537,13 +2880,15 @@
                     {
                       "name": "Bài 1: Khái niệm hiện thực lịch sử và nhận thức lịch sử",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Khái niệm hiện thực lịch sử và nhận thức lịch sử"
+                        "Bối cảnh lịch sử và diễn biến chính: Khái niệm hiện thực lịch sử và nhận thức lịch sử",
+                        "Ý nghĩa lịch sử, đánh giá nhân vật và liên hệ thực tiễn (Khái niệm hiện thực lịch sử và nhận thức lịch sử)"
                       ]
                     },
                     {
                       "name": "Bài 2: Vai trò của lịch sử đối với đời sống xã hội",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Vai trò của lịch sử đối với đời sống xã hội"
+                        "Bối cảnh lịch sử và diễn biến chính: Vai trò của lịch sử đối với đời sống xã hội",
+                        "Ý nghĩa lịch sử, đánh giá nhân vật và liên hệ thực tiễn (Vai trò của lịch sử đối với đời sống xã hội)"
                       ]
                     }
                   ]
@@ -2555,13 +2900,15 @@
                     {
                       "name": "Bài 1: Văn minh phương Đông cổ đại",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Văn minh phương Đông cổ đại"
+                        "Bối cảnh lịch sử và diễn biến chính: Văn minh phương Đông cổ đại",
+                        "Ý nghĩa lịch sử, đánh giá nhân vật và liên hệ thực tiễn (Văn minh phương Đông cổ đại)"
                       ]
                     },
                     {
                       "name": "Bài 2: Văn minh Hy Lạp - La Mã và Tây Âu thời Phục hưng",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Văn minh Hy Lạp - La Mã và Tây Âu thời Phục hưng"
+                        "Bối cảnh lịch sử và diễn biến chính: Văn minh Hy Lạp - La Mã và Tây Âu thời Phục hưng",
+                        "Ý nghĩa lịch sử, đánh giá nhân vật và liên hệ thực tiễn (Văn minh Hy Lạp - La Mã và Tây Âu thời Phục hưng)"
                       ]
                     }
                   ]
@@ -2573,13 +2920,15 @@
                     {
                       "name": "Bài 1: Hành trình phát triển văn minh Đông Nam Á",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Hành trình phát triển văn minh Đông Nam Á"
+                        "Bối cảnh lịch sử và diễn biến chính: Hành trình phát triển văn minh Đông Nam Á",
+                        "Ý nghĩa lịch sử, đánh giá nhân vật và liên hệ thực tiễn (Hành trình phát triển văn minh Đông Nam Á)"
                       ]
                     },
                     {
                       "name": "Bài 2: Văn minh Đại Việt qua các triều đại",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Văn minh Đại Việt qua các triều đại"
+                        "Bối cảnh lịch sử và diễn biến chính: Văn minh Đại Việt qua các triều đại",
+                        "Ý nghĩa lịch sử, đánh giá nhân vật và liên hệ thực tiễn (Văn minh Đại Việt qua các triều đại)"
                       ]
                     }
                   ]
@@ -2597,13 +2946,15 @@
                     {
                       "name": "Bài 1: Các cuộc cách mạng tư sản tiêu biểu",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Các cuộc cách mạng tư sản tiêu biểu"
+                        "Bối cảnh lịch sử và diễn biến chính: Các cuộc cách mạng tư sản tiêu biểu",
+                        "Ý nghĩa lịch sử, đánh giá nhân vật và liên hệ thực tiễn (Các cuộc cách mạng tư sản tiêu biểu)"
                       ]
                     },
                     {
                       "name": "Bài 2: Sự xác lập và mở rộng của chủ nghĩa tư bản",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Sự xác lập và mở rộng của chủ nghĩa tư bản"
+                        "Bối cảnh lịch sử và diễn biến chính: Sự xác lập và mở rộng của chủ nghĩa tư bản",
+                        "Ý nghĩa lịch sử, đánh giá nhân vật và liên hệ thực tiễn (Sự xác lập và mở rộng của chủ nghĩa tư bản)"
                       ]
                     }
                   ]
@@ -2615,13 +2966,15 @@
                     {
                       "name": "Bài 1: Quá trình xâm lược của chủ nghĩa thực dân vào Đông Nam Á",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Quá trình xâm lược của chủ nghĩa thực dân vào Đông Nam Á"
+                        "Bối cảnh lịch sử và diễn biến chính: Quá trình xâm lược của chủ nghĩa thực dân vào Đông Nam Á",
+                        "Ý nghĩa lịch sử, đánh giá nhân vật và liên hệ thực tiễn (Quá trình xâm lược của chủ nghĩa thực dân vào Đông Nam Á)"
                       ]
                     },
                     {
                       "name": "Bài 2: Chiến tranh thế giới thứ nhất và Chiến tranh thế giới thứ hai",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Chiến tranh thế giới thứ nhất và Chiến tranh thế giới thứ hai"
+                        "Bối cảnh lịch sử và diễn biến chính: Chiến tranh thế giới thứ nhất và Chiến tranh thế giới thứ hai",
+                        "Ý nghĩa lịch sử, đánh giá nhân vật và liên hệ thực tiễn (Chiến tranh thế giới thứ nhất và Chiến tranh thế giới thứ hai)"
                       ]
                     }
                   ]
@@ -2633,13 +2986,15 @@
                     {
                       "name": "Bài 1: Phong trào giải phóng dân tộc ở châu Á đầu thế kỉ XX",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Phong trào giải phóng dân tộc ở châu Á đầu thế kỉ XX"
+                        "Bối cảnh lịch sử và diễn biến chính: Phong trào giải phóng dân tộc ở châu Á đầu thế kỉ XX",
+                        "Ý nghĩa lịch sử, đánh giá nhân vật và liên hệ thực tiễn (Phong trào giải phóng dân tộc ở châu Á đầu thế kỉ XX)"
                       ]
                     },
                     {
                       "name": "Bài 2: Phong trào yêu nước Việt Nam đầu thế kỉ XX",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Phong trào yêu nước Việt Nam đầu thế kỉ XX"
+                        "Bối cảnh lịch sử và diễn biến chính: Phong trào yêu nước Việt Nam đầu thế kỉ XX",
+                        "Ý nghĩa lịch sử, đánh giá nhân vật và liên hệ thực tiễn (Phong trào yêu nước Việt Nam đầu thế kỉ XX)"
                       ]
                     }
                   ]
@@ -2657,13 +3012,15 @@
                     {
                       "name": "Bài 1: Trật tự hai cực I-an-ta và Chiến tranh Lạnh",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Trật tự hai cực I-an-ta và Chiến tranh Lạnh"
+                        "Bối cảnh lịch sử, diễn biến và sự kiện cốt lõi: Trật tự hai cực I-an-ta và Chiến tranh Lạnh",
+                        "Ý nghĩa lịch sử, nguyên nhân thắng lợi và bài học kinh nghiệm (Trật tự hai cực I-an-ta và Chiến tranh Lạnh)"
                       ]
                     },
                     {
                       "name": "Bài 2: Liên Hợp Quốc và Xu thế đa cực thế giới",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Liên Hợp Quốc và Xu thế đa cực thế giới"
+                        "Bối cảnh lịch sử, diễn biến và sự kiện cốt lõi: Liên Hợp Quốc và Xu thế đa cực thế giới",
+                        "Ý nghĩa lịch sử, nguyên nhân thắng lợi và bài học kinh nghiệm (Liên Hợp Quốc và Xu thế đa cực thế giới)"
                       ]
                     }
                   ]
@@ -2675,13 +3032,15 @@
                     {
                       "name": "Bài 1: Đảng Cộng sản Việt Nam ra đời và Cách mạng Tháng Tám 1945",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đảng Cộng sản Việt Nam ra đời và Cách mạng Tháng Tám 1945"
+                        "Bối cảnh lịch sử, diễn biến và sự kiện cốt lõi: Đảng Cộng sản Việt Nam ra đời và Cách mạng Tháng Tám 1945",
+                        "Ý nghĩa lịch sử, nguyên nhân thắng lợi và bài học kinh nghiệm (Đảng Cộng sản Việt Nam ra đời và Cách mạng Tháng Tám 1945)"
                       ]
                     },
                     {
                       "name": "Bài 2: Kháng chiến chống Pháp và chống Mỹ (1945 - 1975)",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Kháng chiến chống Pháp và chống Mỹ (1945 - 1975)"
+                        "Bối cảnh lịch sử, diễn biến và sự kiện cốt lõi: Kháng chiến chống Pháp và chống Mỹ (1945 - 1975)",
+                        "Ý nghĩa lịch sử, nguyên nhân thắng lợi và bài học kinh nghiệm (Kháng chiến chống Pháp và chống Mỹ (1945 - 1975))"
                       ]
                     }
                   ]
@@ -2693,13 +3052,15 @@
                     {
                       "name": "Bài 1: Đường lối Đổi mới toàn diện của Đảng từ Đại hội VI",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đường lối Đổi mới toàn diện của Đảng từ Đại hội VI"
+                        "Bối cảnh lịch sử, diễn biến và sự kiện cốt lõi: Đường lối Đổi mới toàn diện của Đảng từ Đại hội VI",
+                        "Ý nghĩa lịch sử, nguyên nhân thắng lợi và bài học kinh nghiệm (Đường lối Đổi mới toàn diện của Đảng từ Đại hội VI)"
                       ]
                     },
                     {
                       "name": "Bài 2: Thành tựu bảo vệ chủ quyền biên giới, biển đảo",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thành tựu bảo vệ chủ quyền biên giới, biển đảo"
+                        "Bối cảnh lịch sử, diễn biến và sự kiện cốt lõi: Thành tựu bảo vệ chủ quyền biên giới, biển đảo",
+                        "Ý nghĩa lịch sử, nguyên nhân thắng lợi và bài học kinh nghiệm (Thành tựu bảo vệ chủ quyền biên giới, biển đảo)"
                       ]
                     }
                   ]
@@ -2724,13 +3085,15 @@
                     {
                       "name": "Bài 1: Một số phương pháp biểu hiện các đối tượng địa lí trên bản đồ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Một số phương pháp biểu hiện các đối tượng địa lí trên bản đồ"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Một số phương pháp biểu hiện các đối tượng địa lí trên bản đồ",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Một số phương pháp biểu hiện các đối tượng địa lí trên bản đồ)"
                       ]
                     },
                     {
                       "name": "Bài 2: Ứng dụng GPS và Hệ thống thông tin địa lí (GIS)",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Ứng dụng GPS và Hệ thống thông tin địa lí (GIS)"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Ứng dụng GPS và Hệ thống thông tin địa lí (GIS)",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Ứng dụng GPS và Hệ thống thông tin địa lí (GIS))"
                       ]
                     }
                   ]
@@ -2742,19 +3105,22 @@
                     {
                       "name": "Bài 1: Thạch quyển và tác động của nội lực, ngoại lực",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Thạch quyển và tác động của nội lực, ngoại lực"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Thạch quyển và tác động của nội lực, ngoại lực",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Thạch quyển và tác động của nội lực, ngoại lực)"
                       ]
                     },
                     {
                       "name": "Bài 2: Khí quyển, khí áp, gió và các đới khí hậu trên Trái Đất",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Khí quyển, khí áp, gió và các đới khí hậu trên Trái Đất"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Khí quyển, khí áp, gió và các đới khí hậu trên Trái Đất",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Khí quyển, khí áp, gió và các đới khí hậu trên Trái Đất)"
                       ]
                     },
                     {
                       "name": "Bài 3: Thủy quyển và chế độ nước sông, sóng, thủy triều, dòng biển",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Thủy quyển và chế độ nước sông, sóng, thủy triều, dòng biển"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Thủy quyển và chế độ nước sông, sóng, thủy triều, dòng biển",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Thủy quyển và chế độ nước sông, sóng, thủy triều, dòng biển)"
                       ]
                     }
                   ]
@@ -2766,13 +3132,15 @@
                     {
                       "name": "Bài 1: Thổ nhưỡng quyển và các nhân tố hình thành đất",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Thổ nhưỡng quyển và các nhân tố hình thành đất"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Thổ nhưỡng quyển và các nhân tố hình thành đất",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Thổ nhưỡng quyển và các nhân tố hình thành đất)"
                       ]
                     },
                     {
                       "name": "Bài 2: Sinh quyển và các quy luật địa lí chung của Trái Đất",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Sinh quyển và các quy luật địa lí chung của Trái Đất"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Sinh quyển và các quy luật địa lí chung của Trái Đất",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Sinh quyển và các quy luật địa lí chung của Trái Đất)"
                       ]
                     }
                   ]
@@ -2784,13 +3152,15 @@
                     {
                       "name": "Bài 1: Gia tăng dân số và cơ cấu dân số",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Gia tăng dân số và cơ cấu dân số"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Gia tăng dân số và cơ cấu dân số",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Gia tăng dân số và cơ cấu dân số)"
                       ]
                     },
                     {
                       "name": "Bài 2: Phân bố dân cư và quá trình đô thị hóa",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Phân bố dân cư và quá trình đô thị hóa"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Phân bố dân cư và quá trình đô thị hóa",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Phân bố dân cư và quá trình đô thị hóa)"
                       ]
                     }
                   ]
@@ -2808,13 +3178,15 @@
                     {
                       "name": "Bài 1: Điều kiện tự nhiên và kinh tế - xã hội khu vực Mỹ Latinh",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Điều kiện tự nhiên và kinh tế - xã hội khu vực Mỹ Latinh"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Điều kiện tự nhiên và kinh tế - xã hội khu vực Mỹ Latinh",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Điều kiện tự nhiên và kinh tế - xã hội khu vực Mỹ Latinh)"
                       ]
                     },
                     {
                       "name": "Bài 2: Liên minh châu Âu (EU) – Một tổ chức liên kết khu vực lớn",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Liên minh châu Âu (EU) – Một tổ chức liên kết khu vực lớn"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Liên minh châu Âu (EU) – Một tổ chức liên kết khu vực lớn",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Liên minh châu Âu (EU) – Một tổ chức liên kết khu vực lớn)"
                       ]
                     }
                   ]
@@ -2826,13 +3198,15 @@
                     {
                       "name": "Bài 1: Tự nhiên, dân cư và kinh tế khu vực Đông Nam Á",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Tự nhiên, dân cư và kinh tế khu vực Đông Nam Á"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Tự nhiên, dân cư và kinh tế khu vực Đông Nam Á",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Tự nhiên, dân cư và kinh tế khu vực Đông Nam Á)"
                       ]
                     },
                     {
                       "name": "Bài 2: Hiệp hội các quốc gia Đông Nam Á (ASEAN)",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Hiệp hội các quốc gia Đông Nam Á (ASEAN)"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Hiệp hội các quốc gia Đông Nam Á (ASEAN)",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Hiệp hội các quốc gia Đông Nam Á (ASEAN))"
                       ]
                     }
                   ]
@@ -2844,13 +3218,15 @@
                     {
                       "name": "Bài 1: Tự nhiên, dân cư và quy mô kinh tế Hoa Kỳ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Tự nhiên, dân cư và quy mô kinh tế Hoa Kỳ"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Tự nhiên, dân cư và quy mô kinh tế Hoa Kỳ",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Tự nhiên, dân cư và quy mô kinh tế Hoa Kỳ)"
                       ]
                     },
                     {
                       "name": "Bài 2: Các ngành kinh tế nông nghiệp, công nghiệp, dịch vụ Hoa Kỳ",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Các ngành kinh tế nông nghiệp, công nghiệp, dịch vụ Hoa Kỳ"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Các ngành kinh tế nông nghiệp, công nghiệp, dịch vụ Hoa Kỳ",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Các ngành kinh tế nông nghiệp, công nghiệp, dịch vụ Hoa Kỳ)"
                       ]
                     }
                   ]
@@ -2862,13 +3238,15 @@
                     {
                       "name": "Bài 1: Nhật Bản – Nền kinh tế tri thức và công nghệ cao",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Nhật Bản – Nền kinh tế tri thức và công nghệ cao"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Nhật Bản – Nền kinh tế tri thức và công nghệ cao",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Nhật Bản – Nền kinh tế tri thức và công nghệ cao)"
                       ]
                     },
                     {
                       "name": "Bài 2: Trung Quốc – Nền kinh tế có tốc độ tăng trưởng hàng đầu",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Trung Quốc – Nền kinh tế có tốc độ tăng trưởng hàng đầu"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và quy luật: Trung Quốc – Nền kinh tế có tốc độ tăng trưởng hàng đầu",
+                        "Kĩ năng khai thác Atlat, bảng số liệu và biểu đồ (Trung Quốc – Nền kinh tế có tốc độ tăng trưởng hàng đầu)"
                       ]
                     }
                   ]
@@ -2886,13 +3264,15 @@
                     {
                       "name": "Bài 1: Vị trí địa lí và phạm vi lãnh thổ Việt Nam",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Vị trí địa lí và phạm vi lãnh thổ Việt Nam"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và thế mạnh vùng: Vị trí địa lí và phạm vi lãnh thổ Việt Nam",
+                        "Kĩ năng phân tích bảng số liệu, biểu đồ và liên hệ thực tiễn (Vị trí địa lí và phạm vi lãnh thổ Việt Nam)"
                       ]
                     },
                     {
                       "name": "Bài 2: Thiên nhiên nhiệt đới ẩm gió mùa và Đất nước nhiều đồi núi",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Thiên nhiên nhiệt đới ẩm gió mùa và Đất nước nhiều đồi núi"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và thế mạnh vùng: Thiên nhiên nhiệt đới ẩm gió mùa và Đất nước nhiều đồi núi",
+                        "Kĩ năng phân tích bảng số liệu, biểu đồ và liên hệ thực tiễn (Thiên nhiên nhiệt đới ẩm gió mùa và Đất nước nhiều đồi núi)"
                       ]
                     }
                   ]
@@ -2904,13 +3284,15 @@
                     {
                       "name": "Bài 1: Đặc điểm dân số và phân bố dân cư Việt Nam",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đặc điểm dân số và phân bố dân cư Việt Nam"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và thế mạnh vùng: Đặc điểm dân số và phân bố dân cư Việt Nam",
+                        "Kĩ năng phân tích bảng số liệu, biểu đồ và liên hệ thực tiễn (Đặc điểm dân số và phân bố dân cư Việt Nam)"
                       ]
                     },
                     {
                       "name": "Bài 2: Lao động, việc làm và chất lượng cuộc sống",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Lao động, việc làm và chất lượng cuộc sống"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và thế mạnh vùng: Lao động, việc làm và chất lượng cuộc sống",
+                        "Kĩ năng phân tích bảng số liệu, biểu đồ và liên hệ thực tiễn (Lao động, việc làm và chất lượng cuộc sống)"
                       ]
                     }
                   ]
@@ -2922,19 +3304,22 @@
                     {
                       "name": "Bài 1: Chuyển dịch cơ cấu nông nghiệp, lâm nghiệp và thủy sản",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Chuyển dịch cơ cấu nông nghiệp, lâm nghiệp và thủy sản"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và thế mạnh vùng: Chuyển dịch cơ cấu nông nghiệp, lâm nghiệp và thủy sản",
+                        "Kĩ năng phân tích bảng số liệu, biểu đồ và liên hệ thực tiễn (Chuyển dịch cơ cấu nông nghiệp, lâm nghiệp và thủy sản)"
                       ]
                     },
                     {
                       "name": "Bài 2: Phát triển các ngành công nghiệp năng lượng và chế biến",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Phát triển các ngành công nghiệp năng lượng và chế biến"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và thế mạnh vùng: Phát triển các ngành công nghiệp năng lượng và chế biến",
+                        "Kĩ năng phân tích bảng số liệu, biểu đồ và liên hệ thực tiễn (Phát triển các ngành công nghiệp năng lượng và chế biến)"
                       ]
                     },
                     {
                       "name": "Bài 3: Giao thông vận tải, thương mại và du lịch Việt Nam",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Giao thông vận tải, thương mại và du lịch Việt Nam"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và thế mạnh vùng: Giao thông vận tải, thương mại và du lịch Việt Nam",
+                        "Kĩ năng phân tích bảng số liệu, biểu đồ và liên hệ thực tiễn (Giao thông vận tải, thương mại và du lịch Việt Nam)"
                       ]
                     }
                   ]
@@ -2946,19 +3331,22 @@
                     {
                       "name": "Bài 1: Vùng Trung du và miền núi Bắc Bộ, Đồng bằng sông Hồng",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Vùng Trung du và miền núi Bắc Bộ, Đồng bằng sông Hồng"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và thế mạnh vùng: Vùng Trung du và miền núi Bắc Bộ, Đồng bằng sông Hồng",
+                        "Kĩ năng phân tích bảng số liệu, biểu đồ và liên hệ thực tiễn (Vùng Trung du và miền núi Bắc Bộ, Đồng bằng sông Hồng)"
                       ]
                     },
                     {
                       "name": "Bài 2: Vùng Duyên hải miền Trung và Tây Nguyên",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Vùng Duyên hải miền Trung và Tây Nguyên"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và thế mạnh vùng: Vùng Duyên hải miền Trung và Tây Nguyên",
+                        "Kĩ năng phân tích bảng số liệu, biểu đồ và liên hệ thực tiễn (Vùng Duyên hải miền Trung và Tây Nguyên)"
                       ]
                     },
                     {
                       "name": "Bài 3: Vùng Đông Nam Bộ và Đồng bằng sông Cửu Long",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Vùng Đông Nam Bộ và Đồng bằng sông Cửu Long"
+                        "Đặc điểm tự nhiên, kinh tế - xã hội và thế mạnh vùng: Vùng Đông Nam Bộ và Đồng bằng sông Cửu Long",
+                        "Kĩ năng phân tích bảng số liệu, biểu đồ và liên hệ thực tiễn (Vùng Đông Nam Bộ và Đồng bằng sông Cửu Long)"
                       ]
                     }
                   ]
@@ -2983,13 +3371,15 @@
                     {
                       "name": "Bài 1: Các chủ thể trong nền kinh tế thị trường",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Các chủ thể trong nền kinh tế thị trường"
+                        "Khái niệm, đặc điểm và quy định pháp luật về Các chủ thể trong nền kinh tế thị trường",
+                        "Phân tích tình huống thực tiễn và trách nhiệm công dân (Các chủ thể trong nền kinh tế thị trường)"
                       ]
                     },
                     {
                       "name": "Bài 2: Hoạt động kinh tế cơ bản của xã hội",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Hoạt động kinh tế cơ bản của xã hội"
+                        "Khái niệm, đặc điểm và quy định pháp luật về Hoạt động kinh tế cơ bản của xã hội",
+                        "Phân tích tình huống thực tiễn và trách nhiệm công dân (Hoạt động kinh tế cơ bản của xã hội)"
                       ]
                     }
                   ]
@@ -3001,13 +3391,15 @@
                     {
                       "name": "Bài 1: Khái niệm thị trường và các chức năng của thị trường",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Khái niệm thị trường và các chức năng của thị trường"
+                        "Khái niệm, đặc điểm và quy định pháp luật về Khái niệm thị trường và các chức năng của thị trường",
+                        "Phân tích tình huống thực tiễn và trách nhiệm công dân (Khái niệm thị trường và các chức năng của thị trường)"
                       ]
                     },
                     {
                       "name": "Bài 2: Cơ chế thị trường và giá cả thị trường",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Cơ chế thị trường và giá cả thị trường"
+                        "Khái niệm, đặc điểm và quy định pháp luật về Cơ chế thị trường và giá cả thị trường",
+                        "Phân tích tình huống thực tiễn và trách nhiệm công dân (Cơ chế thị trường và giá cả thị trường)"
                       ]
                     }
                   ]
@@ -3019,13 +3411,15 @@
                     {
                       "name": "Bài 1: Đặc điểm hệ thống chính trị Việt Nam",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đặc điểm hệ thống chính trị Việt Nam"
+                        "Khái niệm, đặc điểm và quy định pháp luật về Đặc điểm hệ thống chính trị Việt Nam",
+                        "Phân tích tình huống thực tiễn và trách nhiệm công dân (Đặc điểm hệ thống chính trị Việt Nam)"
                       ]
                     },
                     {
                       "name": "Bài 2: Hiến pháp 2013 và quyền con người, quyền cơ bản của công dân",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Hiến pháp 2013 và quyền con người, quyền cơ bản của công dân"
+                        "Khái niệm, đặc điểm và quy định pháp luật về Hiến pháp 2013 và quyền con người, quyền cơ bản của công dân",
+                        "Phân tích tình huống thực tiễn và trách nhiệm công dân (Hiến pháp 2013 và quyền con người, quyền cơ bản của công dân)"
                       ]
                     }
                   ]
@@ -3043,19 +3437,22 @@
                     {
                       "name": "Bài 1: Cạnh tranh lành mạnh và cạnh tranh không lành mạnh",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Cạnh tranh lành mạnh và cạnh tranh không lành mạnh"
+                        "Khái niệm, đặc điểm và quy định pháp luật về Cạnh tranh lành mạnh và cạnh tranh không lành mạnh",
+                        "Phân tích tình huống thực tiễn và trách nhiệm công dân (Cạnh tranh lành mạnh và cạnh tranh không lành mạnh)"
                       ]
                     },
                     {
                       "name": "Bài 2: Cung – cầu và giá cả trong nền kinh tế",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Cung – cầu và giá cả trong nền kinh tế"
+                        "Khái niệm, đặc điểm và quy định pháp luật về Cung – cầu và giá cả trong nền kinh tế",
+                        "Phân tích tình huống thực tiễn và trách nhiệm công dân (Cung – cầu và giá cả trong nền kinh tế)"
                       ]
                     },
                     {
                       "name": "Bài 3: Lạm phát, thất nghiệp và các chính sách điều tiết",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 3: Lạm phát, thất nghiệp và các chính sách điều tiết"
+                        "Khái niệm, đặc điểm và quy định pháp luật về Lạm phát, thất nghiệp và các chính sách điều tiết",
+                        "Phân tích tình huống thực tiễn và trách nhiệm công dân (Lạm phát, thất nghiệp và các chính sách điều tiết)"
                       ]
                     }
                   ]
@@ -3067,13 +3464,15 @@
                     {
                       "name": "Bài 1: Đặc điểm thị trường lao động và thị trường việc làm",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Đặc điểm thị trường lao động và thị trường việc làm"
+                        "Khái niệm, đặc điểm và quy định pháp luật về Đặc điểm thị trường lao động và thị trường việc làm",
+                        "Phân tích tình huống thực tiễn và trách nhiệm công dân (Đặc điểm thị trường lao động và thị trường việc làm)"
                       ]
                     },
                     {
                       "name": "Bài 2: Quyền và nghĩa vụ của người lao động và người sử dụng lao động",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Quyền và nghĩa vụ của người lao động và người sử dụng lao động"
+                        "Khái niệm, đặc điểm và quy định pháp luật về Quyền và nghĩa vụ của người lao động và người sử dụng lao động",
+                        "Phân tích tình huống thực tiễn và trách nhiệm công dân (Quyền và nghĩa vụ của người lao động và người sử dụng lao động)"
                       ]
                     }
                   ]
@@ -3085,13 +3484,15 @@
                     {
                       "name": "Bài 1: Quyền bình đẳng về giới tính, dân tộc và tôn giáo",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Quyền bình đẳng về giới tính, dân tộc và tôn giáo"
+                        "Khái niệm, đặc điểm và quy định pháp luật về Quyền bình đẳng về giới tính, dân tộc và tôn giáo",
+                        "Phân tích tình huống thực tiễn và trách nhiệm công dân (Quyền bình đẳng về giới tính, dân tộc và tôn giáo)"
                       ]
                     },
                     {
                       "name": "Bài 2: Bình đẳng trong kinh doanh và lao động",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Bình đẳng trong kinh doanh và lao động"
+                        "Khái niệm, đặc điểm và quy định pháp luật về Bình đẳng trong kinh doanh và lao động",
+                        "Phân tích tình huống thực tiễn và trách nhiệm công dân (Bình đẳng trong kinh doanh và lao động)"
                       ]
                     }
                   ]
@@ -3109,13 +3510,15 @@
                     {
                       "name": "Bài 1: Các chỉ tiêu đo lường tăng trưởng kinh tế: GDP, GNI, GDP/người",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Các chỉ tiêu đo lường tăng trưởng kinh tế: GDP, GNI, GDP/người"
+                        "Khái niệm, chỉ tiêu và quy định pháp luật về Các chỉ tiêu đo lường tăng trưởng kinh tế: GDP, GNI, GDP/người",
+                        "Vận dụng giải quyết tình huống kinh tế - pháp luật thực tiễn (Các chỉ tiêu đo lường tăng trưởng kinh tế: GDP, GNI, GDP/người)"
                       ]
                     },
                     {
                       "name": "Bài 2: Phát triển kinh tế gắn với tiến bộ xã hội và bảo vệ môi trường",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Phát triển kinh tế gắn với tiến bộ xã hội và bảo vệ môi trường"
+                        "Khái niệm, chỉ tiêu và quy định pháp luật về Phát triển kinh tế gắn với tiến bộ xã hội và bảo vệ môi trường",
+                        "Vận dụng giải quyết tình huống kinh tế - pháp luật thực tiễn (Phát triển kinh tế gắn với tiến bộ xã hội và bảo vệ môi trường)"
                       ]
                     }
                   ]
@@ -3127,13 +3530,15 @@
                     {
                       "name": "Bài 1: Các hình thức hội nhập kinh tế quốc tế: WTO, CPTPP, EVFTA",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Các hình thức hội nhập kinh tế quốc tế: WTO, CPTPP, EVFTA"
+                        "Khái niệm, chỉ tiêu và quy định pháp luật về Các hình thức hội nhập kinh tế quốc tế: WTO, CPTPP, EVFTA",
+                        "Vận dụng giải quyết tình huống kinh tế - pháp luật thực tiễn (Các hình thức hội nhập kinh tế quốc tế: WTO, CPTPP, EVFTA)"
                       ]
                     },
                     {
                       "name": "Bài 2: Vai trò của các loại hình bảo hiểm trong xã hội",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Vai trò của các loại hình bảo hiểm trong xã hội"
+                        "Khái niệm, chỉ tiêu và quy định pháp luật về Vai trò của các loại hình bảo hiểm trong xã hội",
+                        "Vận dụng giải quyết tình huống kinh tế - pháp luật thực tiễn (Vai trò của các loại hình bảo hiểm trong xã hội)"
                       ]
                     }
                   ]
@@ -3145,13 +3550,15 @@
                     {
                       "name": "Bài 1: Quyền học tập, sáng tạo và phát triển của công dân",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 1: Quyền học tập, sáng tạo và phát triển của công dân"
+                        "Khái niệm, chỉ tiêu và quy định pháp luật về Quyền học tập, sáng tạo và phát triển của công dân",
+                        "Vận dụng giải quyết tình huống kinh tế - pháp luật thực tiễn (Quyền học tập, sáng tạo và phát triển của công dân)"
                       ]
                     },
                     {
                       "name": "Bài 2: Nghĩa vụ bảo vệ môi trường và bảo tồn di sản văn hóa",
                       "patterns": [
-                        "Dạng 1: Trọng tâm lý thuyết & Phương pháp giải Bài 2: Nghĩa vụ bảo vệ môi trường và bảo tồn di sản văn hóa"
+                        "Khái niệm, chỉ tiêu và quy định pháp luật về Nghĩa vụ bảo vệ môi trường và bảo tồn di sản văn hóa",
+                        "Vận dụng giải quyết tình huống kinh tế - pháp luật thực tiễn (Nghĩa vụ bảo vệ môi trường và bảo tồn di sản văn hóa)"
                       ]
                     }
                   ]
