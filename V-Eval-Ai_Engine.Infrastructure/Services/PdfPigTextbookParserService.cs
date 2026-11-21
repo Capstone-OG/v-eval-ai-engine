@@ -985,7 +985,8 @@ NHIỆM VỤ BẮT BUỘC:
    - Một cuốn sách SGK {totalPages} trang luôn có từ 4 đến 8 Chương và TỔNG CỘNG TỪ 10 ĐẾN 25 BÀI HỌC.
    - Mỗi Chương BẮT BUỘC phải trích xuất TOÀN BỘ tất cả các bài học con (Bài 1, Bài 2, Bài 3, Bài 4...) có trong mục lục của chương đó!
    - CẢNH BÁO: TUYỆT ĐỐI CẤM GỘP BÀI, TUYỆT ĐỐI CẤM CHỈ LẤY 1 BÀI ĐẠI DIỆN CHO MỖI CHƯƠNG! Nếu chương có 4 bài học, mảng lessons của chương đó BẮT BUỘC phải có đủ 4 phần tử bài học.
-3. Mỗi bài học có từ 2 đến 3 Dạng bài tinh gọn đại diện các mức độ Bloom Taxonomy (1: Nhớ/Nhận biết, 2: Hiểu/Giải thích, 3: Vận dụng/Tính toán, 4: Vận dụng cao/Phân tích).
+3. Số lượng Dạng bài (patterns) của mỗi bài học PHẢI BÁM SÁT ĐÚNG NỘI DUNG THỰC TẾ TRONG SÁCH (bài ngắn chỉ có 1 mảng kiến thức thì trả 1 dạng, bài dài có 4-5 mục/ví dụ thì trả đủ 4-5 dạng — TUYỆT ĐỐI KHÔNG ép cứng 1 dạng hay 2-3 dạng).
+   - QUY TẮC TÊN DẠNG BÀI: Trường ""name"" CHỈ ghi tên bản chất kiến thức/dạng bài (KHÔNG đánh tiền tố ""Dạng 1:"", ""Dạng 2:"" vào dữ liệu gốc vì giao diện FE sẽ tự hiển thị số thứ tự).
 4. Chỉ trả về JSON thuần:
 {{
   ""chapters"": [
@@ -1003,41 +1004,11 @@ NHIỆM VỤ BẮT BUỘC:
           ""keyFormulas"": [""$v = \\frac{{s}}{{t}}$""],
           ""patterns"": [
             {{
-              ""patternCode"": ""C1_B1_D1"",
-              ""name"": ""Dạng 1: Nhận biết khái niệm và hiện tượng cốt lõi"",
+              ""patternCode"": ""C1_B1_P1"",
+              ""name"": ""[Tên mảng kiến thức/dạng bài thực tế trong sách, không ghi Dạng 1:]"",
               ""bloomLevel"": 1,
               ""description"": ""Nhận diện định nghĩa, đơn vị và hiện tượng"",
               ""method"": ""Áp dụng định nghĩa chuẩn GDPT 2018""
-            }},
-            {{
-              ""patternCode"": ""C1_B1_D2"",
-              ""name"": ""Dạng 2: Bài toán định lượng và đồ thị vận dụng"",
-              ""bloomLevel"": 3,
-              ""description"": ""Vận dụng công thức giải các bài toán thực tiễn"",
-              ""method"": ""Lập phương trình và giải""
-            }}
-          ]
-        }},
-        {{
-          ""lessonNumber"": 2,
-          ""title"": ""Bài 2: [Tên bài 2 theo mục lục]"",
-          ""pageStart"": 16,
-          ""pageEnd"": 25,
-          ""keyFormulas"": [],
-          ""patterns"": [
-            {{
-              ""patternCode"": ""C1_B2_D1"",
-              ""name"": ""Dạng 1: Nhận biết tính chất và quy luật"",
-              ""bloomLevel"": 1,
-              ""description"": ""Nhận diện các đặc trưng cốt lõi"",
-              ""method"": ""Áp dụng quy tắc lý thuyết""
-            }},
-            {{
-              ""patternCode"": ""C1_B2_D2"",
-              ""name"": ""Dạng 2: Phân tích bài toán chuyên sâu"",
-              ""bloomLevel"": 2,
-              ""description"": ""Vận dụng phân tích trường hợp cụ thể"",
-              ""method"": ""Quy trình giải quyết vấn đề""
             }}
           ]
         }}

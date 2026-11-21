@@ -1331,3 +1331,14 @@
 
 
 
+
+
+---
+
+### [22/11/2026] - Authentic Grade 10 & 11 CTST Curriculum Framework (529 Dynamic Unnumbered Patterns) & Parser De-Hardcoding
+- **Target Files**: `gdpt2018_dgnl_taxonomy.json`, `PdfPigTextbookParserService.cs`.
+- **Key Deliverables**:
+  1. Upgraded all 236 Grade 10 & 11 lessons across all 9 V-ACT subjects from 1:1 placeholder stubs to **529 authentic, unnumbered CTST patterns** with dynamic per-lesson counts matching the actual textbooks.
+  2. Removed hardcoded pattern counts and `Dạng 1:` / `Dạng 2:` prefixes from `PdfPigTextbookParserService.cs` prompts so pattern numbering is purely a frontend presentation concern.
+  3. Synchronized all Grade 10 & 11 patterns FK-safely into PostgreSQL `v_eval_content."Skills"` (98 in-place stub renames, 130 prefix strips, 430 new authentic patterns inserted).
+  4. **Verification**: `dotnet test --no-restore` passed **65/65** unit tests.
