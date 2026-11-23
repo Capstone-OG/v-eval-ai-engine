@@ -55,6 +55,12 @@
 
 ---
 
+## [23/11/2026]
+- **Tích Hợp Continuous Deployment (Auto-CD) Lên Máy Chủ Ubuntu Docker Server (`veval.io.vn`)**:
+  - Bổ sung file workflow [`.github/workflows/cd-main.yml`](../.github/workflows/cd-main.yml) kích hoạt tự động mỗi khi merge PR vào nhánh `main`.
+  - Thiết lập 2 stage: `ci-verify` (GitHub Cloud Runner) và `deploy-ubuntu` (Self-Hosted Runner mang nhãn `[self-hosted, veval-prod]`) gọi `/data/Capstone/Scripts/deploy_service.sh ai-engine`.
+  - Vận hành cơ chế rebuild độc lập (`--no-deps`), đảm bảo Zero-Downtime, bảo vệ `veval-tunnel` và tự động thu hồi tài nguyên với `docker image prune -f`.
+
 ## [19/11/2026] - Sửa Lỗi Khớp Sai Khối Lớp (Lớp 11 Trả Về Lớp 10) Trong Taxonomy Registry, Loại Bỏ Stub Placeholder & Hỗ Trợ Dấu Tiếng Việt `hoá`/`hóa`
 
 - **Sửa Lỗi Chọn Khối Lớp Chính Xác (`./V-Eval-Ai_Engine.Infrastructure/Services/CurriculumTaxonomyRegistry.cs`)**:

@@ -1,0 +1,55 @@
+name: Continuous Deployment (AI Engine & RAG)
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-ai-engine-prod
+  cancel-in-progress: false
+
+jobs:
+  ci-verify:
+    name: Verify AI Engine Build & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Service Repo
+        uses: actions/checkout@v4
+
+      - name: Checkout System-Repo (gRPC)
+        uses: actions/checkout@v4
+        with:
+          repository: Capstone-OG/System-Repo
+          token: ${{ secrets.GH_PAT || github.token }}
+          path: temp-system-repo
+
+      - name: Setup Shared gRPC Path
+        run: |
+          mkdir -p ../../grpc
+          cp -r temp-system-repo/grpc/* ../../grpc/
+          rm -rf temp-system-repo
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run Tests
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+  deploy-ubuntu:
+    name: Deploy AI Engine & RAG to Ubuntu Server
+    needs: ci-verify
+    runs-on: [self-hosted, veval-prod]
+    steps:
+      - name: Trigger Selective Deployment
+        run: |
+          /data/Capstone/Scripts/deploy/deploy_service.sh ai-engine
+
