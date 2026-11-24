@@ -1304,3 +1304,6 @@
 - **Tạo endpoint API hiển thị (`GET /api/ai-engine/parsed-document`)**: Trả dữ liệu JSON trích xuất từ C# Web API.
 - **Tạo API Upload PDF trực tiếp (`POST /api/ai-engine/upload-pdf`)**: Cho phép upload file PDF từ browser/Swagger và parse toàn bộ nội dung.
 - **Tạo trang UI hiển thị trực quan (`/api/ai-engine/view-exam`)**: Tách code giao diện ra tệp tĩnh `wwwroot/view-exam.html` riêng biệt, gọi API trích xuất và hiển thị kèm LaTeX.
+
+## [24/11/2026]
+- Làm sạch thuật ngữ kỹ thuật (`θ`, `IRT`, `BKT`, `DAG`) trong nhận xét chẩn đoán tại `rag-service/routers/diagnostic.py` và kiểm tra cú pháp thành công.

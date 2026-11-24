@@ -59,7 +59,7 @@ def _generate_rule_based_commentary(
     label = placement_labels.get(placement_class, placement_class)
 
     if not domain_scores:
-        return f"Học sinh được phân lớp vào {label} (ước lượng năng lực θ = {theta_0:.2f})."
+        return f"Học sinh được đề xuất bắt đầu ở {label}."
 
     sorted_domains = sorted(domain_scores, key=lambda d: d.accuracy_pct, reverse=True)
     best = sorted_domains[0]
@@ -67,13 +67,11 @@ def _generate_rule_based_commentary(
 
     if len(sorted_domains) == 1 or best.domain_id == worst.domain_id:
         return (
-            f"Kết quả phân tích cho thấy năng lực tổng quan θ = {theta_0:.2f}. "
             f"Bạn được đề xuất tham gia {label}. "
             f"Lĩnh vực '{best.domain_name}' đạt độ chính xác {best.accuracy_pct:.1f}%."
         )
 
     return (
-        f"Kết quả phân tích cho thấy năng lực tổng quan θ = {theta_0:.2f}. "
         f"Bạn được đề xuất tham gia {label}. "
         f"Thế mạnh nổi bật của bạn là '{best.domain_name}' (độ chính xác {best.accuracy_pct:.1f}%). "
         f"Cần ưu tiên bổ trợ kiến thức ở lĩnh vực '{worst.domain_name}' ({worst.accuracy_pct:.1f}%) "
@@ -105,7 +103,8 @@ def _generate_ai_commentary(
             f"- Điểm mục tiêu: {target_score}/1200\n"
             f"- Kết quả từng phần: {domain_summary}\n\n"
             "Hãy đưa ra nhận xét ngắn gọn (2-3 câu, tiếng Việt), giọng điệu tích cực, sư phạm, chỉ rõ thế mạnh "
-            "và 1 trọng tâm cần ưu tiên cải thiện trong lộ trình học tiếp theo."
+            "và 1 trọng tâm cần ưu tiên cải thiện trong lộ trình học tiếp theo. "
+            "QUAN TRỌNG: Không dùng các ký hiệu hoặc thuật ngữ chuyên môn như IRT, theta, θ, BKT, P(L0), DAG."
         )
         response = llm.invoke(prompt)
         raw_content = response.content
