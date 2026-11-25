@@ -27,17 +27,20 @@ public class PdfPigTextbookParserService : ITextbookParserService
     private readonly IConfiguration _configuration;
     private readonly ILogger<PdfPigTextbookParserService> _logger;
     private readonly ITextbookRepository _repository;
+    private readonly IEmbeddingService _embeddingService;
 
     public PdfPigTextbookParserService(
         HttpClient httpClient,
         IConfiguration configuration,
         ILogger<PdfPigTextbookParserService> logger,
-        ITextbookRepository repository)
+        ITextbookRepository repository,
+        IEmbeddingService embeddingService)
     {
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
         _repository = repository;
+        _embeddingService = embeddingService;
     }
 
     public async Task<TextbookIngestResultDto> ParseAndIngestTextbookAsync(
@@ -356,8 +359,26 @@ public class PdfPigTextbookParserService : ITextbookParserService
         chunk.ImagePlaceholders.Clear();
         state.RunningCharCount += chunk.CharCount;
 
-        await _repository.SavePageChunkAsync(
-            sourceId, pageNumber, state.RunningChunkCount, chunk.Text, domainId, skillId, docType, cancellationToken, chunk);
+        // Cắt trượt gối đầu theo ngữ nghĩa (1000 ký tự, overlap 200) & nhúng vector 768 chiều
+        var subChunks = PgVectorDbService.SplitIntoOverlappingChunks(chunk.Text, chunkSize: 1000, overlap: 200);
+        if (subChunks.Count == 0) return;
+
+        var embeddings = await _embeddingService.EmbedBatchAsync(subChunks, "RETRIEVAL_DOCUMENT", cancellationToken);
+        for (int sIdx = 0; sIdx < subChunks.Count; sIdx++)
+        {
+            if (sIdx > 0) state.RunningChunkCount++;
+            await _repository.SavePageChunkAsync(
+                sourceId,
+                pageNumber,
+                state.RunningChunkCount,
+                subChunks[sIdx],
+                domainId,
+                skillId,
+                docType,
+                cancellationToken,
+                chunk,
+                embeddings[sIdx]);
+        }
     }
 
     private static string BuildTocSample(Dictionary<int, string> digitalPages, int totalPages)
