@@ -649,6 +649,124 @@ public static class TextbookEndpoints
         })
         .WithName("ViewTextbookIngestPage");
 
+        // 6. Backfill Embeddings 768 chiều cho toàn bộ chunk cũ đang có embedding IS NULL
+        async Task<IResult> HandleBackfillEmbeddingsAsync(
+            HttpRequest request,
+            [FromServices] ITextbookRepository repository,
+            [FromServices] IEmbeddingService embeddingService,
+            CancellationToken cancellationToken)
+        {
+            Guid? sourceId = null;
+            int batchSize = 40;
+            int maxBatches = 50;
+
+            if (request.HasJsonContentType())
+            {
+                try
+                {
+                    using var doc = await JsonDocument.ParseAsync(request.Body, cancellationToken: cancellationToken);
+                    var root = doc.RootElement;
+                    if (root.TryGetProperty("sourceId", out var sidProp) && Guid.TryParse(sidProp.GetString(), out var parsedSid))
+                        sourceId = parsedSid;
+                    if (root.TryGetProperty("batchSize", out var bsProp) && bsProp.TryGetInt32(out var bs))
+                        batchSize = Math.Clamp(bs, 5, 100);
+                    if (root.TryGetProperty("maxBatches", out var mbProp) && mbProp.TryGetInt32(out var mb))
+                        maxBatches = Math.Clamp(mb, 1, 200);
+                }
+                catch
+                {
+                    // Cho phép gọi body rỗng
+                }
+            }
+
+            var sw = Stopwatch.StartNew();
+            int totalProcessed = 0;
+            int totalUpdated = 0;
+
+            for (int b = 0; b < maxBatches; b++)
+            {
+                var pending = await repository.GetUnembeddedChunksAsync(sourceId, batchSize, cancellationToken);
+                if (pending.Count == 0) break;
+
+                var texts = pending.Select(p => p.ContentSnippet).ToList();
+                var vectors = await embeddingService.EmbedBatchAsync(texts, "RETRIEVAL_DOCUMENT", cancellationToken);
+
+                for (int i = 0; i < pending.Count; i++)
+                {
+                    totalProcessed++;
+                    var vec = vectors[i];
+                    if (vec is { Length: 768 })
+                    {
+                        await repository.UpdateChunkEmbeddingAsync(pending[i].ChunkId, vec, cancellationToken);
+                        totalUpdated++;
+                    }
+                }
+
+                if (totalUpdated == 0 && b == 0) break;
+            }
+
+            sw.Stop();
+            int remaining = await repository.CountUnembeddedChunksAsync(sourceId, cancellationToken);
+            return Results.Ok(new
+            {
+                sourceId,
+                processed = totalProcessed,
+                updated = totalUpdated,
+                remainingUnembedded = remaining,
+                dimensions = 768,
+                elapsedMs = sw.ElapsedMilliseconds
+            });
+        }
+
+        group.MapPost("/backfill-embeddings", HandleBackfillEmbeddingsAsync).WithName("BackfillTextbookEmbeddings");
+        app.MapPost("/api/ai/textbooks/backfill-embeddings", HandleBackfillEmbeddingsAsync);
+
+        // 7. Truy vấn ngữ nghĩa pgvector HNSW (demo & kiểm thử trực tiếp Top-K đoạn SGK)
+        async Task<IResult> HandleSemanticSearchAsync(
+            HttpRequest request,
+            [FromServices] IVectorDbService vectorDbService,
+            CancellationToken cancellationToken)
+        {
+            string query = string.Empty;
+            string? skillId = null;
+            int limit = 5;
+
+            if (request.HasJsonContentType())
+            {
+                using var doc = await JsonDocument.ParseAsync(request.Body, cancellationToken: cancellationToken);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("query", out var qProp)) query = qProp.GetString() ?? string.Empty;
+                if (root.TryGetProperty("skillId", out var sProp)) skillId = sProp.GetString();
+                if (root.TryGetProperty("limit", out var lProp) && lProp.TryGetInt32(out var lVal)) limit = Math.Clamp(lVal, 1, 20);
+            }
+
+            if (string.IsNullOrWhiteSpace(query))
+                return Results.BadRequest(new { message = "Vui lòng truyền trường 'query' để tìm kiếm ngữ nghĩa." });
+
+            var sw = Stopwatch.StartNew();
+            var hits = await vectorDbService.SearchSimilarChunksAsync(query, skillId, limit, cancellationToken);
+            sw.Stop();
+
+            return Results.Ok(new
+            {
+                query,
+                skillId,
+                count = hits.Count,
+                elapsedMs = sw.ElapsedMilliseconds,
+                results = hits.Select(h => new
+                {
+                    chunkId = h.ChunkId,
+                    sourceId = h.DocumentId,
+                    skillId = h.SkillId,
+                    similarity = Math.Round(h.SimilarityScore, 4),
+                    content = h.Content
+                })
+            });
+        }
+
+        group.MapPost("/search-semantic", HandleSemanticSearchAsync).WithName("SearchTextbookSemantic");
+        app.MapPost("/api/ai/textbooks/search-semantic", HandleSemanticSearchAsync);
+
         return app;
     }
 }

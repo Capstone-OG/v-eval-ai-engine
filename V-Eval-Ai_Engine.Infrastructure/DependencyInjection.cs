@@ -29,8 +29,14 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromMinutes(textbookTimeoutMinutes);
         });
 
-        // Đăng ký Vector Database Service cho RAG
-        services.AddSingleton<IVectorDbService, QdrantVectorDbService>();
+        // Đăng ký dịch vụ Gemini Embedding 768 chiều (MRL + Multi-Key Rotation)
+        services.AddHttpClient<IEmbeddingService, GeminiEmbeddingService>(client =>
+        {
+            client.Timeout = TimeSpan.FromMinutes(2);
+        });
+
+        // Đăng ký Vector Database Service thật trên PostgreSQL pgvector HNSW (thay Qdrant in-memory cũ)
+        services.AddScoped<IVectorDbService, PgVectorDbService>();
 
         // Đăng ký dịch vụ Prompt Template Engine nạp prompt từ file độc lập
         services.AddSingleton<IPromptTemplateService, PromptTemplateService>();
