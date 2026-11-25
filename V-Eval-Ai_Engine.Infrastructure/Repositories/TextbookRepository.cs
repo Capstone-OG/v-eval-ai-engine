@@ -123,15 +123,16 @@ public class TextbookRepository : ITextbookRepository
         string skillId,
         string docType,
         CancellationToken cancellationToken = default,
-        TextbookChunkDto? chunkMetadata = null)
+        TextbookChunkDto? chunkMetadata = null,
+        float[]? embedding = null)
     {
         await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync(cancellationToken);
 
         const string sql = @"
             INSERT INTO v_eval_ai.""KnowledgeVectorChunks""
-            (chunk_id, source_id, domain_id, skill_id, chunk_index, page_number, content_snippet, document_type, char_count, metadata, created_at)
-            VALUES (gen_random_uuid(), @source_id, @domain_id, @skill_id, @chunk_index, @page_number, @content_snippet, @document_type, @char_count, @metadata::jsonb, now());";
+            (chunk_id, source_id, domain_id, skill_id, chunk_index, page_number, content_snippet, embedding, document_type, char_count, metadata, created_at)
+            VALUES (gen_random_uuid(), @source_id, @domain_id, @skill_id, @chunk_index, @page_number, @content_snippet, @embedding::vector, @document_type, @char_count, @metadata::jsonb, now());";
 
         var metaPayload = new
         {
@@ -158,11 +159,86 @@ public class TextbookRepository : ITextbookRepository
         cmd.Parameters.AddWithValue("chunk_index", chunkIndex);
         cmd.Parameters.AddWithValue("page_number", pageNumber);
         cmd.Parameters.AddWithValue("content_snippet", contentSnippet);
+        cmd.Parameters.AddWithValue(
+            "embedding",
+            embedding is { Length: 768 }
+                ? (object)V_Eval_Ai_Engine.Infrastructure.Services.GeminiEmbeddingService.ToPgVectorLiteral(embedding)
+                : DBNull.Value);
         cmd.Parameters.AddWithValue("document_type", (object?)docType ?? "TEXTBOOK");
         cmd.Parameters.AddWithValue("char_count", contentSnippet.Length);
         cmd.Parameters.AddWithValue("metadata", JsonSerializer.Serialize(metaPayload));
 
         await cmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<List<(Guid ChunkId, Guid SourceId, string ContentSnippet)>> GetUnembeddedChunksAsync(
+        Guid? sourceId = null,
+        int batchSize = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var list = new List<(Guid, Guid, string)>();
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync(cancellationToken);
+
+        const string sql = @"
+            SELECT chunk_id, source_id, content_snippet
+            FROM v_eval_ai.""KnowledgeVectorChunks""
+            WHERE embedding IS NULL
+              AND (@source_id IS NULL OR source_id = @source_id)
+            ORDER BY source_id ASC, page_number ASC, chunk_index ASC
+            LIMIT @limit;";
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("source_id", sourceId.HasValue ? sourceId.Value : DBNull.Value);
+        cmd.Parameters.AddWithValue("limit", Math.Clamp(batchSize, 1, 200));
+
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            list.Add((reader.GetGuid(0), reader.GetGuid(1), reader.GetString(2)));
+        }
+
+        return list;
+    }
+
+    public async Task UpdateChunkEmbeddingAsync(
+        Guid chunkId,
+        float[] embedding,
+        CancellationToken cancellationToken = default)
+    {
+        if (embedding is not { Length: 768 }) return;
+
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync(cancellationToken);
+
+        const string sql = @"
+            UPDATE v_eval_ai.""KnowledgeVectorChunks""
+            SET embedding = @embedding::vector
+            WHERE chunk_id = @chunk_id;";
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("chunk_id", chunkId);
+        cmd.Parameters.AddWithValue("embedding", V_Eval_Ai_Engine.Infrastructure.Services.GeminiEmbeddingService.ToPgVectorLiteral(embedding));
+        await cmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<int> CountUnembeddedChunksAsync(
+        Guid? sourceId = null,
+        CancellationToken cancellationToken = default)
+    {
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync(cancellationToken);
+
+        const string sql = @"
+            SELECT COUNT(*)::int
+            FROM v_eval_ai.""KnowledgeVectorChunks""
+            WHERE embedding IS NULL
+              AND (@source_id IS NULL OR source_id = @source_id);";
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("source_id", sourceId.HasValue ? sourceId.Value : DBNull.Value);
+        var val = await cmd.ExecuteScalarAsync(cancellationToken);
+        return val is int count ? count : Convert.ToInt32(val ?? 0);
     }
 
     public async Task UpdateSourceProgressAsync(

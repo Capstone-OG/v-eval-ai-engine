@@ -1307,3 +1307,9 @@
 
 ## [24/11/2026]
 - Làm sạch thuật ngữ kỹ thuật (`θ`, `IRT`, `BKT`, `DAG`) trong nhận xét chẩn đoán tại `rag-service/routers/diagnostic.py` và kiểm tra cú pháp thành công.
+
+## [25/11/2026] Chuẩn hóa Nhúng Vector 768 chiều (Gemini MRL) & Truy vấn Ngữ nghĩa pgvector HNSW
+- Tạo mới `IEmbeddingService.cs`, `GeminiEmbeddingService.cs` (`models/gemini-embedding-001`, `768` chiều, L2-normalize, batch + multi-key rotation) và `PgVectorDbService.cs` (truy vấn `embedding <=> @query_vec::vector` trên chỉ mục HNSW + Neighbor Chunk Expansion).
+- Chuyển DI trong `DependencyInjection.cs` từ `QdrantVectorDbService` (in-memory) sang `PgVectorDbService`.
+- Cập nhật `TextbookRepository.cs`, `ITextbookRepository.cs`, `PdfPigTextbookParserService.cs` (chunking gối đầu `1000/200` + lưu `embedding::vector`) và bổ sung endpoint `/backfill-embeddings`, `/search-semantic` tại `TextbookEndpoints.cs`.
+- Chạy backfill nhúng toàn bộ 708 chunk SGK trong `v_eval_ai."KnowledgeVectorChunks"` trên Supabase PostgreSQL.
